@@ -39,7 +39,8 @@ pageURLButton.addEventListener("click", async () => {
   var url = document.getElementById("pageURL").value;
   //TODO: check if correct url
   var [tab] = await chrome.tabs.query({ url: url });
-  chrome.storage.sync.set({ startingURL: url });
+  var domain = new URL(url);
+  chrome.storage.sync.set({ startingURL: domain.hostname });
   chrome.storage.sync.set({ visitedPages: [] });
   //var pageActions = JSON.stringify([]);
   //chrome.storage.sync.set({ pageActions: pageActions });
