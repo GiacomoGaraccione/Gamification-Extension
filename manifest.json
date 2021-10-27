@@ -1,0 +1,27 @@
+{
+    "name": "Gamification Plugin",
+    "version": "0.1",
+    "manifest_version": 3,
+    "description": "A plugin that enhances app testing with gamification strategies",
+    "permissions": [ 
+        "tabs",
+        "storage",
+        "activeTab", 
+        "scripting",
+        "downloads",
+        "background"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "web_accessible_resources": [{
+        "resources": ["img/*"], 
+        "matches": ["<all_urls>"]
+    }]
+}

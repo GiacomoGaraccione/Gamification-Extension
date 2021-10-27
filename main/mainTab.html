@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" type="text/css" href="mainTab.css">
+    </head>
+    <body>
+        <header>
+            <h1 style="text-align: center;">Main Page</h1>
+        </header>
+        <div class="wrapper">
+            <div class="files">
+                <div class="file">
+                    <div>
+                        <h2 style="text-align: center;">Create a new profile</h2> 
+                        <input type="file" class="fileInput">
+                        <button class="btn select-file" id="profileButton">Select PDF file</button>
+                    </div> 
+                 </div>
+                <div class="file">
+                   <div>
+                       <h2 style="text-align: center;">Upload your profile information</h2> 
+                       <input type="file">
+                       <button class="btn select-file" id="profileFileButton">Select file</button>
+                   </div> 
+                </div>
+                <div class="file">
+                    <div>
+                        <h2 style="text-align: center;">Upload the record of a past session</h2> 
+                        <input type="file">
+                        <button class="btn select-file" id="recordFileButton">Select file</button>
+                    </div> 
+                 </div>
+            </div>
+            <div>
+                <h2 style="text-align: center;">Paste URL of Page to Test</h2>
+                <input type="url" id="pageURL">
+                <button class="btn select-file" id="pageURLButton">Go to Page</button>
+            </div>
+        </div>
+
+        <script src="../jquery.js"></script>
+        <script src="mainTab.js"></script>
+    </body>
+</html>
