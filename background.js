@@ -135,25 +135,26 @@ function showFirstTimeStar() {
 
 function showSidenav() {
   function downloadFile() {
+    function onlyUnique(value, index, self) {
+      return self.indexOf(value) === index;
+    }
     chrome.storage.sync.get(
       ["pastPages", "visitedPages", "pageActions"],
       function (result) {
-        /*var pastPages = result.pastPages;
-      var visitedPages = result.visitedPages;
-      for (var i of visitedPages) {
-        if (!pastPages.includes(i)) {
-          pastPages.push(i);
-        }
-      }
-      for (var i of pastPages) {
-        i += "\n";
-      }*/
         var pageActions = result.pageActions;
-        var blob = new Blob([pageActions], {
+        var pageActionsObj = JSON.parse(pageActions);
+        for (var i = 0; i < pageActionsObj.length; i++) {
+          var filteredIds = pageActionsObj[i].ids.filter(onlyUnique);
+          pageActionsObj[i].ids = filteredIds;
+        }
+        var blob = new Blob([JSON.stringify(pageActionsObj)], {
           type: "text/plain;charset=UTF-8",
         });
         var url = window.URL.createObjectURL(blob);
-        var obj = { url: url, filename: "prova.txt" };
+        var obj = {
+          url: url,
+          filename: "gamification-extension-session-records.txt",
+        };
         chrome.runtime.sendMessage({ obj: obj, mess: "download" });
       }
     );
@@ -256,11 +257,8 @@ function countInteractableElements() {
               var array = [];
               array.push(j - 1);
               var obj = { url: currentURL, ids: array };
-              var objJSON = JSON.stringify(obj);
-              //console.log(result.pageActions);
               var retrievedObj = JSON.parse(result.pageActions);
-              //console.log("before", retrievedObj);
-              var newPage = true; //retrievedObj.push(obj);
+              var newPage = true;
               for (var k = 0; k < retrievedObj.length && newPage; k++) {
                 if (retrievedObj[k].url === currentURL) {
                   newPage = false;
