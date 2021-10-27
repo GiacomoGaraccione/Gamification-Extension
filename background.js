@@ -38,28 +38,30 @@ chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
       if (tab.active === true && tab.url.indexOf(startingURL) >= 0) {
         chrome.storage.sync.get(["visitedPages"], function (result) {
           var visitedPages = result.visitedPages;
-          chrome.storage.sync.set({ currentURL: tab.url });
-          if (!visitedPages.includes(tab.url)) {
-            visitedPages.push(tab.url);
-            chrome.storage.sync.set({ visitedPages: visitedPages });
-          }
+          chrome.storage.sync.set({ currentURL: tab.url }, function () {
+            if (!visitedPages.includes(tab.url)) {
+              visitedPages.push(tab.url);
+              chrome.storage.sync.set({ visitedPages: visitedPages });
+            }
+            chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              function: showFirstTimeStar,
+            });
+            chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              function: showSidenav,
+            });
+            chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              function: countInteractableElements,
+            });
+            chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              function: drawOverlays,
+            });
+          });
         });
-        chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          function: showFirstTimeStar,
-        });
-        chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          function: showSidenav,
-        });
-        chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          function: countInteractableElements,
-        });
-        chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          function: drawOverlays,
-        });
+
         //chiamata a funzione di calcolo elementi cliccabili
       }
     }
@@ -76,30 +78,32 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
         var reachedURL = tab.url;
         if (reachedURL.indexOf(startingURL) >= 0 && startingURL !== "") {
           chrome.storage.sync.get(["visitedPages"], function (result) {
-            chrome.storage.sync.set({ currentURL: tab.url });
-            var visitedPages = result.visitedPages;
-            if (!visitedPages.includes(tab.url)) {
-              visitedPages.push(tab.url);
-              chrome.storage.sync.set({ visitedPages: visitedPages });
-            }
-          });
-          chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            function: showFirstTimeStar,
+            chrome.storage.sync.set({ currentURL: tab.url }, function () {
+              var visitedPages = result.visitedPages;
+              if (!visitedPages.includes(tab.url)) {
+                visitedPages.push(tab.url);
+                chrome.storage.sync.set({ visitedPages: visitedPages });
+              }
+              chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                function: showFirstTimeStar,
+              });
+
+              chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                function: showSidenav,
+              });
+              chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                function: countInteractableElements,
+              });
+              chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                function: drawOverlays,
+              });
+            });
           });
 
-          chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            function: showSidenav,
-          });
-          chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            function: countInteractableElements,
-          });
-          chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            function: drawOverlays,
-          });
           //chiamata a funzione di calcolo elementi cliccabili
         }
       }
