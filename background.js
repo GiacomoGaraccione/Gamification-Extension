@@ -55,10 +55,6 @@ chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
               target: { tabId: tab.id },
               function: countInteractableElements,
             });
-            chrome.scripting.executeScript({
-              target: { tabId: tab.id },
-              function: drawOverlays,
-            });
           });
         });
 
@@ -96,10 +92,6 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
               chrome.scripting.executeScript({
                 target: { tabId: tab.id },
                 function: countInteractableElements,
-              });
-              chrome.scripting.executeScript({
-                target: { tabId: tab.id },
-                function: drawOverlays,
               });
             });
           });
@@ -165,30 +157,11 @@ function showSidenav() {
   }
 
   function removeBorders() {
-    var nodes = [];
-
-    function checkChildren(node) {
-      var divChildren = node.getElementsByTagName("div");
-      if (divChildren.length > 0) {
-        for (var i = 0; i < divChildren.length; i++) {
-          checkChildren(divChildren[i]);
-        }
-      } else {
-        if (!nodes.includes(node)) {
-          nodes.push(node);
-        }
-      }
-    }
-
     var el = document.body.getElementsByTagName("a");
 
     for (var i = 0; i < el.length; i++) {
-      checkChildren(el[i]);
-    }
-
-    for (var i = 0; i < nodes.length; i++) {
       //rimuove i border a ogni oggetto interagibile
-      nodes[i].style = "border:0; border-style:solid;";
+      el[i].style = "border:0; border-style:solid;";
     }
   }
   var div = document.createElement("div");
@@ -237,6 +210,63 @@ function showSidenav() {
       //l'url di partenza viene cancellato per evitare di mostrare di nuovo tutte le aggiunte alla pagina
       chrome.storage.sync.set({ startingURL: "" });
     };
+
+    var toggleClickedElementsButton = document.createElement("button");
+    div.appendChild(toggleClickedElementsButton);
+    toggleClickedElementsButton.id =
+      "gamificationExtensionToggleClickedElementsButton";
+    toggleClickedElementsButton.textContent = "Show Interacted Elements";
+    toggleClickedElementsButton.onclick = function () {
+      var elsToRemove = document.body.getElementsByTagName("a");
+
+      for (var i = 0; i < elsToRemove.length; i++) {
+        //rimuove i border a ogni oggetto interagibile
+        elsToRemove[i].style = "border:0; border-style:solid;";
+      }
+
+      chrome.storage.sync.get(["pageActions", "currentURL"], function (result) {
+        var retrievedObj = JSON.parse(result.pageActions);
+        var el = document.body.getElementsByTagName("a");
+
+        for (var i = 0; i < retrievedObj.length; i++) {
+          if (retrievedObj[i].url === result.currentURL) {
+            var ids = retrievedObj[i].ids;
+            for (var j = 0; j < el.length; j++) {
+              if (ids.indexOf(j - 1) >= 0) {
+                el[j - 1].style =
+                  "border:3px; border-style:solid; border-color:#FF0000; padding: 1em;";
+              }
+            }
+          }
+        }
+      });
+    };
+
+    var removeOverlaysButton = document.createElement("button");
+    div.appendChild(removeOverlaysButton);
+    removeOverlaysButton.id = "gamificationExtensionRemoveOverlaysButton";
+    removeOverlaysButton.textContent = "Remove Overlays";
+    removeOverlaysButton.onclick = function () {
+      var el = document.body.getElementsByTagName("a");
+
+      for (var i = 0; i < el.length; i++) {
+        //rimuove i border a ogni oggetto interagibile
+        el[i].style = "border:0; border-style:solid;";
+      }
+    };
+
+    var toggleAllElementsButton = document.createElement("button");
+    div.appendChild(toggleAllElementsButton);
+    toggleAllElementsButton.id = "gamificationExtensionToggleAllElementsButton";
+    toggleAllElementsButton.textContent = "Show All Elements";
+    toggleAllElementsButton.onclick = function () {
+      var el = document.getElementsByTagName("a");
+
+      for (var i = 0; i < el.length; i++) {
+        el[i].style =
+          "border:3px; border-style:solid; border-color:#FF0000; padding: 1em;";
+      }
+    };
   }
 }
 
@@ -283,25 +313,6 @@ function countInteractableElements() {
           }
         }
       });
-    }
-  });
-}
-
-function drawOverlays() {
-  chrome.storage.sync.get(["pageActions", "currentURL"], function (result) {
-    var retrievedObj = JSON.parse(result.pageActions);
-    var el = document.body.getElementsByTagName("a");
-
-    for (var i = 0; i < retrievedObj.length; i++) {
-      if (retrievedObj[i].url === result.currentURL) {
-        var ids = retrievedObj[i].ids;
-        for (var j = 0; j < el.length; j++) {
-          if (ids.indexOf(j - 1) >= 0) {
-            el[j - 1].style =
-              "border:3px; border-style:solid; border-color:#FF0000; padding: 1em;";
-          }
-        }
-      }
     }
   });
 }
