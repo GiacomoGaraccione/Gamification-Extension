@@ -38,7 +38,11 @@ chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
         active: true,
         currentWindow: true,
       });
-      if (tab.active === true && tab.url.indexOf(startingURL) >= 0) {
+      if (
+        tab.active === true &&
+        tab.url.indexOf(startingURL) >= 0 &&
+        startingURL !== ""
+      ) {
         chrome.storage.sync.get(["visitedPages"], function (result) {
           var visitedPages = result.visitedPages;
           chrome.storage.sync.set({ currentURL: tab.url }, function () {
@@ -143,8 +147,12 @@ function showSidenav() {
         var pageActions = result.pageActions;
         var pageActionsObj = JSON.parse(pageActions);
         for (var i = 0; i < pageActionsObj.length; i++) {
-          var filteredIds = pageActionsObj[i].ids.filter(onlyUnique);
-          pageActionsObj[i].ids = filteredIds;
+          var filteredLinkIds =
+            pageActionsObj[i].idsOfLinkObjects.filter(onlyUnique);
+          pageActionsObj[i].idsOfLinkObjects = filteredLinkIds;
+          var filteredInputIds =
+            pageActionsObj[i].idsOfInputObjects.filter(onlyUnique);
+          pageActionsObj[i].idsOfInputObjects = filteredInputIds;
         }
         var blob = new Blob([JSON.stringify(pageActionsObj)], {
           type: "text/plain;charset=UTF-8",
@@ -160,11 +168,15 @@ function showSidenav() {
   }
 
   function removeBorders() {
-    var el = document.body.getElementsByTagName("a");
-
-    for (var i = 0; i < el.length; i++) {
+    var linksToRemove = document.body.getElementsByTagName("a");
+    for (var i = 0; i < linksToRemove.length; i++) {
       //rimuove i border a ogni oggetto interagibile
-      el[i].style = "border:0; border-style:solid;";
+      linksToRemove[i].style = "border:0; border-style:solid;";
+    }
+
+    var inputsToRemove = document.body.getElementsByTagName("input");
+    for (var i = 0; i < inputsToRemove.length; i++) {
+      inputsToRemove[i].style = "border:0; border-style:solid;";
     }
   }
   var div = document.createElement("div");
@@ -220,24 +232,37 @@ function showSidenav() {
       "gamificationExtensionToggleClickedElementsButton";
     toggleClickedElementsButton.textContent = "Show Interacted Elements";
     toggleClickedElementsButton.onclick = function () {
-      var elsToRemove = document.body.getElementsByTagName("a");
-
-      for (var i = 0; i < elsToRemove.length; i++) {
+      var linksToRemove = document.body.getElementsByTagName("a");
+      for (var i = 0; i < linksToRemove.length; i++) {
         //rimuove i border a ogni oggetto interagibile
-        elsToRemove[i].style = "border:0; border-style:solid;";
+        linksToRemove[i].style = "border:0; border-style:solid;";
+      }
+
+      var inputsToRemove = document.body.getElementsByTagName("input");
+      for (var i = 0; i < inputsToRemove.length; i++) {
+        inputsToRemove[i].style = "border:0; border-style:solid;";
       }
 
       chrome.storage.sync.get(["pageActions", "currentURL"], function (result) {
         var retrievedObj = JSON.parse(result.pageActions);
-        var el = document.body.getElementsByTagName("a");
+        var links = document.body.getElementsByTagName("a");
+        var inputs = document.body.getElementsByTagName("input");
 
         for (var i = 0; i < retrievedObj.length; i++) {
           if (retrievedObj[i].url === result.currentURL) {
-            var ids = retrievedObj[i].ids;
-            for (var j = 0; j < el.length; j++) {
-              if (ids.indexOf(j - 1) >= 0) {
-                el[j - 1].style =
+            var idsOfLinkObjects = retrievedObj[i].idsOfLinkObjects;
+            for (var j = 0; j < links.length; j++) {
+              if (idsOfLinkObjects.indexOf(j - 1) >= 0) {
+                links[j - 1].style =
                   "border:3px; border-style:solid; border-color:#FF0000; padding: 1em;";
+              }
+            }
+
+            var idsOfInputObjects = retrievedObj[i].idsOfInputObjects;
+            for (var j = 0; j < inputs.length; j++) {
+              if (idsOfInputObjects.indexOf(j - 1) >= 0) {
+                inputs[j - 1].style =
+                  "border:3px; border-style:solid; border-color:#00FF00; padding: 1em;";
               }
             }
           }
@@ -250,11 +275,15 @@ function showSidenav() {
     removeOverlaysButton.id = "gamificationExtensionRemoveOverlaysButton";
     removeOverlaysButton.textContent = "Remove Overlays";
     removeOverlaysButton.onclick = function () {
-      var el = document.body.getElementsByTagName("a");
-
-      for (var i = 0; i < el.length; i++) {
+      var linksToRemove = document.body.getElementsByTagName("a");
+      for (var i = 0; i < linksToRemove.length; i++) {
         //rimuove i border a ogni oggetto interagibile
-        el[i].style = "border:0; border-style:solid;";
+        linksToRemove[i].style = "border:0; border-style:solid;";
+      }
+
+      var inputsToRemove = document.body.getElementsByTagName("input");
+      for (var i = 0; i < inputsToRemove.length; i++) {
+        inputsToRemove[i].style = "border:0; border-style:solid;";
       }
     };
 
@@ -263,52 +292,102 @@ function showSidenav() {
     toggleAllElementsButton.id = "gamificationExtensionToggleAllElementsButton";
     toggleAllElementsButton.textContent = "Show All Elements";
     toggleAllElementsButton.onclick = function () {
-      var el = document.getElementsByTagName("a");
-
-      for (var i = 0; i < el.length; i++) {
-        el[i].style =
+      var links = document.body.getElementsByTagName("a");
+      for (var i = 0; i < links.length; i++) {
+        links[i].style =
           "border:3px; border-style:solid; border-color:#FF0000; padding: 1em;";
+      }
+
+      var inputs = document.body.getElementsByTagName("input");
+      for (var i = 0; i < inputs.length; i++) {
+        inputs[i].style =
+          "border:3px; border-style:solid; border-color:#00FF00; padding: 1em;";
       }
     };
   }
 }
 
 function countInteractableElements() {
-  chrome.storage.sync.get(["currentURL"], function (result) {
+  chrome.storage.sync.get(["currentURL", "pageActions"], function (result) {
     var currentURL = result.currentURL;
-    var el = document.body.getElementsByTagName("a");
-    //Ricercare tutti i possibili elementi comuni (nav, button, a, tabelle)?
+    var pageActions = result.pageActions;
 
-    for (var i = 0; i < el.length; i++) {
-      //aggiunge un outline generico ad ogni oggetto individuato
-      //el[i].style =
-      //"border:3px; border-style:solid; border-color:#FF0000; padding: 1em;";
+    //ottiene tutti gli elementi di tipo 'a' (link ad altre pagine)
+    var linkObjects = document.body.getElementsByTagName("a");
+    var totalLinkObjects = linkObjects.length;
+
+    //ottiene tutti i campi di input della pagina
+    var inputObjects = document.body.getElementsByTagName("input");
+    var totalInputObjects = inputObjects.length;
+
+    var obj = {
+      url: currentURL,
+      idsOfLinkObjects: [],
+      totalLinkObjects: totalLinkObjects,
+      idsOfInputObjects: [],
+      totalInputObjects: totalInputObjects,
+    };
+    var retrievedObj = JSON.parse(result.pageActions);
+    var newPage = true;
+    for (var i = 0; i < retrievedObj.length && newPage; i++) {
+      //magari in futuro aggiungere controlli sulla differenza del numero di oggetti interagibili
+      if (retrievedObj[i].url === currentURL) {
+        newPage = false;
+      }
+    }
+    if (newPage) {
+      retrievedObj.push(obj);
+    }
+    var pageActions = JSON.stringify(retrievedObj);
+    chrome.storage.sync.set({ pageActions: pageActions });
+
+    for (var i = 0; i < linkObjects.length; i++) {
       //funzione chiamata ogni volta che un link viene cliccato
-      el[i].addEventListener("click", function (event) {
+      linkObjects[i].addEventListener("click", function (event) {
         var found = false;
         var els = document.body.getElementsByTagName("a");
         for (var j = 0; j < els.length && !found; j++) {
           if (els[j].href === event.target.href) {
             found = true;
             chrome.storage.sync.get(["pageActions"], function (result) {
-              var array = [];
-              array.push(j - 1);
-              var obj = { url: currentURL, ids: array };
               var retrievedObj = JSON.parse(result.pageActions);
-              var newPage = true;
-              for (var k = 0; k < retrievedObj.length && newPage; k++) {
+              for (var k = 0; k < retrievedObj.length; k++) {
                 if (retrievedObj[k].url === currentURL) {
-                  newPage = false;
-                  var ids = retrievedObj[k].ids;
+                  var ids = retrievedObj[k].idsOfLinkObjects;
                   var pos = ids.indexOf(j);
                   if (pos === -1) {
                     ids.push(j - 1);
-                    retrievedObj.ids = ids;
+                    retrievedObj.idsOfLinkObjects = ids;
                   }
                 }
               }
-              if (newPage) {
-                retrievedObj.push(obj);
+              var pageActions = JSON.stringify(retrievedObj);
+              chrome.storage.sync.set({ pageActions: pageActions });
+            });
+          }
+        }
+      });
+    }
+
+    for (var i = 0; i < inputObjects.length; i++) {
+      inputObjects[i].addEventListener("click", function (event) {
+        event.preventDefault();
+        var els = document.body.getElementsByTagName("input");
+        var found = false;
+        for (var j = 0; j < els.length && !found; j++) {
+          if (els[j].id === event.target.id) {
+            found = true;
+            chrome.storage.sync.get(["pageActions"], function (result) {
+              var retrievedObj = JSON.parse(result.pageActions);
+              for (var k = 0; k < retrievedObj.length; k++) {
+                if (retrievedObj[k].url === currentURL) {
+                  var ids = retrievedObj[k].idsOfInputObjects;
+                  var pos = ids.indexOf(j);
+                  if (pos === -1) {
+                    ids.push(j - 1);
+                    retrievedObj.idsOfInputObjects = ids;
+                  }
+                }
               }
               var pageActions = JSON.stringify(retrievedObj);
               chrome.storage.sync.set({ pageActions: pageActions });
