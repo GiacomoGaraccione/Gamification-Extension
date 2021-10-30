@@ -34,7 +34,10 @@ chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
     async function (result) {
       var pastPages = result.pastPages;
       var startingURL = result.startingURL;
-      var [tab] = await chrome.tabs.query({ url: startingURL });
+      var [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
       if (tab.active === true && tab.url.indexOf(startingURL) >= 0) {
         chrome.storage.sync.get(["visitedPages"], function (result) {
           var visitedPages = result.visitedPages;
