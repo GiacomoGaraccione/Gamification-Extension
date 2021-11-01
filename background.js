@@ -137,6 +137,18 @@ function showFirstTimeStar() {
 }
 
 function showSidenav() {
+  function isButtonOfExtension(button) {
+    return (
+      button.id === "gamificationExtensionRemoveOverlaysButton" ||
+      button.id === "gamificationExtensionSidenavButton" ||
+      button.id === "gamificationExtensionSidenavCloseButton" ||
+      button.id === "gamificationExtensionEndSessionButton" ||
+      button.id === "gamificationExtensionToggleClickedElementsButton" ||
+      button.id === "gamificationExtensionRemoveOverlaysButton" ||
+      button.id === "gamificationExtensionToggleAllElementsButton"
+    );
+  }
+
   function downloadFile() {
     function onlyUnique(value, index, self) {
       return self.indexOf(value) === index;
@@ -153,6 +165,9 @@ function showSidenav() {
           var filteredInputIds =
             pageActionsObj[i].idsOfInputObjects.filter(onlyUnique);
           pageActionsObj[i].idsOfInputObjects = filteredInputIds;
+          var filteredButtonIds =
+            pageActionsObj[i].idsOfButtonObjects.filter(onlyUnique);
+          pageActionsObj[i].idsOfButtonObjects = filteredButtonIds;
         }
         var blob = new Blob([JSON.stringify(pageActionsObj)], {
           type: "text/plain;charset=UTF-8",
@@ -177,6 +192,12 @@ function showSidenav() {
     var inputsToRemove = document.body.getElementsByTagName("input");
     for (var i = 0; i < inputsToRemove.length; i++) {
       inputsToRemove[i].style = "border:0; border-style:solid;";
+    }
+
+    var buttonsToRemove = document.body.getElementsByTagName("button");
+    for (var i = 0; i < buttonsToRemove.length; i++) {
+      if (!isButtonOfExtension(buttonsToRemove[i]))
+        buttonsToRemove[i].style = "border:0; border-style:solid;";
     }
   }
   var div = document.createElement("div");
@@ -243,10 +264,17 @@ function showSidenav() {
         inputsToRemove[i].style = "border:0; border-style:solid;";
       }
 
+      var buttonsToRemove = document.body.getElementsByTagName("button");
+      for (var i = 0; i < buttonsToRemove.length; i++) {
+        if (!isButtonOfExtension(buttonsToRemove[i]))
+          buttonsToRemove[i].style = "border:0; border-style:solid;";
+      }
+
       chrome.storage.sync.get(["pageActions", "currentURL"], function (result) {
         var retrievedObj = JSON.parse(result.pageActions);
         var links = document.body.getElementsByTagName("a");
         var inputs = document.body.getElementsByTagName("input");
+        var buttons = document.body.getElementsByTagName("button");
 
         for (var i = 0; i < retrievedObj.length; i++) {
           if (retrievedObj[i].url === result.currentURL) {
@@ -263,6 +291,17 @@ function showSidenav() {
               if (idsOfInputObjects.indexOf(j - 1) >= 0) {
                 inputs[j - 1].style =
                   "border:3px; border-style:solid; border-color:#00FF00; padding: 1em;";
+              }
+            }
+
+            var idsOfButtonObjects = retrievedObj[i].idsOfButtonObjects;
+            for (var j = 0; j < idsOfButtonObjects.length; j++) {
+              if (
+                idsOfButtonObjects.indexOf(j - 1) >= 0 &&
+                !isButtonOfExtension(buttons[j - 1])
+              ) {
+                buttons[j - 1].style =
+                  "border:3px; border-style:solid; border-color:#0000FF; padding: 1em;";
               }
             }
           }
@@ -285,6 +324,12 @@ function showSidenav() {
       for (var i = 0; i < inputsToRemove.length; i++) {
         inputsToRemove[i].style = "border:0; border-style:solid;";
       }
+
+      var buttonsToRemove = document.body.getElementsByTagName("button");
+      for (var i = 0; i < buttonsToRemove.length; i++) {
+        if (!isButtonOfExtension(buttonsToRemove[i]))
+          buttonsToRemove[i].style = "border:0; border-style:solid;";
+      }
     };
 
     var toggleAllElementsButton = document.createElement("button");
@@ -303,11 +348,31 @@ function showSidenav() {
         inputs[i].style =
           "border:3px; border-style:solid; border-color:#00FF00; padding: 1em;";
       }
+
+      var buttons = document.body.getElementsByTagName("button");
+      for (var i = 0; i < buttons.length; i++) {
+        if (!isButtonOfExtension(buttons[i])) {
+          buttons[i].style =
+            "border:3px; border-style:solid; border-color:#0000FF; padding: 1em;";
+        }
+      }
     };
   }
 }
 
 function countInteractableElements() {
+  function isButtonOfExtension(button) {
+    return (
+      button.id === "gamificationExtensionRemoveOverlaysButton" ||
+      button.id === "gamificationExtensionSidenavButton" ||
+      button.id === "gamificationExtensionSidenavCloseButton" ||
+      button.id === "gamificationExtensionEndSessionButton" ||
+      button.id === "gamificationExtensionToggleClickedElementsButton" ||
+      button.id === "gamificationExtensionRemoveOverlaysButton" ||
+      button.id === "gamificationExtensionToggleAllElementsButton"
+    );
+  }
+
   chrome.storage.sync.get(["currentURL", "pageActions"], function (result) {
     var currentURL = result.currentURL;
     var pageActions = result.pageActions;
@@ -320,12 +385,23 @@ function countInteractableElements() {
     var inputObjects = document.body.getElementsByTagName("input");
     var totalInputObjects = inputObjects.length;
 
+    //ottiene tutti i buttons presenti nella pagina
+    var buttonObjects = document.body.getElementsByTagName("button");
+    var totalButtonObjects = 0;
+    for (var i = 0; i < buttonObjects.length; i++) {
+      if (!isButtonOfExtension(buttonObjects[i])) {
+        totalButtonObjects++;
+      }
+    }
+
     var obj = {
       url: currentURL,
       idsOfLinkObjects: [],
       totalLinkObjects: totalLinkObjects,
       idsOfInputObjects: [],
       totalInputObjects: totalInputObjects,
+      idsOfButtonObjects: [],
+      totalButtonObjects: totalButtonObjects,
     };
     var retrievedObj = JSON.parse(result.pageActions);
     var newPage = true;
@@ -395,6 +471,35 @@ function countInteractableElements() {
           }
         }
       });
+    }
+
+    for (var i = 0; i < buttonObjects.length; i++) {
+      if (!isButtonOfExtension(buttonObjects[i])) {
+        buttonObjects[i].addEventListener("click", function (event) {
+          var els = document.body.getElementsByTagName("button");
+          var found = false;
+          for (var j = 0; j < els.length && !found; j++) {
+            if (els[j].id === event.target.id) {
+              found = true;
+              chrome.storage.sync.get(["pageActions"], function (result) {
+                var retrievedObj = JSON.parse(result.pageActions);
+                for (var k = 0; k < retrievedObj.length; k++) {
+                  if (retrievedObj[k].url === currentURL) {
+                    var ids = retrievedObj[k].idsOfButtonObjects;
+                    var pos = ids.indexOf(j);
+                    if (pos === -1) {
+                      ids.push(j - 1);
+                      retrievedObj.idsOfButtonObjects = ids;
+                    }
+                  }
+                }
+                var pageActions = JSON.stringify(retrievedObj);
+                chrome.storage.sync.set({ pageActions: pageActions });
+              });
+            }
+          }
+        });
+      }
     }
   });
 }
