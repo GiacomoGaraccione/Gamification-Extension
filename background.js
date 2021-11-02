@@ -62,6 +62,10 @@ chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
               target: { tabId: tab.id },
               function: countInteractableElements,
             });
+            chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              function: showTopbar,
+            });
           });
         });
 
@@ -99,6 +103,10 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
               chrome.scripting.executeScript({
                 target: { tabId: tab.id },
                 function: countInteractableElements,
+              });
+              chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                function: showTopbar,
               });
             });
           });
@@ -243,6 +251,10 @@ function showSidenav() {
         document.body.removeChild(star);
       }
       removeBorders();
+      var topnav = document.getElementById("gamificationExtensionTopnav");
+      if (topnav != null) {
+        document.body.removeChild(topnav);
+      }
       //l'url di partenza viene cancellato per evitare di mostrare di nuovo tutte le aggiunte alla pagina
       chrome.storage.sync.set({ startingURL: "" });
     };
@@ -373,6 +385,10 @@ function countInteractableElements() {
     );
   }
 
+  function onlyUnique(value, index, self) {
+    return self.indexOf(value) === index;
+  }
+
   chrome.storage.sync.get(["currentURL", "pageActions"], function (result) {
     var currentURL = result.currentURL;
     var pageActions = result.pageActions;
@@ -463,10 +479,33 @@ function countInteractableElements() {
                     ids.push(j - 1);
                     retrievedObj.idsOfInputObjects = ids;
                   }
+                  var pageActions = JSON.stringify(retrievedObj);
+                  chrome.storage.sync.set({ pageActions: pageActions });
+                  var innerDiv = document.getElementById(
+                    "gamificationExtensionTopnavInner"
+                  );
+                  var totalLinkObjects = retrievedObj[k].totalLinkObjects;
+                  var totalInputObjects = retrievedObj[k].totalInputObjects;
+                  var totalButtonObjects = retrievedObj[k].totalButtonObjects;
+                  var interactedLinks =
+                    retrievedObj[k].idsOfLinkObjects.filter(onlyUnique).length;
+                  var interactedInputs =
+                    retrievedObj[k].idsOfInputObjects.filter(onlyUnique).length;
+                  var interactedButtons =
+                    retrievedObj[k].idsOfButtonObjects.filter(
+                      onlyUnique
+                    ).length;
+                  var progress =
+                    ((interactedLinks + interactedInputs + interactedButtons) *
+                      100) /
+                    (totalLinkObjects + totalInputObjects + totalButtonObjects);
+                  innerDiv.style =
+                    `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+                    progress +
+                    `%; white-space:nowrap`;
+                  innerDiv.textContent = "Progress: " + progress + "%";
                 }
               }
-              var pageActions = JSON.stringify(retrievedObj);
-              chrome.storage.sync.set({ pageActions: pageActions });
             });
           }
         }
@@ -491,6 +530,37 @@ function countInteractableElements() {
                       ids.push(j - 1);
                       retrievedObj.idsOfButtonObjects = ids;
                     }
+                    var innerDiv = document.getElementById(
+                      "gamificationExtensionTopnavInner"
+                    );
+                    var totalLinkObjects = retrievedObj[k].totalLinkObjects;
+                    var totalInputObjects = retrievedObj[k].totalInputObjects;
+                    var totalButtonObjects = retrievedObj[k].totalButtonObjects;
+                    var interactedLinks =
+                      retrievedObj[k].idsOfLinkObjects.filter(
+                        onlyUnique
+                      ).length;
+                    var interactedInputs =
+                      retrievedObj[k].idsOfInputObjects.filter(
+                        onlyUnique
+                      ).length;
+                    var interactedButtons =
+                      retrievedObj[k].idsOfButtonObjects.filter(
+                        onlyUnique
+                      ).length;
+                    var progress =
+                      ((interactedLinks +
+                        interactedInputs +
+                        interactedButtons) *
+                        100) /
+                      (totalLinkObjects +
+                        totalInputObjects +
+                        totalButtonObjects);
+                    innerDiv.style =
+                      `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+                      progress +
+                      `%; white-space:nowrap`;
+                    innerDiv.textContent = "Progress: " + progress + "%";
                   }
                 }
                 var pageActions = JSON.stringify(retrievedObj);
@@ -500,6 +570,58 @@ function countInteractableElements() {
           }
         });
       }
+    }
+  });
+}
+
+function showTopbar() {
+  function onlyUnique(value, index, self) {
+    return self.indexOf(value) === index;
+  }
+
+  chrome.storage.sync.get(["pageActions", "currentURL"], function (result) {
+    var pageActions = JSON.parse(result.pageActions);
+    var currentURL = result.currentURL;
+    for (var i = 0; i < pageActions.length; i++) {
+      if (pageActions[i].url === currentURL) {
+        var totalLinkObjects = pageActions[i].totalLinkObjects;
+        var totalInputObjects = pageActions[i].totalInputObjects;
+        var totalButtonObjects = pageActions[i].totalButtonObjects;
+        var interactedLinks =
+          pageActions[i].idsOfLinkObjects.filter(onlyUnique).length;
+        var interactedInputs =
+          pageActions[i].idsOfInputObjects.filter(onlyUnique).length;
+        var interactedButtons =
+          pageActions[i].idsOfButtonObjects.filter(onlyUnique).length;
+        var progress =
+          ((interactedLinks + interactedInputs + interactedButtons) * 100) /
+          (totalLinkObjects + totalInputObjects + totalButtonObjects);
+        console.log(progress);
+      }
+    }
+    var topnav = document.createElement("div");
+    topnav.id = "gamificationExtensionTopnav";
+    var found = document.getElementById("gamificationExtensionTopnav");
+    if (found === null) {
+      document.body.appendChild(topnav);
+      topnav.style =
+        "background-color: transparent;position: fixed;bottom: 0;width: 100%;";
+      var outerDiv = document.createElement("div");
+      outerDiv.id = "gamificationExtensionTopnavOuter";
+      outerDiv.style =
+        "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
+      topnav.appendChild(outerDiv);
+      var innerDiv = document.createElement("div");
+      innerDiv.id = "gamificationExtensionTopnavInner";
+      if (progress === undefined) {
+        progress = 0;
+      }
+      innerDiv.style =
+        `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+        progress +
+        `%; white-space:nowrap`;
+      innerDiv.textContent = "Progress: " + progress + "%";
+      outerDiv.appendChild(innerDiv);
     }
   });
 }
