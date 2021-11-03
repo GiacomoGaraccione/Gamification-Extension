@@ -22,8 +22,11 @@ pageURLButton.addEventListener("click", async () => {
   var url = document.getElementById("pageURL").value;
   var [tab] = await chrome.tabs.query({ url: url });
   var domain = new URL(url);
+  var empty = [];
+
   chrome.storage.sync.set({ startingURL: domain.hostname });
   chrome.storage.sync.set({ visitedPages: [] });
+  chrome.storage.sync.set({ pageStats: JSON.stringify(empty) });
   if (tab === undefined) {
     chrome.runtime.sendMessage({
       mess: "openNew",

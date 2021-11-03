@@ -1,9 +1,3 @@
-let color = "#3aa757";
-
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.sync.set({ color });
-});
-
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.mess === "create") {
     chrome.tabs.create({ url: chrome.runtime.getURL("main/mainTab.html") });
@@ -223,7 +217,7 @@ function showSidenav() {
     document.body.appendChild(div);
     div.id = "gamificationExtensionSidenav";
     div.style =
-      "height: 100%; width: 0; position: fixed; z-index: 1; top: 0; right: 0; background-color: #111; overflow-x: hidden; padding-top: 60px; transition: 0.5s;";
+      "height: 100%; width: 0; position: fixed; z-index: 1; top: 0; right: 0; background-color: rgb(211 245 230); overflow-x: hidden; padding-top: 60px; transition: 0.5s;";
     var closeButton = document.createElement("button");
     div.appendChild(closeButton);
     closeButton.id = "gamificationExtensionSidenavCloseButton";
@@ -369,6 +363,112 @@ function showSidenav() {
         }
       }
     };
+
+    chrome.storage.sync.get(
+      ["pageActions", "pageStats", "currentURL"],
+      function (result) {
+        var pageActions = JSON.parse(result.pageActions);
+        var pageStats = JSON.parse(result.pageStats);
+        function filterURL(event) {
+          return event.url === result.currentURL;
+        }
+        var stats = pageStats.filter(filterURL)[0];
+        var actions = pageActions.filter(filterURL)[0];
+        var noStats = stats === undefined;
+        var noActions = actions === undefined;
+        console.log(actions);
+
+        var table = document.createElement("table");
+        var linksRow = table.insertRow();
+        for (var i = 0; i < 4; i++) {
+          var cell = linksRow.insertCell();
+          var text = "";
+          switch (i) {
+            case 0:
+              text = "Links";
+              break;
+            case 1:
+              text = noStats ? 0 : stats.interactedLinks.length;
+              break;
+            case 2:
+              text = noStats ? 0 : stats.newLinks.length;
+              break;
+            case 3:
+              text = noActions ? 0 : actions.idsOfLinkObjects.length;
+              break;
+          }
+          cell.appendChild(document.createTextNode(text));
+        }
+        var inputsRow = table.insertRow();
+        for (var i = 0; i < 4; i++) {
+          var cell = inputsRow.insertCell();
+          var text = "";
+          switch (i) {
+            case 0:
+              text = "Forms";
+              break;
+            case 1:
+              text = noStats ? 0 : stats.interactedInputs.length;
+              break;
+            case 2:
+              text = noStats ? 0 : stats.newInputs.length;
+              break;
+            case 3:
+              text = noActions ? 0 : actions.idsOfInputObjects.length;
+              break;
+          }
+          cell.appendChild(document.createTextNode(text));
+        }
+        var buttonsRow = table.insertRow();
+        for (var i = 0; i < 4; i++) {
+          var cell = buttonsRow.insertCell();
+          var text = "";
+          switch (i) {
+            case 0:
+              text = "Buttons";
+              break;
+            case 1:
+              text = noStats ? 0 : stats.interactedButtons.length;
+              break;
+            case 2:
+              text = noStats ? 0 : stats.newButtons.length;
+              break;
+            case 3:
+              text = noActions ? 0 : actions.idsOfButtonObjects.length;
+              break;
+          }
+          cell.appendChild(document.createTextNode(text));
+        }
+
+        var tableHead = table.createTHead();
+        var headRow = tableHead.insertRow();
+        var th1 = document.createElement("th");
+        var text1 = document.createTextNode("");
+        th1.appendChild(text1);
+        var th2 = document.createElement("th");
+        var text2 = document.createTextNode("Current Session");
+        th2.appendChild(text2);
+        var th3 = document.createElement("th");
+        var text3 = document.createTextNode("New");
+        th3.appendChild(text3);
+        var th4 = document.createElement("th");
+        var text4 = document.createTextNode("Total");
+        th4.appendChild(text4);
+        headRow.appendChild(th1);
+        headRow.appendChild(th2);
+        headRow.appendChild(th3);
+        headRow.appendChild(th4);
+
+        div.appendChild(table);
+      }
+    );
+
+    /*var pagesRow = table.insertRow();
+    for (var i = 0; i < 4; i++) {
+      var cell = pagesRow.insertCell();
+      var text = i === 0 ? "Pages" : i;
+      cell.appendChild(document.createTextNode(text));
+    }*/
   }
 }
 
@@ -389,189 +489,257 @@ function countInteractableElements() {
     return self.indexOf(value) === index;
   }
 
-  chrome.storage.sync.get(["currentURL", "pageActions"], function (result) {
-    var currentURL = result.currentURL;
-    var pageActions = result.pageActions;
+  chrome.storage.sync.get(
+    ["currentURL", "pageActions", "pageStats"],
+    function (result) {
+      var currentURL = result.currentURL;
 
-    //ottiene tutti gli elementi di tipo 'a' (link ad altre pagine)
-    var linkObjects = document.body.getElementsByTagName("a");
-    var totalLinkObjects = linkObjects.length;
+      //ottiene tutti gli elementi di tipo 'a' (link ad altre pagine)
+      var linkObjects = document.body.getElementsByTagName("a");
+      var totalLinkObjects = linkObjects.length;
 
-    //ottiene tutti i campi di input della pagina
-    var inputObjects = document.body.getElementsByTagName("input");
-    var totalInputObjects = inputObjects.length;
+      //ottiene tutti i campi di input della pagina
+      var inputObjects = document.body.getElementsByTagName("input");
+      var totalInputObjects = inputObjects.length;
 
-    //ottiene tutti i buttons presenti nella pagina
-    var buttonObjects = document.body.getElementsByTagName("button");
-    var totalButtonObjects = 0;
-    for (var i = 0; i < buttonObjects.length; i++) {
-      if (!isButtonOfExtension(buttonObjects[i])) {
-        totalButtonObjects++;
-      }
-    }
-
-    var obj = {
-      url: currentURL,
-      idsOfLinkObjects: [],
-      totalLinkObjects: totalLinkObjects,
-      idsOfInputObjects: [],
-      totalInputObjects: totalInputObjects,
-      idsOfButtonObjects: [],
-      totalButtonObjects: totalButtonObjects,
-    };
-    var retrievedObj = JSON.parse(result.pageActions);
-    var newPage = true;
-    for (var i = 0; i < retrievedObj.length && newPage; i++) {
-      //magari in futuro aggiungere controlli sulla differenza del numero di oggetti interagibili
-      if (retrievedObj[i].url === currentURL) {
-        newPage = false;
-      }
-    }
-    if (newPage) {
-      retrievedObj.push(obj);
-    }
-    var pageActions = JSON.stringify(retrievedObj);
-    chrome.storage.sync.set({ pageActions: pageActions });
-
-    for (var i = 0; i < linkObjects.length; i++) {
-      //funzione chiamata ogni volta che un link viene cliccato
-      linkObjects[i].addEventListener("click", function (event) {
-        var found = false;
-        var els = document.body.getElementsByTagName("a");
-        for (var j = 0; j < els.length && !found; j++) {
-          if (els[j].href === event.target.href) {
-            found = true;
-            chrome.storage.sync.get(["pageActions"], function (result) {
-              var retrievedObj = JSON.parse(result.pageActions);
-              for (var k = 0; k < retrievedObj.length; k++) {
-                if (retrievedObj[k].url === currentURL) {
-                  var ids = retrievedObj[k].idsOfLinkObjects;
-                  var pos = ids.indexOf(j);
-                  if (pos === -1) {
-                    ids.push(j - 1);
-                    retrievedObj.idsOfLinkObjects = ids;
-                  }
-                }
-              }
-              var pageActions = JSON.stringify(retrievedObj);
-              chrome.storage.sync.set({ pageActions: pageActions });
-            });
-          }
+      //ottiene tutti i buttons presenti nella pagina
+      var buttonObjects = document.body.getElementsByTagName("button");
+      var totalButtonObjects = 0;
+      for (var i = 0; i < buttonObjects.length; i++) {
+        if (!isButtonOfExtension(buttonObjects[i])) {
+          totalButtonObjects++;
         }
-      });
-    }
+      }
 
-    for (var i = 0; i < inputObjects.length; i++) {
-      inputObjects[i].addEventListener("click", function (event) {
-        event.preventDefault();
-        var els = document.body.getElementsByTagName("input");
-        var found = false;
-        for (var j = 0; j < els.length && !found; j++) {
-          if (els[j].id === event.target.id) {
-            found = true;
-            chrome.storage.sync.get(["pageActions"], function (result) {
-              var retrievedObj = JSON.parse(result.pageActions);
-              for (var k = 0; k < retrievedObj.length; k++) {
-                if (retrievedObj[k].url === currentURL) {
-                  var ids = retrievedObj[k].idsOfInputObjects;
-                  var pos = ids.indexOf(j);
-                  if (pos === -1) {
-                    ids.push(j - 1);
-                    retrievedObj.idsOfInputObjects = ids;
+      var obj = {
+        url: currentURL,
+        idsOfLinkObjects: [],
+        totalLinkObjects: totalLinkObjects,
+        idsOfInputObjects: [],
+        totalInputObjects: totalInputObjects,
+        idsOfButtonObjects: [],
+        totalButtonObjects: totalButtonObjects,
+      };
+      var retrievedObj = JSON.parse(result.pageActions);
+      var newPage = true;
+      for (var i = 0; i < retrievedObj.length && newPage; i++) {
+        //magari in futuro aggiungere controlli sulla differenza del numero di oggetti interagibili
+        if (retrievedObj[i].url === currentURL) {
+          newPage = false;
+        }
+      }
+      if (newPage) {
+        retrievedObj.push(obj);
+      }
+      var pageActions = JSON.stringify(retrievedObj);
+      chrome.storage.sync.set({ pageActions: pageActions });
+
+      var psObj = {
+        url: currentURL,
+        interactedLinks: [],
+        interactedInputs: [],
+        interactedButtons: [],
+        newLinks: [],
+        newInputs: [],
+        newButtons: [],
+      };
+      var pageStatsObj = JSON.parse(result.pageStats);
+      newPage = true;
+      for (var i = 0; i < pageStatsObj.length && newPage; i++) {
+        if (pageStatsObj[i].url === currentURL) {
+          newPage = false;
+        }
+      }
+      if (newPage) {
+        pageStatsObj.push(psObj);
+      }
+      chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) });
+
+      for (var i = 0; i < linkObjects.length; i++) {
+        //funzione chiamata ogni volta che un link viene cliccato
+        linkObjects[i].addEventListener("click", function (event) {
+          var found = false;
+          var els = document.body.getElementsByTagName("a");
+          for (var j = 0; j < els.length && !found; j++) {
+            if (els[j].href === event.target.href) {
+              found = true;
+              chrome.storage.sync.get(
+                ["pageActions", "pageStats"],
+                function (result) {
+                  var retrievedObj = JSON.parse(result.pageActions);
+                  for (var k = 0; k < retrievedObj.length; k++) {
+                    if (retrievedObj[k].url === currentURL) {
+                      var ids = retrievedObj[k].idsOfLinkObjects;
+                      var pos = ids.indexOf(j);
+                      if (pos < 0) {
+                        ids.push(j - 1);
+                        retrievedObj.idsOfLinkObjects = ids;
+                      }
+                    }
                   }
                   var pageActions = JSON.stringify(retrievedObj);
-                  chrome.storage.sync.set({ pageActions: pageActions });
-                  var innerDiv = document.getElementById(
-                    "gamificationExtensionTopnavInner"
-                  );
-                  var totalLinkObjects = retrievedObj[k].totalLinkObjects;
-                  var totalInputObjects = retrievedObj[k].totalInputObjects;
-                  var totalButtonObjects = retrievedObj[k].totalButtonObjects;
-                  var interactedLinks =
-                    retrievedObj[k].idsOfLinkObjects.filter(onlyUnique).length;
-                  var interactedInputs =
-                    retrievedObj[k].idsOfInputObjects.filter(onlyUnique).length;
-                  var interactedButtons =
-                    retrievedObj[k].idsOfButtonObjects.filter(
-                      onlyUnique
-                    ).length;
-                  var progress =
-                    ((interactedLinks + interactedInputs + interactedButtons) *
-                      100) /
-                    (totalLinkObjects + totalInputObjects + totalButtonObjects);
-                  innerDiv.style =
-                    `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
-                    progress +
-                    `%; white-space:nowrap`;
-                  innerDiv.textContent = "Progress: " + progress + "%";
-                }
-              }
-            });
-          }
-        }
-      });
-    }
 
-    for (var i = 0; i < buttonObjects.length; i++) {
-      if (!isButtonOfExtension(buttonObjects[i])) {
-        buttonObjects[i].addEventListener("click", function (event) {
-          var els = document.body.getElementsByTagName("button");
-          var found = false;
-          for (var j = 0; j < els.length && !found; j++) {
-            if (els[j].id === event.target.id) {
-              found = true;
-              chrome.storage.sync.get(["pageActions"], function (result) {
-                var retrievedObj = JSON.parse(result.pageActions);
-                for (var k = 0; k < retrievedObj.length; k++) {
-                  if (retrievedObj[k].url === currentURL) {
-                    var ids = retrievedObj[k].idsOfButtonObjects;
-                    var pos = ids.indexOf(j);
-                    if (pos === -1) {
-                      ids.push(j - 1);
-                      retrievedObj.idsOfButtonObjects = ids;
-                    }
-                    var innerDiv = document.getElementById(
-                      "gamificationExtensionTopnavInner"
-                    );
-                    var totalLinkObjects = retrievedObj[k].totalLinkObjects;
-                    var totalInputObjects = retrievedObj[k].totalInputObjects;
-                    var totalButtonObjects = retrievedObj[k].totalButtonObjects;
-                    var interactedLinks =
-                      retrievedObj[k].idsOfLinkObjects.filter(
-                        onlyUnique
-                      ).length;
-                    var interactedInputs =
-                      retrievedObj[k].idsOfInputObjects.filter(
-                        onlyUnique
-                      ).length;
-                    var interactedButtons =
-                      retrievedObj[k].idsOfButtonObjects.filter(
-                        onlyUnique
-                      ).length;
-                    var progress =
-                      ((interactedLinks +
-                        interactedInputs +
-                        interactedButtons) *
-                        100) /
-                      (totalLinkObjects +
-                        totalInputObjects +
-                        totalButtonObjects);
-                    innerDiv.style =
-                      `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
-                      progress +
-                      `%; white-space:nowrap`;
-                    innerDiv.textContent = "Progress: " + progress + "%";
-                  }
+                  var pageStatsObj = JSON.parse(result.pageStats);
+                  chrome.storage.sync.set({ pageActions: pageActions });
                 }
-                var pageActions = JSON.stringify(retrievedObj);
-                chrome.storage.sync.set({ pageActions: pageActions });
-              });
+              );
             }
           }
         });
       }
+
+      for (var i = 0; i < inputObjects.length; i++) {
+        inputObjects[i].addEventListener("click", function (event) {
+          event.preventDefault();
+          var els = document.body.getElementsByTagName("input");
+          var found = false;
+          for (var j = 0; j < els.length && !found; j++) {
+            if (els[j].id === event.target.id) {
+              found = true;
+              chrome.storage.sync.get(
+                ["pageActions", "pageStats"],
+                function (result) {
+                  var retrievedObj = JSON.parse(result.pageActions);
+                  var newInput = false;
+                  for (var k = 0; k < retrievedObj.length; k++) {
+                    if (retrievedObj[k].url === currentURL) {
+                      var ids = retrievedObj[k].idsOfInputObjects;
+                      var pos = ids.indexOf(j);
+                      if (pos < 0) {
+                        ids.push(j - 1);
+                        retrievedObj.idsOfInputObjects = ids;
+                        newInput = true;
+                      }
+                      var pageActions = JSON.stringify(retrievedObj);
+                      var pageStatsObj = JSON.parse(result.pageStats);
+                      for (var m = 0; m < pageStatsObj.length; m++) {
+                        if (pageStatsObj[m].url === currentURL) {
+                          var ids = pageStatsObj[m].interactedInputs;
+                          var pos = ids.indexOf(j);
+                          if (pos < 0) {
+                            ids.push(j);
+                            pageStatsObj[m].interactedInputs = ids;
+                          }
+                          if (newInput === true) {
+                            var ids = pageStatsObj[m].newInputs;
+                            var pos = ids.indexOf(j);
+                            if (pos < 0) {
+                              ids.push(j);
+                              pageStatsObj[m].newInputs = ids;
+                            }
+                          }
+                        }
+                      }
+                      chrome.storage.sync.set({ pageActions: pageActions });
+                      var innerDiv = document.getElementById(
+                        "gamificationExtensionTopnavInner"
+                      );
+                      var totalLinkObjects = retrievedObj[k].totalLinkObjects;
+                      var totalInputObjects = retrievedObj[k].totalInputObjects;
+                      var totalButtonObjects =
+                        retrievedObj[k].totalButtonObjects;
+                      var interactedLinks =
+                        retrievedObj[k].idsOfLinkObjects.filter(
+                          onlyUnique
+                        ).length;
+                      var interactedInputs =
+                        retrievedObj[k].idsOfInputObjects.filter(
+                          onlyUnique
+                        ).length;
+                      var interactedButtons =
+                        retrievedObj[k].idsOfButtonObjects.filter(
+                          onlyUnique
+                        ).length;
+                      var progress =
+                        ((interactedLinks +
+                          interactedInputs +
+                          interactedButtons) *
+                          100) /
+                        (totalLinkObjects +
+                          totalInputObjects +
+                          totalButtonObjects);
+                      innerDiv.style =
+                        `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+                        progress +
+                        `%; white-space:nowrap`;
+                      innerDiv.textContent = "Progress: " + progress + "%";
+                    }
+                  }
+                }
+              );
+            }
+          }
+        });
+      }
+
+      for (var i = 0; i < buttonObjects.length; i++) {
+        if (!isButtonOfExtension(buttonObjects[i])) {
+          buttonObjects[i].addEventListener("click", function (event) {
+            var els = document.body.getElementsByTagName("button");
+            var found = false;
+            for (var j = 0; j < els.length && !found; j++) {
+              if (els[j].id === event.target.id) {
+                found = true;
+                chrome.storage.sync.get(
+                  ["pageActions", "pageStats"],
+                  function (result) {
+                    var retrievedObj = JSON.parse(result.pageActions);
+                    for (var k = 0; k < retrievedObj.length; k++) {
+                      if (retrievedObj[k].url === currentURL) {
+                        var ids = retrievedObj[k].idsOfButtonObjects;
+                        var pos = ids.indexOf(j);
+                        if (pos < 0) {
+                          ids.push(j - 1);
+                          retrievedObj.idsOfButtonObjects = ids;
+                        }
+                        var innerDiv = document.getElementById(
+                          "gamificationExtensionTopnavInner"
+                        );
+                        var totalLinkObjects = retrievedObj[k].totalLinkObjects;
+                        var totalInputObjects =
+                          retrievedObj[k].totalInputObjects;
+                        var totalButtonObjects =
+                          retrievedObj[k].totalButtonObjects;
+                        var interactedLinks =
+                          retrievedObj[k].idsOfLinkObjects.filter(
+                            onlyUnique
+                          ).length;
+                        var interactedInputs =
+                          retrievedObj[k].idsOfInputObjects.filter(
+                            onlyUnique
+                          ).length;
+                        var interactedButtons =
+                          retrievedObj[k].idsOfButtonObjects.filter(
+                            onlyUnique
+                          ).length;
+                        var progress =
+                          ((interactedLinks +
+                            interactedInputs +
+                            interactedButtons) *
+                            100) /
+                          (totalLinkObjects +
+                            totalInputObjects +
+                            totalButtonObjects);
+                        innerDiv.style =
+                          `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+                          progress +
+                          `%; white-space:nowrap`;
+                        innerDiv.textContent = "Progress: " + progress + "%";
+                      }
+                    }
+                    var pageActions = JSON.stringify(retrievedObj);
+
+                    var pageStatsObj = JSON.parse(result.pageStats);
+                    chrome.storage.sync.set({ pageActions: pageActions });
+                  }
+                );
+              }
+            }
+          });
+        }
+      }
     }
-  });
+  );
 }
 
 function showTopbar() {
@@ -596,7 +764,6 @@ function showTopbar() {
         var progress =
           ((interactedLinks + interactedInputs + interactedButtons) * 100) /
           (totalLinkObjects + totalInputObjects + totalButtonObjects);
-        console.log(progress);
       }
     }
     var topnav = document.createElement("div");
