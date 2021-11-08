@@ -202,6 +202,10 @@ function showSidenav() {
         buttonsToRemove[i].style = "border:0; border-style:solid;";
     }
   }
+
+  function onlyUnique(value, index, self) {
+    return self.indexOf(value) === index;
+  }
   var div = document.createElement("div");
   var button = document.createElement("button");
   var found = document.getElementById("gamificationExtensionSidenav");
@@ -250,7 +254,10 @@ function showSidenav() {
         document.body.removeChild(topnav);
       }
       //l'url di partenza viene cancellato per evitare di mostrare di nuovo tutte le aggiunte alla pagina
-      chrome.storage.sync.set({ startingURL: "" });
+      chrome.storage.sync.set({
+        startingURL: "",
+        pageStats: JSON.stringify([]),
+      });
     };
 
     var toggleClickedElementsButton = document.createElement("button");
@@ -303,10 +310,10 @@ function showSidenav() {
             var idsOfButtonObjects = retrievedObj[i].idsOfButtonObjects;
             for (var j = 0; j < idsOfButtonObjects.length; j++) {
               if (
-                idsOfButtonObjects.indexOf(j - 1) >= 0 &&
-                !isButtonOfExtension(buttons[j - 1])
+                idsOfButtonObjects.indexOf(j) >= 0 &&
+                !isButtonOfExtension(buttons[j])
               ) {
-                buttons[j - 1].style =
+                buttons[j].style =
                   "border:3px; border-style:solid; border-color:#0000FF; padding: 1em;";
               }
             }
@@ -376,7 +383,6 @@ function showSidenav() {
         var actions = pageActions.filter(filterURL)[0];
         var noStats = stats === undefined;
         var noActions = actions === undefined;
-        console.log(actions);
 
         var table = document.createElement("table");
         var linksRow = table.insertRow();
@@ -388,13 +394,17 @@ function showSidenav() {
               text = "Links";
               break;
             case 1:
-              text = noStats ? 0 : stats.interactedLinks.length;
+              text = noStats
+                ? 0
+                : stats.interactedLinks.filter(onlyUnique).length;
               break;
             case 2:
-              text = noStats ? 0 : stats.newLinks.length;
+              text = noStats ? 0 : stats.newLinks.filter(onlyUnique).length;
               break;
             case 3:
-              text = noActions ? 0 : actions.idsOfLinkObjects.length;
+              text = noActions
+                ? 0
+                : actions.idsOfLinkObjects.filter(onlyUnique).length;
               break;
           }
           cell.appendChild(document.createTextNode(text));
@@ -408,13 +418,17 @@ function showSidenav() {
               text = "Forms";
               break;
             case 1:
-              text = noStats ? 0 : stats.interactedInputs.length;
+              text = noStats
+                ? 0
+                : stats.interactedInputs.filter(onlyUnique).length;
               break;
             case 2:
-              text = noStats ? 0 : stats.newInputs.length;
+              text = noStats ? 0 : stats.newInputs.filter(onlyUnique).length;
               break;
             case 3:
-              text = noActions ? 0 : actions.idsOfInputObjects.length;
+              text = noActions
+                ? 0
+                : actions.idsOfInputObjects.filter(onlyUnique).length;
               break;
           }
           cell.appendChild(document.createTextNode(text));
@@ -428,13 +442,17 @@ function showSidenav() {
               text = "Buttons";
               break;
             case 1:
-              text = noStats ? 0 : stats.interactedButtons.length;
+              text = noStats
+                ? 0
+                : stats.interactedButtons.filter(onlyUnique).length;
               break;
             case 2:
-              text = noStats ? 0 : stats.newButtons.length;
+              text = noStats ? 0 : stats.newButtons.filter(onlyUnique).length;
               break;
             case 3:
-              text = noActions ? 0 : actions.idsOfButtonObjects.length;
+              text = noActions
+                ? 0
+                : actions.idsOfButtonObjects.filter(onlyUnique).length;
               break;
           }
           cell.appendChild(document.createTextNode(text));
@@ -567,20 +585,43 @@ function countInteractableElements() {
                 ["pageActions", "pageStats"],
                 function (result) {
                   var retrievedObj = JSON.parse(result.pageActions);
+                  var newLink = false;
                   for (var k = 0; k < retrievedObj.length; k++) {
                     if (retrievedObj[k].url === currentURL) {
                       var ids = retrievedObj[k].idsOfLinkObjects;
-                      var pos = ids.indexOf(j);
+                      var pos = ids.indexOf(j - 1);
                       if (pos < 0) {
                         ids.push(j - 1);
                         retrievedObj.idsOfLinkObjects = ids;
+                        newLink = true;
                       }
                     }
                   }
                   var pageActions = JSON.stringify(retrievedObj);
 
                   var pageStatsObj = JSON.parse(result.pageStats);
-                  chrome.storage.sync.set({ pageActions: pageActions });
+                  for (var m = 0; m < pageStatsObj.length; m++) {
+                    if (pageStatsObj[m].url === currentURL) {
+                      var ids = pageStatsObj[m].interactedLinks;
+                      var pos = ids.indexOf(j - 1);
+                      if (pos < 0) {
+                        ids.push(j - 1);
+                        pageStatsObj[m].interactedLinks = ids;
+                      }
+                      if (newLink) {
+                        var ids = pageStatsObj[m].newLinks;
+                        var pos = ids.indexOf(j - 1);
+                        if (pos < 0) {
+                          ids.push(j - 1);
+                          pageStatsObj[m].newLinks = ids;
+                        }
+                      }
+                    }
+                  }
+                  chrome.storage.sync.set({
+                    pageActions: pageActions,
+                    pageStats: JSON.stringify(pageStatsObj),
+                  });
                 }
               );
             }
@@ -604,7 +645,7 @@ function countInteractableElements() {
                   for (var k = 0; k < retrievedObj.length; k++) {
                     if (retrievedObj[k].url === currentURL) {
                       var ids = retrievedObj[k].idsOfInputObjects;
-                      var pos = ids.indexOf(j);
+                      var pos = ids.indexOf(j - 1);
                       if (pos < 0) {
                         ids.push(j - 1);
                         retrievedObj.idsOfInputObjects = ids;
@@ -615,22 +656,25 @@ function countInteractableElements() {
                       for (var m = 0; m < pageStatsObj.length; m++) {
                         if (pageStatsObj[m].url === currentURL) {
                           var ids = pageStatsObj[m].interactedInputs;
-                          var pos = ids.indexOf(j);
+                          var pos = ids.indexOf(j - 1);
                           if (pos < 0) {
-                            ids.push(j);
+                            ids.push(j - 1);
                             pageStatsObj[m].interactedInputs = ids;
                           }
                           if (newInput === true) {
                             var ids = pageStatsObj[m].newInputs;
-                            var pos = ids.indexOf(j);
+                            var pos = ids.indexOf(j - 1);
                             if (pos < 0) {
-                              ids.push(j);
+                              ids.push(j - 1);
                               pageStatsObj[m].newInputs = ids;
                             }
                           }
                         }
                       }
-                      chrome.storage.sync.set({ pageActions: pageActions });
+                      chrome.storage.sync.set({
+                        pageActions: pageActions,
+                        pageStats: JSON.stringify(pageStatsObj),
+                      });
                       var innerDiv = document.getElementById(
                         "gamificationExtensionTopnavInner"
                       );
@@ -684,13 +728,35 @@ function countInteractableElements() {
                   ["pageActions", "pageStats"],
                   function (result) {
                     var retrievedObj = JSON.parse(result.pageActions);
+                    var newButton = false;
                     for (var k = 0; k < retrievedObj.length; k++) {
                       if (retrievedObj[k].url === currentURL) {
                         var ids = retrievedObj[k].idsOfButtonObjects;
-                        var pos = ids.indexOf(j);
+                        var pos = ids.indexOf(j - 1);
                         if (pos < 0) {
                           ids.push(j - 1);
                           retrievedObj.idsOfButtonObjects = ids;
+                          newButton = true;
+                        }
+
+                        var pageStatsObj = JSON.parse(result.pageStats);
+                        for (var m = 0; m < pageStatsObj.length; m++) {
+                          if (pageStatsObj[m].url === currentURL) {
+                            var ids = pageStatsObj[m].interactedButtons;
+                            var pos = ids.indexOf(j - 1);
+                            if (pos < 0) {
+                              ids.push(j - 1);
+                              pageStatsObj[m].interactedButtons = ids;
+                            }
+                            if (newButton) {
+                              var ids = pageStatsObj[m].newButtons;
+                              var pos = ids.indexOf(j - 1);
+                              if (pos < 0) {
+                                ids.push(j - 1);
+                                pageStatsObj[m].newButtons = ids;
+                              }
+                            }
+                          }
                         }
                         var innerDiv = document.getElementById(
                           "gamificationExtensionTopnavInner"
@@ -729,8 +795,10 @@ function countInteractableElements() {
                     }
                     var pageActions = JSON.stringify(retrievedObj);
 
-                    var pageStatsObj = JSON.parse(result.pageStats);
-                    chrome.storage.sync.set({ pageActions: pageActions });
+                    chrome.storage.sync.set({
+                      pageActions: pageActions,
+                      pageStats: JSON.stringify(pageStatsObj),
+                    });
                   }
                 );
               }
