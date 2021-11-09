@@ -46,7 +46,16 @@ chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
                 visitedPages.push(tab.url);
                 chrome.storage.sync.set({ visitedPages: visitedPages });
               }
-              if (!newPages.includes(tab.url)) {
+              function filterURL(event) {
+                return event.url === tab.url;
+              }
+              var pageActions = JSON.parse(result.pageActions);
+              var pageActionsFiltered = pageActions.filter(filterURL);
+
+              if (
+                !newPages.includes(tab.url) &&
+                pageActionsFiltered.length === 0
+              ) {
                 newPages.push(tab.url);
                 chrome.storage.sync.set({ newPages: newPages });
               }
@@ -94,7 +103,18 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                   visitedPages.push(tab.url);
                   chrome.storage.sync.set({ visitedPages: visitedPages });
                 }
-                if (!newPages.includes(tab.url)) {
+                //check se tab.url è presente anche in pageActions prima di inserire
+                function filterURL(event) {
+                  return event.url === tab.url;
+                }
+
+                var pageActions = JSON.parse(result.pageActions);
+                var pageActionsFiltered = pageActions.filter(filterURL);
+
+                if (
+                  !newPages.includes(tab.url) &&
+                  pageActionsFiltered.length === 0
+                ) {
                   newPages.push(tab.url);
                   chrome.storage.sync.set({ newPages: newPages });
                 }
@@ -249,9 +269,6 @@ function showSidenav() {
     endButton.textContent = "End Session";
     endButton.style = "bottom: 10%; right: 50%;";
     endButton.onclick = function () {
-      //chiudere sidenav ed eliminarla dal documento
-      //eliminare overlay aggiunti alla pagina
-      //magari ritornare alla homepage dell'estensione?
       downloadFile();
       //chiusura della sidenav
       document.getElementById("gamificationExtensionSidenav").style.width = "0";
@@ -272,6 +289,53 @@ function showSidenav() {
         startingURL: "",
         pageStats: JSON.stringify([]),
       });
+      //mostrare modal di riepilogo
+      chrome.storage.sync.get(
+        ["visitedPages", "newPages", "pageActions"],
+        function (result) {
+          var visitedPages = result.visitedPages;
+          var newPages = result.newPages;
+          var pageActions = result.pageActions;
+          var modalContainer = document.createElement("div");
+          modalContainer.id = "gamificationExtensionModalContainer";
+          modalContainer.style =
+            " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
+          var innerModal = document.createElement("div");
+          innerModal.id = "gamificationExtensionInnerModal";
+          innerModal.style =
+            "background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; ";
+          modalContainer.appendChild(innerModal);
+          var modalSpan = document.createElement("span");
+          modalSpan.id = "gamificationExtensionModalSpan";
+          modalSpan.style =
+            "color: #aaa; float: right; font-size: 28px; font-weight: bold;";
+          modalSpan.textContent = "X";
+          innerModal.appendChild(modalSpan);
+          var modalContent = document.createElement("p");
+          modalContent.id = "gamificationExtensionModalContent";
+
+          var newPagesCount = newPages.length;
+          function filterURL(event) {
+            return event.url === result.currentURL;
+          }
+          for (var i = 0; i < newPages.length; i++) {}
+          modalContent.innerText =
+            "Pages visited in this session: " +
+            visitedPages.length +
+            "\nPages encountered for the first time: " +
+            newPages.length;
+          innerModal.appendChild(modalContent);
+          modalSpan.onclick = function () {
+            modalContainer.style.display = "none";
+          };
+          window.onclick = function (event) {
+            if (event.target === modalContainer) {
+              modalContainer.style.display = "none";
+            }
+          };
+          document.body.appendChild(modalContainer);
+        }
+      );
     };
 
     var toggleClickedElementsButton = document.createElement("button");
@@ -545,13 +609,6 @@ function showSidenav() {
         div.appendChild(table);
       }
     );
-
-    /*var pagesRow = table.insertRow();
-    for (var i = 0; i < 4; i++) {
-      var cell = pagesRow.insertCell();
-      var text = i === 0 ? "Pages" : i;
-      cell.appendChild(document.createTextNode(text));
-    }*/
   }
 }
 
