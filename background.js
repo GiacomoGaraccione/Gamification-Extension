@@ -26,7 +26,6 @@ chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
   chrome.storage.sync.get(
     ["pastPages", "startingURL"],
     async function (result) {
-      var pastPages = result.pastPages;
       var startingURL = result.startingURL;
       var [tab] = await chrome.tabs.query({
         active: true,
@@ -37,59 +36,24 @@ chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
         tab.url.indexOf(startingURL) >= 0 &&
         startingURL !== ""
       ) {
-        chrome.storage.sync.get(["visitedPages"], function (result) {
-          var visitedPages = result.visitedPages;
-          chrome.storage.sync.set({ currentURL: tab.url }, function () {
-            if (!visitedPages.includes(tab.url)) {
-              visitedPages.push(tab.url);
-              chrome.storage.sync.set({ visitedPages: visitedPages });
-            }
-            chrome.scripting.executeScript({
-              target: { tabId: tab.id },
-              function: showFirstTimeStar,
-            });
-            chrome.scripting.executeScript({
-              target: { tabId: tab.id },
-              function: showSidenav,
-            });
-            chrome.scripting.executeScript({
-              target: { tabId: tab.id },
-              function: countInteractableElements,
-            });
-            chrome.scripting.executeScript({
-              target: { tabId: tab.id },
-              function: showTopbar,
-            });
-          });
-        });
-
-        //chiamata a funzione di calcolo elementi cliccabili
-      }
-    }
-  );
-});
-
-chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-  chrome.storage.sync.get(
-    ["pastPages", "startingURL"],
-    async function (result) {
-      var pastPages = result.pastPages;
-      var startingURL = result.startingURL;
-      if (changeInfo.status === "complete") {
-        var reachedURL = tab.url;
-        if (reachedURL.indexOf(startingURL) >= 0 && startingURL !== "") {
-          chrome.storage.sync.get(["visitedPages"], function (result) {
+        chrome.storage.sync.get(
+          ["visitedPages", "newPages", "pageActions"],
+          function (result) {
+            var visitedPages = result.visitedPages;
+            var newPages = result.newPages;
             chrome.storage.sync.set({ currentURL: tab.url }, function () {
-              var visitedPages = result.visitedPages;
               if (!visitedPages.includes(tab.url)) {
                 visitedPages.push(tab.url);
                 chrome.storage.sync.set({ visitedPages: visitedPages });
+              }
+              if (!newPages.includes(tab.url)) {
+                newPages.push(tab.url);
+                chrome.storage.sync.set({ newPages: newPages });
               }
               chrome.scripting.executeScript({
                 target: { tabId: tab.id },
                 function: showFirstTimeStar,
               });
-
               chrome.scripting.executeScript({
                 target: { tabId: tab.id },
                 function: showSidenav,
@@ -103,7 +67,57 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                 function: showTopbar,
               });
             });
-          });
+          }
+        );
+
+        //chiamata a funzione di calcolo elementi cliccabili
+      }
+    }
+  );
+});
+
+chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+  chrome.storage.sync.get(
+    ["pastPages", "startingURL"],
+    async function (result) {
+      var startingURL = result.startingURL;
+      if (changeInfo.status === "complete") {
+        var reachedURL = tab.url;
+        if (reachedURL.indexOf(startingURL) >= 0 && startingURL !== "") {
+          chrome.storage.sync.get(
+            ["visitedPages", "newPages", "pageActions"],
+            function (result) {
+              chrome.storage.sync.set({ currentURL: tab.url }, function () {
+                var visitedPages = result.visitedPages;
+                var newPages = result.newPages;
+                if (!visitedPages.includes(tab.url)) {
+                  visitedPages.push(tab.url);
+                  chrome.storage.sync.set({ visitedPages: visitedPages });
+                }
+                if (!newPages.includes(tab.url)) {
+                  newPages.push(tab.url);
+                  chrome.storage.sync.set({ newPages: newPages });
+                }
+                chrome.scripting.executeScript({
+                  target: { tabId: tab.id },
+                  function: showFirstTimeStar,
+                });
+
+                chrome.scripting.executeScript({
+                  target: { tabId: tab.id },
+                  function: showSidenav,
+                });
+                chrome.scripting.executeScript({
+                  target: { tabId: tab.id },
+                  function: countInteractableElements,
+                });
+                chrome.scripting.executeScript({
+                  target: { tabId: tab.id },
+                  function: showTopbar,
+                });
+              });
+            }
+          );
 
           //chiamata a funzione di calcolo elementi cliccabili
         }
@@ -372,10 +386,20 @@ function showSidenav() {
     };
 
     chrome.storage.sync.get(
-      ["pageActions", "pageStats", "currentURL"],
+      [
+        "pageActions",
+        "pageStats",
+        "currentURL",
+        "visitedPages",
+        "startingURL",
+        "newPages",
+      ],
       function (result) {
         var pageActions = JSON.parse(result.pageActions);
         var pageStats = JSON.parse(result.pageStats);
+        var visitedPages = result.visitedPages;
+        var startingURL = result.startingURL;
+        var newPages = result.newPages;
         function filterURL(event) {
           return event.url === result.currentURL;
         }
@@ -383,6 +407,8 @@ function showSidenav() {
         var actions = pageActions.filter(filterURL)[0];
         var noStats = stats === undefined;
         var noActions = actions === undefined;
+        var noNewPages = newPages === undefined;
+        var noVisitedPages = visitedPages === undefined;
 
         var table = document.createElement("table");
         var linksRow = table.insertRow();
@@ -453,6 +479,45 @@ function showSidenav() {
               text = noActions
                 ? 0
                 : actions.idsOfButtonObjects.filter(onlyUnique).length;
+              break;
+          }
+          cell.appendChild(document.createTextNode(text));
+        }
+
+        var totalPages = [];
+        var currentPresent = false;
+        for (var i = 0; i < pageActions.length; i++) {
+          if (
+            pageActions[i].url.indexOf(startingURL) >= 0 &&
+            startingURL != ""
+          ) {
+            totalPages.push(pageActions[i].url);
+          }
+          if (pageActions[i].url === result.currentURL) {
+            currentPresent = true;
+          }
+        }
+
+        var pagesRow = table.insertRow();
+        var totalNumPages = noNewPages ? 1 : totalPages.length;
+        if (!currentPresent) {
+          totalNumPages++;
+        }
+        for (var i = 0; i < 4; i++) {
+          var cell = pagesRow.insertCell();
+          var text = "";
+          switch (i) {
+            case 0:
+              text = "Pages";
+              break;
+            case 1:
+              text = noVisitedPages ? 1 : visitedPages.length;
+              break;
+            case 2:
+              text = noNewPages ? 1 : newPages.length;
+              break;
+            case 3:
+              text = totalNumPages;
               break;
           }
           cell.appendChild(document.createTextNode(text));

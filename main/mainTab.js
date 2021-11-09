@@ -27,6 +27,7 @@ pageURLButton.addEventListener("click", async () => {
   chrome.storage.sync.set({ startingURL: domain.hostname });
   chrome.storage.sync.set({ visitedPages: [] });
   chrome.storage.sync.set({ pageStats: JSON.stringify(empty) });
+  chrome.storage.sync.set({ newPages: [] });
   if (tab === undefined) {
     chrome.runtime.sendMessage({
       mess: "openNew",
