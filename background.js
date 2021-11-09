@@ -107,10 +107,8 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                 function filterURL(event) {
                   return event.url === tab.url;
                 }
-
                 var pageActions = JSON.parse(result.pageActions);
                 var pageActionsFiltered = pageActions.filter(filterURL);
-
                 if (
                   !newPages.includes(tab.url) &&
                   pageActionsFiltered.length === 0
@@ -285,17 +283,13 @@ function showSidenav() {
         document.body.removeChild(topnav);
       }
       //l'url di partenza viene cancellato per evitare di mostrare di nuovo tutte le aggiunte alla pagina
-      chrome.storage.sync.set({
-        startingURL: "",
-        pageStats: JSON.stringify([]),
-      });
+
       //mostrare modal di riepilogo
       chrome.storage.sync.get(
-        ["visitedPages", "newPages", "pageActions"],
+        ["visitedPages", "newPages", "pageStats"],
         function (result) {
           var visitedPages = result.visitedPages;
           var newPages = result.newPages;
-          var pageActions = result.pageActions;
           var modalContainer = document.createElement("div");
           modalContainer.id = "gamificationExtensionModalContainer";
           modalContainer.style =
@@ -313,17 +307,38 @@ function showSidenav() {
           innerModal.appendChild(modalSpan);
           var modalContent = document.createElement("p");
           modalContent.id = "gamificationExtensionModalContent";
-
-          var newPagesCount = newPages.length;
-          function filterURL(event) {
-            return event.url === result.currentURL;
+          var pageStats = JSON.parse(result.pageStats);
+          var totalLinks = 0;
+          var totalInputs = 0;
+          var totalButtons = 0;
+          var newLinks = 0;
+          var newInputs = 0;
+          var newButtons = 0;
+          for (var i = 0; i < pageStats.length; i++) {
+            totalLinks += pageStats[i].interactedLinks.length;
+            totalInputs += pageStats[i].interactedInputs.length;
+            totalButtons += pageStats[i].interactedButtons.length;
+            newLinks += pageStats[i].newLinks.length;
+            newInputs += pageStats[i].newInputs.length;
+            newButtons += pageStats[i].newButtons.length;
           }
-          for (var i = 0; i < newPages.length; i++) {}
           modalContent.innerText =
             "Pages visited in this session: " +
             visitedPages.length +
             "\nPages encountered for the first time: " +
-            newPages.length;
+            newPages.length +
+            "\nLinks clicked in this session: " +
+            totalLinks +
+            "\nForms interacted with in this session: " +
+            totalInputs +
+            "\nButtons clicked in this session: " +
+            totalButtons +
+            "\nLinks clicked for the first time: " +
+            newLinks +
+            "\nForms interacted with for the first time: " +
+            newInputs +
+            "\nButtons clicked for the first time: " +
+            newButtons;
           innerModal.appendChild(modalContent);
           modalSpan.onclick = function () {
             modalContainer.style.display = "none";
@@ -336,6 +351,10 @@ function showSidenav() {
           document.body.appendChild(modalContainer);
         }
       );
+      chrome.storage.sync.set({
+        startingURL: "",
+        pageStats: JSON.stringify([]),
+      });
     };
 
     var toggleClickedElementsButton = document.createElement("button");
@@ -473,6 +492,7 @@ function showSidenav() {
         var noActions = actions === undefined;
         var noNewPages = newPages === undefined;
         var noVisitedPages = visitedPages === undefined;
+        console.log(stats);
 
         var table = document.createElement("table");
         var linksRow = table.insertRow();
