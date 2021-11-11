@@ -164,7 +164,7 @@ function showFirstTimeStar() {
         div.height = 20;
         div.src = chrome.runtime.getURL("img/star.png");
         div.style =
-          "position: fixed; bottom: 0;  right: 0;width: 30px;border: 3px solid #FFD700;";
+          "position: fixed; bottom: 10%;  right: 0;width: 30px;border: 3px solid #FFD700;";
       }
     }
   });
@@ -492,7 +492,6 @@ function showSidenav() {
         var noActions = actions === undefined;
         var noNewPages = newPages === undefined;
         var noVisitedPages = visitedPages === undefined;
-        console.log(stats);
 
         var table = document.createElement("table");
         var linksRow = table.insertRow();
@@ -627,6 +626,60 @@ function showSidenav() {
         headRow.appendChild(th4);
 
         div.appendChild(table);
+
+        var totalLinks = document.getElementsByTagName("a").length;
+        var totalInputs = document.getElementsByTagName("input").length;
+
+        var totalButtons = document.getElementsByTagName("button");
+        var buttonsCount = 0;
+        for (var i = 0; i < totalButtons.length; i++) {
+          if (!isButtonOfExtension(totalButtons[i])) {
+            buttonsCount++;
+          }
+        }
+        var linkObjects = noActions ? 0 : actions.idsOfLinkObjects.length;
+        var inputObjects = noActions ? 0 : actions.idsOfInputObjects.length;
+        var buttonObjects = noActions ? 0 : actions.idsOfButtonObjects.length;
+        var linksPerc = (linkObjects * 100) / totalLinks;
+        var inputsPerc = (inputObjects * 100) / totalInputs;
+        var buttonsPerc = (buttonObjects * 100) / buttonsCount;
+
+        var linksProgressTop = document.createElement("div");
+        div.appendChild(linksProgressTop);
+        linksProgressTop.id = "gamificationExtensionLinksProgress";
+        linksProgressTop.style =
+          "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
+        var linksProgress = document.createElement("div");
+        linksProgress.style =
+          `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+          linksPerc +
+          `%; white-space:nowrap`;
+        linksProgressTop.appendChild(linksProgress);
+        linksProgress.textContent = "Links Progress: " + linksPerc + "%";
+        var inputsProgressTop = document.createElement("div");
+        div.appendChild(inputsProgressTop);
+        inputsProgressTop.id = "gamificationExtensionInputsProgress";
+        inputsProgressTop.style =
+          "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
+        var inputsProgress = document.createElement("div");
+        inputsProgress.style =
+          `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+          inputsPerc +
+          `%; white-space:nowrap`;
+        inputsProgressTop.appendChild(inputsProgress);
+        inputsProgress.textContent = "Forms Progress: " + inputsPerc + "%";
+        var buttonsProgressTop = document.createElement("div");
+        div.appendChild(buttonsProgressTop);
+        buttonsProgressTop.style =
+          "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
+        var buttonsProgress = document.createElement("div");
+        buttonsProgressTop.appendChild(buttonsProgress);
+        buttonsProgress.style =
+          `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+          buttonsPerc +
+          `%; white-space:nowrap`;
+        buttonsProgressTop.id = "gamificationExtensionButtonsProgress";
+        buttonsProgress.textContent = "Buttons Progress: " + buttonsPerc + "%";
       }
     );
   }
