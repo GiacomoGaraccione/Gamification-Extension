@@ -2,6 +2,7 @@ var recordFileButton = document.getElementById("recordFileButton");
 var profileFileButton = document.getElementById("profileFileButton");
 var pageURL = document.getElementById("pageURL");
 var pageURLButton = document.getElementById("pageURLButton");
+var resetButton = document.getElementById("resetButton");
 var url = "";
 
 var total = [];
@@ -36,4 +37,8 @@ pageURLButton.addEventListener("click", async () => {
   } else {
     chrome.tabs.update(tab.id, { highlighted: true });
   }
+});
+
+resetButton.addEventListener("click", function () {
+  chrome.storage.sync.set({ pageActions: JSON.stringify([]) });
 });

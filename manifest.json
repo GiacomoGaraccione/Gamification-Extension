@@ -1,6 +1,6 @@
 {
     "name": "Gamification Plugin",
-    "version": "0.2",
+    "version": "0.3",
     "manifest_version": 3,
     "description": "A plugin that enhances app testing with gamification strategies",
     "permissions": [ 
