@@ -87,6 +87,7 @@ function callScripts(tab) {
     files: ["scripts/showFirstTimeStar.js",
       "scripts/showSidenav.js",
       "scripts/countInteractableElements.js",
-      "scripts/showTopbar.js"]
+      "scripts/showTopbar.js",
+      "scripts/drawOverlays.js"]
   });
 }

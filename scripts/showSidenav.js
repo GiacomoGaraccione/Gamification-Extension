@@ -177,6 +177,7 @@ if (found === null) {
                 }
             }
         });
+        chrome.storage.sync.set({ overlayMode: "interacted" })
     };
 
     var removeOverlaysButton = document.createElement("button");
@@ -200,6 +201,7 @@ if (found === null) {
             if (!isButtonOfExtension(buttonsToRemove[i]))
                 buttonsToRemove[i].style = "border:0; border-style:solid;";
         }
+        chrome.storage.sync.set({ overlayMode: "none" })
     };
 
     var toggleAllElementsButton = document.createElement("button");
@@ -226,220 +228,212 @@ if (found === null) {
                     "border:3px; border-style:solid; border-color:#0000FF; padding: 1em;";
             }
         }
+        chrome.storage.sync.set({ overlayMode: "all" })
     };
 
-    chrome.storage.sync.get(
-        [
-            "pageActions",
-            "pageStats",
-            "currentURL",
-            "visitedPages",
-            "startingURL",
-            "newPages",
-        ],
-        function (result) {
-            var pageActions = JSON.parse(result.pageActions);
-            var pageStats = JSON.parse(result.pageStats);
-            var visitedPages = result.visitedPages;
-            var startingURL = result.startingURL;
-            var newPages = result.newPages;
-            function filterURL(event) {
-                return event.url === result.currentURL;
-            }
-            var stats = pageStats.filter(filterURL)[0];
-            var actions = pageActions.filter(filterURL)[0];
-            var noStats = stats === undefined;
-            var noActions = actions === undefined;
-            var noNewPages = newPages === undefined;
-            var noVisitedPages = visitedPages === undefined;
-
-            var table = document.createElement("table");
-            var linksRow = table.insertRow();
-            for (var i = 0; i < 4; i++) {
-                var cell = linksRow.insertCell();
-                var text = "";
-                switch (i) {
-                    case 0:
-                        text = "Links";
-                        break;
-                    case 1:
-                        text = noStats
-                            ? 0
-                            : stats.interactedLinks.filter(onlyUnique).length;
-                        break;
-                    case 2:
-                        text = noStats ? 0 : stats.newLinks.filter(onlyUnique).length;
-                        break;
-                    case 3:
-                        text = noActions
-                            ? 0
-                            : actions.idsOfLinkObjects.filter(onlyUnique).length;
-                        break;
-                }
-                cell.appendChild(document.createTextNode(text));
-            }
-            var inputsRow = table.insertRow();
-            for (var i = 0; i < 4; i++) {
-                var cell = inputsRow.insertCell();
-                var text = "";
-                switch (i) {
-                    case 0:
-                        text = "Forms";
-                        break;
-                    case 1:
-                        text = noStats
-                            ? 0
-                            : stats.interactedInputs.filter(onlyUnique).length;
-                        break;
-                    case 2:
-                        text = noStats ? 0 : stats.newInputs.filter(onlyUnique).length;
-                        break;
-                    case 3:
-                        text = noActions
-                            ? 0
-                            : actions.idsOfInputObjects.filter(onlyUnique).length;
-                        break;
-                }
-                cell.appendChild(document.createTextNode(text));
-            }
-            var buttonsRow = table.insertRow();
-            for (var i = 0; i < 4; i++) {
-                var cell = buttonsRow.insertCell();
-                var text = "";
-                switch (i) {
-                    case 0:
-                        text = "Buttons";
-                        break;
-                    case 1:
-                        text = noStats
-                            ? 0
-                            : stats.interactedButtons.filter(onlyUnique).length;
-                        break;
-                    case 2:
-                        text = noStats ? 0 : stats.newButtons.filter(onlyUnique).length;
-                        break;
-                    case 3:
-                        text = noActions
-                            ? 0
-                            : actions.idsOfButtonObjects.filter(onlyUnique).length;
-                        break;
-                }
-                cell.appendChild(document.createTextNode(text));
-            }
-
-            var totalPages = [];
-            var currentPresent = false;
-            for (var i = 0; i < pageActions.length; i++) {
-                if (
-                    pageActions[i].url.indexOf(startingURL) >= 0 &&
-                    startingURL != ""
-                ) {
-                    totalPages.push(pageActions[i].url);
-                }
-                if (pageActions[i].url === result.currentURL) {
-                    currentPresent = true;
-                }
-            }
-
-            var pagesRow = table.insertRow();
-            var totalNumPages = noNewPages ? 1 : totalPages.length;
-            if (!currentPresent) {
-                totalNumPages++;
-            }
-            for (var i = 0; i < 4; i++) {
-                var cell = pagesRow.insertCell();
-                var text = "";
-                switch (i) {
-                    case 0:
-                        text = "Pages";
-                        break;
-                    case 1:
-                        text = noVisitedPages ? 1 : visitedPages.length;
-                        break;
-                    case 2:
-                        text = noNewPages ? 1 : newPages.length;
-                        break;
-                    case 3:
-                        text = totalNumPages;
-                        break;
-                }
-                cell.appendChild(document.createTextNode(text));
-            }
-
-            var tableHead = table.createTHead();
-            var headRow = tableHead.insertRow();
-            var th1 = document.createElement("th");
-            var text1 = document.createTextNode("");
-            th1.appendChild(text1);
-            var th2 = document.createElement("th");
-            var text2 = document.createTextNode("Current Session");
-            th2.appendChild(text2);
-            var th3 = document.createElement("th");
-            var text3 = document.createTextNode("New");
-            th3.appendChild(text3);
-            var th4 = document.createElement("th");
-            var text4 = document.createTextNode("Total");
-            th4.appendChild(text4);
-            headRow.appendChild(th1);
-            headRow.appendChild(th2);
-            headRow.appendChild(th3);
-            headRow.appendChild(th4);
-
-            div.appendChild(table);
-
-            var totalLinks = document.getElementsByTagName("a").length;
-            var totalInputs = document.getElementsByTagName("input").length;
-
-            var totalButtons = document.getElementsByTagName("button");
-            var buttonsCount = 0;
-            for (var i = 0; i < totalButtons.length; i++) {
-                if (!isButtonOfExtension(totalButtons[i])) {
-                    buttonsCount++;
-                }
-            }
-            var linkObjects = noActions ? 0 : actions.idsOfLinkObjects.length;
-            var inputObjects = noActions ? 0 : actions.idsOfInputObjects.length;
-            var buttonObjects = noActions ? 0 : actions.idsOfButtonObjects.length;
-            var linksPerc = (linkObjects * 100) / totalLinks;
-            var inputsPerc = (inputObjects * 100) / totalInputs;
-            var buttonsPerc = (buttonObjects * 100) / buttonsCount;
-
-            var linksProgressTop = document.createElement("div");
-            div.appendChild(linksProgressTop);
-            linksProgressTop.id = "gamificationExtensionLinksProgress";
-            linksProgressTop.style =
-                "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
-            var linksProgress = document.createElement("div");
-            linksProgress.style =
-                `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
-                linksPerc +
-                `%; white-space:nowrap`;
-            linksProgressTop.appendChild(linksProgress);
-            linksProgress.textContent = "Links Progress: " + linksPerc + "%";
-            var inputsProgressTop = document.createElement("div");
-            div.appendChild(inputsProgressTop);
-            inputsProgressTop.id = "gamificationExtensionInputsProgress";
-            inputsProgressTop.style =
-                "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
-            var inputsProgress = document.createElement("div");
-            inputsProgress.style =
-                `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
-                inputsPerc +
-                `%; white-space:nowrap`;
-            inputsProgressTop.appendChild(inputsProgress);
-            inputsProgress.textContent = "Forms Progress: " + inputsPerc + "%";
-            var buttonsProgressTop = document.createElement("div");
-            div.appendChild(buttonsProgressTop);
-            buttonsProgressTop.style =
-                "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
-            var buttonsProgress = document.createElement("div");
-            buttonsProgressTop.appendChild(buttonsProgress);
-            buttonsProgress.style =
-                `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
-                buttonsPerc +
-                `%; white-space:nowrap`;
-            buttonsProgressTop.id = "gamificationExtensionButtonsProgress";
-            buttonsProgress.textContent = "Buttons Progress: " + buttonsPerc + "%";
+    chrome.storage.sync.get(["pageActions", "pageStats", "currentURL", "visitedPages", "startingURL", "newPages",], function (result) {
+        var pageActions = JSON.parse(result.pageActions);
+        var pageStats = JSON.parse(result.pageStats);
+        var visitedPages = result.visitedPages;
+        var startingURL = result.startingURL;
+        var newPages = result.newPages;
+        function filterURL(event) {
+            return event.url === result.currentURL;
         }
+        var stats = pageStats.filter(filterURL)[0];
+        var actions = pageActions.filter(filterURL)[0];
+        var noStats = stats === undefined;
+        var noActions = actions === undefined;
+        var noNewPages = newPages === undefined;
+        var noVisitedPages = visitedPages === undefined;
+
+        var table = document.createElement("table");
+        var linksRow = table.insertRow();
+        for (var i = 0; i < 4; i++) {
+            var cell = linksRow.insertCell();
+            var text = "";
+            switch (i) {
+                case 0:
+                    text = "Links";
+                    break;
+                case 1:
+                    text = noStats
+                        ? 0
+                        : stats.interactedLinks.filter(onlyUnique).length;
+                    break;
+                case 2:
+                    text = noStats ? 0 : stats.newLinks.filter(onlyUnique).length;
+                    break;
+                case 3:
+                    text = noActions
+                        ? 0
+                        : actions.idsOfLinkObjects.filter(onlyUnique).length;
+                    break;
+            }
+            cell.appendChild(document.createTextNode(text));
+        }
+        var inputsRow = table.insertRow();
+        for (var i = 0; i < 4; i++) {
+            var cell = inputsRow.insertCell();
+            var text = "";
+            switch (i) {
+                case 0:
+                    text = "Forms";
+                    break;
+                case 1:
+                    text = noStats
+                        ? 0
+                        : stats.interactedInputs.filter(onlyUnique).length;
+                    break;
+                case 2:
+                    text = noStats ? 0 : stats.newInputs.filter(onlyUnique).length;
+                    break;
+                case 3:
+                    text = noActions
+                        ? 0
+                        : actions.idsOfInputObjects.filter(onlyUnique).length;
+                    break;
+            }
+            cell.appendChild(document.createTextNode(text));
+        }
+        var buttonsRow = table.insertRow();
+        for (var i = 0; i < 4; i++) {
+            var cell = buttonsRow.insertCell();
+            var text = "";
+            switch (i) {
+                case 0:
+                    text = "Buttons";
+                    break;
+                case 1:
+                    text = noStats
+                        ? 0
+                        : stats.interactedButtons.filter(onlyUnique).length;
+                    break;
+                case 2:
+                    text = noStats ? 0 : stats.newButtons.filter(onlyUnique).length;
+                    break;
+                case 3:
+                    text = noActions
+                        ? 0
+                        : actions.idsOfButtonObjects.filter(onlyUnique).length;
+                    break;
+            }
+            cell.appendChild(document.createTextNode(text));
+        }
+
+        var totalPages = [];
+        var currentPresent = false;
+        for (var i = 0; i < pageActions.length; i++) {
+            if (
+                pageActions[i].url.indexOf(startingURL) >= 0 &&
+                startingURL != ""
+            ) {
+                totalPages.push(pageActions[i].url);
+            }
+            if (pageActions[i].url === result.currentURL) {
+                currentPresent = true;
+            }
+        }
+
+        var pagesRow = table.insertRow();
+        var totalNumPages = noNewPages ? 1 : totalPages.length;
+        if (!currentPresent) {
+            totalNumPages++;
+        }
+        for (var i = 0; i < 4; i++) {
+            var cell = pagesRow.insertCell();
+            var text = "";
+            switch (i) {
+                case 0:
+                    text = "Pages";
+                    break;
+                case 1:
+                    text = noVisitedPages ? 1 : visitedPages.length;
+                    break;
+                case 2:
+                    text = noNewPages ? 1 : newPages.length;
+                    break;
+                case 3:
+                    text = totalNumPages;
+                    break;
+            }
+            cell.appendChild(document.createTextNode(text));
+        }
+
+        var tableHead = table.createTHead();
+        var headRow = tableHead.insertRow();
+        var th1 = document.createElement("th");
+        var text1 = document.createTextNode("");
+        th1.appendChild(text1);
+        var th2 = document.createElement("th");
+        var text2 = document.createTextNode("Current Session");
+        th2.appendChild(text2);
+        var th3 = document.createElement("th");
+        var text3 = document.createTextNode("New");
+        th3.appendChild(text3);
+        var th4 = document.createElement("th");
+        var text4 = document.createTextNode("Total");
+        th4.appendChild(text4);
+        headRow.appendChild(th1);
+        headRow.appendChild(th2);
+        headRow.appendChild(th3);
+        headRow.appendChild(th4);
+
+        div.appendChild(table);
+
+        var totalLinks = document.getElementsByTagName("a").length;
+        var totalInputs = document.getElementsByTagName("input").length;
+
+        var totalButtons = document.getElementsByTagName("button");
+        var buttonsCount = 0;
+        for (var i = 0; i < totalButtons.length; i++) {
+            if (!isButtonOfExtension(totalButtons[i])) {
+                buttonsCount++;
+            }
+        }
+        var linkObjects = noActions ? 0 : actions.idsOfLinkObjects.length;
+        var inputObjects = noActions ? 0 : actions.idsOfInputObjects.length;
+        var buttonObjects = noActions ? 0 : actions.idsOfButtonObjects.length;
+        var linksPerc = (linkObjects * 100) / totalLinks;
+        var inputsPerc = (inputObjects * 100) / totalInputs;
+        var buttonsPerc = (buttonObjects * 100) / buttonsCount;
+
+        var linksProgressTop = document.createElement("div");
+        div.appendChild(linksProgressTop);
+        linksProgressTop.id = "gamificationExtensionLinksProgress";
+        linksProgressTop.style =
+            "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
+        var linksProgress = document.createElement("div");
+        linksProgress.style =
+            `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+            linksPerc +
+            `%; white-space:nowrap`;
+        linksProgressTop.appendChild(linksProgress);
+        linksProgress.textContent = "Links Progress: " + linksPerc + "%";
+        var inputsProgressTop = document.createElement("div");
+        div.appendChild(inputsProgressTop);
+        inputsProgressTop.id = "gamificationExtensionInputsProgress";
+        inputsProgressTop.style =
+            "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
+        var inputsProgress = document.createElement("div");
+        inputsProgress.style =
+            `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+            inputsPerc +
+            `%; white-space:nowrap`;
+        inputsProgressTop.appendChild(inputsProgress);
+        inputsProgress.textContent = "Forms Progress: " + inputsPerc + "%";
+        var buttonsProgressTop = document.createElement("div");
+        div.appendChild(buttonsProgressTop);
+        buttonsProgressTop.style =
+            "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
+        var buttonsProgress = document.createElement("div");
+        buttonsProgressTop.appendChild(buttonsProgress);
+        buttonsProgress.style =
+            `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+            buttonsPerc +
+            `%; white-space:nowrap`;
+        buttonsProgressTop.id = "gamificationExtensionButtonsProgress";
+        buttonsProgress.textContent = "Buttons Progress: " + buttonsPerc + "%";
+    }
     );
 }
