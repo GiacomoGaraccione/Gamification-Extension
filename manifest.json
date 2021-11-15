@@ -1,8 +1,23 @@
 {
-    "name": "Gamification Plugin",
-    "version": "0.3",
-    "manifest_version": 3,
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "author": "Giacomo Garaccione",
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["prova.js", "prova2.js"]
+        }
+    ],
     "description": "A plugin that enhances app testing with gamification strategies",
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "manifest_version": 3,
+    "name": "Gamification Plugin",
     "permissions": [ 
         "tabs",
         "storage",
@@ -11,15 +26,7 @@
         "downloads",
         "background"
     ],
-    "host_permissions": [
-        "<all_urls>"
-    ],
-    "background": {
-        "service_worker": "background.js"
-    },
-    "action": {
-        "default_popup": "popup.html"
-    },
+    "version": "0.3",
     "web_accessible_resources": [{
         "resources": ["img/*"], 
         "matches": ["<all_urls>"]
