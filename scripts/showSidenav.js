@@ -7,13 +7,11 @@ if (found === null) {
     button.style = "position: absolute; top: 50%; right: 0; width: 100;";
     button.textContent = "Open Menu";
     button.onclick = function () {
-        document.getElementById("gamificationExtensionSidenav").style.width =
-            "250px";
+        document.getElementById("gamificationExtensionSidenav").style.width = "250px";
     };
     document.body.appendChild(div);
     div.id = "gamificationExtensionSidenav";
-    div.style =
-        "height: 100%; width: 0; position: fixed; z-index: 1; top: 0; right: 0; background-color: rgb(211 245 230); overflow-x: hidden; padding-top: 60px; transition: 0.5s;";
+    div.style = "height: 100%; width: 0; position: fixed; z-index: 1; top: 0; right: 0; background-color: rgb(211 245 230); overflow-x: hidden; padding-top: 60px; transition: 0.5s;";
     var closeButton = document.createElement("button");
     div.appendChild(closeButton);
     closeButton.id = "gamificationExtensionSidenavCloseButton";
@@ -103,18 +101,15 @@ if (found === null) {
             pageStats: JSON.stringify([]),
         });
     };
-
     var toggleClickedElementsButton = document.createElement("button");
     div.appendChild(toggleClickedElementsButton);
-    toggleClickedElementsButton.id =
-        "gamificationExtensionToggleClickedElementsButton";
+    toggleClickedElementsButton.id = "gamificationExtensionToggleClickedElementsButton";
     toggleClickedElementsButton.textContent = "Show Interacted Elements";
     toggleClickedElementsButton.onclick = function () {
         removeBorders()
         drawBorderOnInteracted()
         chrome.storage.sync.set({ overlayMode: "interacted" })
     };
-
     var removeOverlaysButton = document.createElement("button");
     div.appendChild(removeOverlaysButton);
     removeOverlaysButton.id = "gamificationExtensionRemoveOverlaysButton";
@@ -123,7 +118,6 @@ if (found === null) {
         removeBorders()
         chrome.storage.sync.set({ overlayMode: "none" })
     };
-
     var toggleAllElementsButton = document.createElement("button");
     div.appendChild(toggleAllElementsButton);
     toggleAllElementsButton.id = "gamificationExtensionToggleAllElementsButton";
@@ -132,7 +126,6 @@ if (found === null) {
         drawBorderOnAll()
         chrome.storage.sync.set({ overlayMode: "all" })
     };
-
     chrome.storage.sync.get(["pageActions", "pageStats", "currentURL", "visitedPages", "startingURL", "newPages",], function (result) {
         var pageActions = JSON.parse(result.pageActions);
         var pageStats = JSON.parse(result.pageStats);
@@ -167,9 +160,7 @@ if (found === null) {
                     text = noStats ? 0 : stats.newLinks.filter(onlyUnique).length;
                     break;
                 case 3:
-                    text = noActions
-                        ? 0
-                        : actions.idsOfLinkObjects.filter(onlyUnique).length;
+                    text = noActions ? 0 : actions.idsOfLinkObjects.filter(onlyUnique).length;
                     break;
             }
             cell.appendChild(document.createTextNode(text));
@@ -183,17 +174,13 @@ if (found === null) {
                     text = "Forms";
                     break;
                 case 1:
-                    text = noStats
-                        ? 0
-                        : stats.interactedInputs.filter(onlyUnique).length;
+                    text = noStats ? 0 : stats.interactedInputs.filter(onlyUnique).length;
                     break;
                 case 2:
                     text = noStats ? 0 : stats.newInputs.filter(onlyUnique).length;
                     break;
                 case 3:
-                    text = noActions
-                        ? 0
-                        : actions.idsOfInputObjects.filter(onlyUnique).length;
+                    text = noActions ? 0 : actions.idsOfInputObjects.filter(onlyUnique).length;
                     break;
             }
             cell.appendChild(document.createTextNode(text));
@@ -207,17 +194,13 @@ if (found === null) {
                     text = "Buttons";
                     break;
                 case 1:
-                    text = noStats
-                        ? 0
-                        : stats.interactedButtons.filter(onlyUnique).length;
+                    text = noStats ? 0 : stats.interactedButtons.filter(onlyUnique).length;
                     break;
                 case 2:
                     text = noStats ? 0 : stats.newButtons.filter(onlyUnique).length;
                     break;
                 case 3:
-                    text = noActions
-                        ? 0
-                        : actions.idsOfButtonObjects.filter(onlyUnique).length;
+                    text = noActions ? 0 : actions.idsOfButtonObjects.filter(onlyUnique).length;
                     break;
             }
             cell.appendChild(document.createTextNode(text));
@@ -226,10 +209,7 @@ if (found === null) {
         var totalPages = [];
         var currentPresent = false;
         for (var i = 0; i < pageActions.length; i++) {
-            if (
-                pageActions[i].url.indexOf(startingURL) >= 0 &&
-                startingURL != ""
-            ) {
+            if (pageActions[i].url.indexOf(startingURL) >= 0 && startingURL != "") {
                 totalPages.push(pageActions[i].url);
             }
             if (pageActions[i].url === result.currentURL) {

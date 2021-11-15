@@ -1,5 +1,6 @@
-chrome.storage.sync.get(["currentURL", "pageActions", "pageStats"], function (result) {
+chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"], function (result) {
     var currentURL = result.currentURL;
+    var overlayMode = result.overlayMode
 
     //ottiene tutti gli elementi di tipo 'a' (link ad altre pagine)
     var linkObjects = document.body.getElementsByTagName("a");
@@ -30,7 +31,6 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats"], function (re
     var retrievedObj = JSON.parse(result.pageActions);
     var newPage = true;
     for (var i = 0; i < retrievedObj.length && newPage; i++) {
-        //magari in futuro aggiungere controlli sulla differenza del numero di oggetti interagibili
         if (retrievedObj[i].url === currentURL) {
             newPage = false;
         }
@@ -85,7 +85,6 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats"], function (re
                             }
                         }
                         var pageActions = JSON.stringify(retrievedObj);
-
                         var pageStatsObj = JSON.parse(result.pageStats);
                         for (var m = 0; m < pageStatsObj.length; m++) {
                             if (pageStatsObj[m].url === currentURL) {
@@ -175,6 +174,9 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats"], function (re
                                     progress +
                                     `%; white-space:nowrap`;
                                 innerDiv.textContent = "Progress: " + progress + "%";
+                                if (overlayMode === "interacted") {
+                                    drawBorderOnInteracted()
+                                }
                             }
                         }
                     }
@@ -238,6 +240,9 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats"], function (re
                                         progress +
                                         `%; white-space:nowrap`;
                                     innerDiv.textContent = "Progress: " + progress + "%";
+                                    if (overlayMode === "interacted") {
+                                        drawBorderOnInteracted()
+                                    }
                                 }
                             }
                             var pageActions = JSON.stringify(retrievedObj);
