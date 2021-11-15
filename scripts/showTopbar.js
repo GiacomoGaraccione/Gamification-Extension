@@ -1,7 +1,4 @@
 chrome.storage.sync.get(["pageActions", "currentURL"], function (result) {
-    function onlyUnique(value, index, self) {
-        return self.indexOf(value) === index;
-    }
     var pageActions = JSON.parse(result.pageActions);
     var currentURL = result.currentURL;
     for (var i = 0; i < pageActions.length; i++) {

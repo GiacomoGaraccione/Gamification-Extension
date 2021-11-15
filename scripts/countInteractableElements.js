@@ -1,19 +1,3 @@
-function isButtonOfExtension(button) {
-    return (
-        button.id === "gamificationExtensionRemoveOverlaysButton" ||
-        button.id === "gamificationExtensionSidenavButton" ||
-        button.id === "gamificationExtensionSidenavCloseButton" ||
-        button.id === "gamificationExtensionEndSessionButton" ||
-        button.id === "gamificationExtensionToggleClickedElementsButton" ||
-        button.id === "gamificationExtensionRemoveOverlaysButton" ||
-        button.id === "gamificationExtensionToggleAllElementsButton"
-    );
-}
-
-function onlyUnique(value, index, self) {
-    return self.indexOf(value) === index;
-}
-
 chrome.storage.sync.get(["currentURL", "pageActions", "pageStats"], function (result) {
     var currentURL = result.currentURL;
 

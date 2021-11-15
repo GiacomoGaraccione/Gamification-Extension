@@ -8,8 +8,10 @@
     },
     "content_scripts": [
         {
-            "matches": ["<all_urls>"],
-            "js": ["prova.js", "prova2.js"]
+            "matches": ["*://*/*"],
+            "js": [
+                "scripts/utilityFunctions.js"
+            ]
         }
     ],
     "description": "A plugin that enhances app testing with gamification strategies",
