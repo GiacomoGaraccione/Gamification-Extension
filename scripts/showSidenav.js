@@ -143,6 +143,7 @@ if (found === null) {
         var noVisitedPages = visitedPages === undefined;
 
         var table = document.createElement("table");
+        table.id = "gamificationExtensionPageStatsTable"
         var linksRow = table.insertRow();
         for (var i = 0; i < 4; i++) {
             var cell = linksRow.insertCell();
@@ -282,10 +283,10 @@ if (found === null) {
 
         var linksProgressTop = document.createElement("div");
         div.appendChild(linksProgressTop);
-        linksProgressTop.id = "gamificationExtensionLinksProgress";
         linksProgressTop.style =
             "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
         var linksProgress = document.createElement("div");
+        linksProgress.id = "gamificationExtensionLinksProgress";
         linksProgress.style =
             `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
             linksPerc +
@@ -294,10 +295,10 @@ if (found === null) {
         linksProgress.textContent = "Links Progress: " + linksPerc + "%";
         var inputsProgressTop = document.createElement("div");
         div.appendChild(inputsProgressTop);
-        inputsProgressTop.id = "gamificationExtensionInputsProgress";
         inputsProgressTop.style =
             "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
         var inputsProgress = document.createElement("div");
+        inputsProgress.id = "gamificationExtensionInputsProgress";
         inputsProgress.style =
             `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
             inputsPerc +
@@ -310,11 +311,11 @@ if (found === null) {
             "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
         var buttonsProgress = document.createElement("div");
         buttonsProgressTop.appendChild(buttonsProgress);
+        buttonsProgress.id = "gamificationExtensionButtonsProgress"
         buttonsProgress.style =
             `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
             buttonsPerc +
             `%; white-space:nowrap`;
-        buttonsProgressTop.id = "gamificationExtensionButtonsProgress";
         buttonsProgress.textContent = "Buttons Progress: " + buttonsPerc + "%";
     }
     );

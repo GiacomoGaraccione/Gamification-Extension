@@ -2,6 +2,10 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
     var currentURL = result.currentURL;
     var overlayMode = result.overlayMode
 
+    function filterURL(event) {
+        return event.url === currentURL
+    }
+
     //ottiene tutti gli elementi di tipo 'a' (link ad altre pagine)
     var linkObjects = document.body.getElementsByTagName("a");
     var totalLinkObjects = linkObjects.length;
@@ -177,6 +181,19 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                 if (overlayMode === "interacted") {
                                     drawBorderOnInteracted()
                                 }
+                                var sidenavProgress = document.getElementById("gamificationExtensionInputsProgress")
+                                progress = interactedInputs * 100 / totalInputObjects
+                                sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+                                    progress +
+                                    `%; white-space:nowrap`;
+                                sidenavProgress.textContent = "Buttons Progress: " + progress + "%"
+                                var table = document.getElementById("gamificationExtensionPageStatsTable")
+                                var inputsRow = table.rows[2]
+                                var pageAction = retrievedObj.filter(filterURL)[0]
+                                var pageStat = pageStatsObj.filter(filterURL)[0]
+                                inputsRow.cells[1].innerHTML = pageStat.interactedInputs.length
+                                inputsRow.cells[2].innerHTML = pageStat.interactedInputs.length
+                                inputsRow.cells[3].innerHTML = pageAction.idsOfInputObjects.length
                             }
                         }
                     }
@@ -225,9 +242,7 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                             }
                                         }
                                     }
-                                    var innerDiv = document.getElementById(
-                                        "gamificationExtensionTopnavInner"
-                                    );
+                                    var innerDiv = document.getElementById("gamificationExtensionTopnavInner");
                                     var totalLinkObjects = retrievedObj[k].totalLinkObjects;
                                     var totalInputObjects = retrievedObj[k].totalInputObjects;
                                     var totalButtonObjects = retrievedObj[k].totalButtonObjects;
@@ -243,6 +258,19 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                     if (overlayMode === "interacted") {
                                         drawBorderOnInteracted()
                                     }
+                                    var sidenavProgress = document.getElementById("gamificationExtensionButtonsProgress")
+                                    progress = interactedButtons * 100 / totalButtonObjects
+                                    sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+                                        progress +
+                                        `%; white-space:nowrap`;
+                                    sidenavProgress.textContent = "Buttons Progress: " + progress + "%"
+                                    var table = document.getElementById("gamificationExtensionPageStatsTable")
+                                    var buttonsRow = table.rows[3]
+                                    var pageAction = retrievedObj.filter(filterURL)[0]
+                                    var pageStat = pageStatsObj.filter(filterURL)[0]
+                                    buttonsRow.cells[1].innerHTML = pageStat.interactedButtons.length
+                                    buttonsRow.cells[2].innerHTML = pageStat.newButtons.length
+                                    buttonsRow.cells[3].innerHTML = pageAction.idsOfButtonObjects.length
                                 }
                             }
                             var pageActions = JSON.stringify(retrievedObj);
