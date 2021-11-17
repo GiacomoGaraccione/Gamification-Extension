@@ -31,14 +31,11 @@ function downloadFile() {
             var pageActions = result.pageActions;
             var pageActionsObj = JSON.parse(pageActions);
             for (var i = 0; i < pageActionsObj.length; i++) {
-                var filteredLinkIds =
-                    pageActionsObj[i].idsOfLinkObjects.filter(onlyUnique);
+                var filteredLinkIds = pageActionsObj[i].idsOfLinkObjects.filter(onlyUnique);
                 pageActionsObj[i].idsOfLinkObjects = filteredLinkIds;
-                var filteredInputIds =
-                    pageActionsObj[i].idsOfInputObjects.filter(onlyUnique);
+                var filteredInputIds = pageActionsObj[i].idsOfInputObjects.filter(onlyUnique);
                 pageActionsObj[i].idsOfInputObjects = filteredInputIds;
-                var filteredButtonIds =
-                    pageActionsObj[i].idsOfButtonObjects.filter(onlyUnique);
+                var filteredButtonIds = pageActionsObj[i].idsOfButtonObjects.filter(onlyUnique);
                 pageActionsObj[i].idsOfButtonObjects = filteredButtonIds;
             }
             var blob = new Blob([JSON.stringify(pageActionsObj)], {

@@ -7,42 +7,73 @@
     </head>
     <body>
         <header>
-            <h1 style="text-align: center;">Main Page</h1>
+            <h1 style="text-align: center;" id="title">Main Page</h1>
         </header>
-        <div class="wrapper">
+        <div class="wrapper" id="firstWrapper">
             <div class="files">
-                <div class="file">
+                <div class="file" id="newProfileDiv">
                     <div>
-                        <h2 style="text-align: center;">Create a new profile</h2> 
                         <input type="file" class="fileInput">
-                        <button class="btn select-file" id="profileButton">Select PDF file</button>
+                        <button class="btn select-file" id="profileButton">Create a new profile</button>
                     </div> 
                  </div>
-                <div class="file">
+                <div class="file" id="uploadProfileDiv">
                    <div>
                        <h2 style="text-align: center;">Upload your profile information</h2> 
                        <input type="file">
                        <button class="btn select-file" id="profileFileButton">Select file</button>
                    </div> 
                 </div>
-                <div class="file">
+                <div class="file" style="display: none;" id="uploadSessionDiv">
                     <div>
                         <h2 style="text-align: center;">Upload the record of a past session</h2> 
                         <input type="file">
                         <button class="btn select-file" id="recordFileButton">Select file</button>
                     </div> 
                  </div>
-                 <div class="file">
+                 <div class="file" style="display: none;" id="resetSessionDiv">
                      <div>
                          <h2 style="text-align: center;">Reset Past Session Information</h2>
                          <button class="btn select-file" id="resetButton">Reset</button>
                      </div>
                  </div>
             </div>
-            <div>
-                <h2 style="text-align: center;">Paste URL of Page to Test</h2>
-                <input type="url" id="pageURL">
-                <button class="btn select-file" id="pageURLButton">Go to Page</button>
+            <div class="blocks">
+                <div style="display: none;" id="urlDiv">
+                    <h2 style="text-align: center;">Paste URL of Page to Test</h2>
+                    <input type="url" id="pageURL">
+                    <button class="btn select-file" id="pageURLButton">Go to Page</button>
+                </div>
+            </div>
+            <div class="files">
+                <div style="display: none" id="logoutDiv">
+                    <button class="btn select-file" id="logoutButton">Logout</button>
+                </div>
+            </div>
+        </div>
+        <div class="wrapper" id="secondWrapper" style="display: none;">
+            <div class="blocks">
+                <div class="file">
+                    <h2 style="text-align: center;">Write your username here</h2>
+                    <input type="text" id="usernameField">
+                </div>
+            </div>
+            <div class="blocks">
+                <div class="file" id="greenAvatarContainer">
+                    <h2 style="text-align: center;">Green Avatar</h2>
+                    <img src="../img/Idle (1)_Green.png" style="max-width:100%; max-height:100%;" id="greenAvatar">
+                </div>
+                <div class="file" id="redAvatarContainer">
+                    <h2 style="text-align: center;">Red Avatar</h2>
+                    <img src="../img/Idle (1)_Orange.png" style="max-width:100%; max-height:100%;" id="redAvatar">
+                </div>
+                <div class="file" id="blueAvatarContainer">
+                    <h2 style="text-align: center;">Blue Avatar</h2>
+                    <img src="../img/Idle (1).png" style="max-width:100%; max-height:100%;" id="blueAvatar">
+                </div>
+            </div>
+            <div class="blocks" style="display: none;" id="confirmButtonWrapper">
+                <button class="btn select-file" id="confirmProfileButton">Confirm Profile</button>
             </div>
         </div>
 
