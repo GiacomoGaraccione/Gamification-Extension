@@ -204,7 +204,25 @@ if (found === null) {
             }
             cell.appendChild(document.createTextNode(text));
         }
+        var tableHead = table.createTHead();
+        var headRow = tableHead.insertRow();
+        var th1 = document.createElement("th");
+        th1.appendChild(document.createTextNode("Page Widgets"));
+        var th2 = document.createElement("th");
+        th2.appendChild(document.createTextNode("Current Session"));
+        var th3 = document.createElement("th");
+        th3.appendChild(document.createTextNode("New"));
+        var th4 = document.createElement("th");
+        th4.appendChild(document.createTextNode("Total"));
+        headRow.appendChild(th1);
+        headRow.appendChild(th2);
+        headRow.appendChild(th3);
+        headRow.appendChild(th4);
 
+        div.appendChild(table);
+
+        var tablePages = document.createElement("table");
+        tablePages.id = "gamificationExtensionPagesTable"
         var totalPages = [];
         var currentPresent = false;
         for (var i = 0; i < pageActions.length; i++) {
@@ -216,7 +234,7 @@ if (found === null) {
             }
         }
 
-        var pagesRow = table.insertRow();
+        var pagesRow = tablePages.insertRow();
         var totalNumPages = noNewPages ? 1 : totalPages.length;
         if (!currentPresent) {
             totalNumPages++;
@@ -240,27 +258,22 @@ if (found === null) {
             }
             cell.appendChild(document.createTextNode(text));
         }
+        var tHead = tablePages.createTHead();
+        var hRow = tHead.insertRow();
+        var t1 = document.createElement("th");
+        t1.appendChild(document.createTextNode("Pages Visited"));
+        var t2 = document.createElement("th");
+        t2.appendChild(document.createTextNode("Current Session"));
+        var t3 = document.createElement("th");
+        t3.appendChild(document.createTextNode("New"));
+        var t4 = document.createElement("th");
+        t4.appendChild(document.createTextNode("Total"));
+        hRow.appendChild(t1);
+        hRow.appendChild(t2);
+        hRow.appendChild(t3);
+        hRow.appendChild(t4);
 
-        var tableHead = table.createTHead();
-        var headRow = tableHead.insertRow();
-        var th1 = document.createElement("th");
-        var text1 = document.createTextNode("");
-        th1.appendChild(text1);
-        var th2 = document.createElement("th");
-        var text2 = document.createTextNode("Current Session");
-        th2.appendChild(text2);
-        var th3 = document.createElement("th");
-        var text3 = document.createTextNode("New");
-        th3.appendChild(text3);
-        var th4 = document.createElement("th");
-        var text4 = document.createTextNode("Total");
-        th4.appendChild(text4);
-        headRow.appendChild(th1);
-        headRow.appendChild(th2);
-        headRow.appendChild(th3);
-        headRow.appendChild(th4);
-
-        div.appendChild(table);
+        div.appendChild(tablePages);
 
         var totalLinks = document.getElementsByTagName("a").length;
         var totalInputs = document.getElementsByTagName("input").length;
