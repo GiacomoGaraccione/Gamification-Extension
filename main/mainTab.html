@@ -37,6 +37,11 @@
                          <button class="btn select-file" id="resetButton">Reset</button>
                      </div>
                  </div>
+                 <div class="file" style="display:none" id="viewProfileDiv">
+                    <div>
+                        <button class="btn select-file" id="viewProfileButton">View Profile</button>
+                    </div>                
+                </div>
             </div>
             <div class="blocks">
                 <div style="display: none;" id="urlDiv">
@@ -61,19 +66,32 @@
             <div class="blocks">
                 <div class="file" id="greenAvatarContainer">
                     <h2 style="text-align: center;">Green Avatar</h2>
-                    <img src="../img/Idle (1)_Green.png" style="max-width:100%; max-height:100%;" id="greenAvatar">
+                    <img src="../img/default_green.png" style="max-width:100%; max-height:100%;" id="greenAvatar">
                 </div>
                 <div class="file" id="redAvatarContainer">
                     <h2 style="text-align: center;">Red Avatar</h2>
-                    <img src="../img/Idle (1)_Orange.png" style="max-width:100%; max-height:100%;" id="redAvatar">
+                    <img src="../img/default_red.png" style="max-width:100%; max-height:100%;" id="redAvatar">
                 </div>
                 <div class="file" id="blueAvatarContainer">
                     <h2 style="text-align: center;">Blue Avatar</h2>
-                    <img src="../img/Idle (1).png" style="max-width:100%; max-height:100%;" id="blueAvatar">
+                    <img src="../img/default_blue.png" style="max-width:100%; max-height:100%;" id="blueAvatar">
                 </div>
             </div>
             <div class="blocks" style="display: none;" id="confirmButtonWrapper">
                 <button class="btn select-file" id="confirmProfileButton">Confirm Profile</button>
+            </div>
+        </div>
+        <div class="wrapper" id="thirdWrapper" style="display: none;">
+            <div class="blocks">
+                <h2 style="text-align: center;">Your Avatars</h2>
+            </div>
+            <div class="blocks" id="selectableAvatars" style="overflow-y: auto; white-space: nowrap; width: auto;"></div>
+            <div class="blocks">
+                <h2 style="text-align: center;">Your Achievements</h2>
+            </div>
+            <div class="blocks" id="achievements" style="overflow-y: auto; white-space: nowrap; width: auto; "></div>
+            <div class="blocks">
+                <button class="btn select-file" id="goBackButton">Go Back</button>
             </div>
         </div>
 

@@ -6,29 +6,34 @@ var pageURLButton = document.getElementById("pageURLButton");
 var resetButton = document.getElementById("resetButton");
 var confirmProfileButton = document.getElementById("confirmProfileButton")
 var usernameField = document.getElementById("usernameField")
-var greenAvatar = document.getElementById("greenAvatar")
-var redAvatar = document.getElementById("redAvatar")
-var blueAvatar = document.getElementById("blueAvatar")
 var logoutButton = document.getElementById("logoutButton")
+var viewProfileButton = document.getElementById("viewProfileButton")
+var firstWrapper = document.getElementById("firstWrapper")
+var secondWrapper = document.getElementById("secondWrapper")
+var thirdWrapper = document.getElementById("thirdWrapper")
+var newProfileDiv = document.getElementById("newProfileDiv")
+var uploadProfileDiv = document.getElementById("uploadProfileDiv")
+var uploadSessionDiv = document.getElementById("uploadSessionDiv")
+var resetSessionDiv = document.getElementById("resetSessionDiv")
+var urlDiv = document.getElementById("urlDiv")
+var logoutDiv = document.getElementById("logoutDiv")
+var viewProfileDiv = document.getElementById("viewProfileDiv")
+var title = document.getElementById("title")
+var confirmButtonWrapper = document.getElementById("confirmButtonWrapper")
+var redAvatarContainer = document.getElementById("redAvatarContainer")
+var greenAvatarContainer = document.getElementById("greenAvatarContainer")
+var blueAvatarContainer = document.getElementById("blueAvatarContainer")
+var selectableAvatars = document.getElementById("selectableAvatars")
+var achievementsContainer = document.getElementById("achievements")
+var goBackButton = document.getElementById("goBackButton")
 
 var url = "";
 var username = ""
 var selectedAvatar = ""
+var avatarDivs = []
 
-chrome.storage.sync.get(["profileInfo"], function (result) {
-  var profileInfo = result.profileInfo
-  if (profileInfo !== undefined && profileInfo !== "[]") {
-    var profileInfoObj = JSON.parse(profileInfo)
-    var firstWrapper = document.getElementById("firstWrapper")
-    var secondWrapper = document.getElementById("secondWrapper")
-    var newProfileDiv = document.getElementById("newProfileDiv")
-    var uploadProfileDiv = document.getElementById("uploadProfileDiv")
-    var uploadSessionDiv = document.getElementById("uploadSessionDiv")
-    var resetSessionDiv = document.getElementById("resetSessionDiv")
-    var urlDiv = document.getElementById("urlDiv")
-    var logoutDiv = document.getElementById("logoutDiv")
-    var title = document.getElementById("title")
-    title.textContent = "Main Page - Welcome " + profileInfoObj.username + "!"
+function render(flag) {
+  if (flag === "home") {
     secondWrapper.style.display = "none"
     firstWrapper.style.display = "flex"
     newProfileDiv.style.display = "none"
@@ -37,7 +42,48 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
     resetSessionDiv.style.display = "flex"
     urlDiv.style.display = "flex"
     logoutDiv.style.display = "flex"
+    viewProfileDiv.style.display = "flex"
+  } else if (flag === "create") {
+    newProfileDiv.style.display = "flex"
+    uploadProfileDiv.style.display = "flex"
+    uploadSessionDiv.style.display = "none"
+    resetSessionDiv.style.display = "none"
+    urlDiv.style.display = "none"
+    logoutDiv.style.display = "none"
+    viewProfileDiv.style.display = "none"
   }
+}
+
+function highlightDefaultAvatar(selected, second, third, color) {
+  selected.style = `border:3px; border-style:solid; border-color:#` + color + `; padding: 1em;`
+  second.style = "border:0; border-style:solid;"
+  third.style = "border:0; border-style:solid;"
+}
+
+
+chrome.storage.sync.get(["profileInfo"], function (result) {
+  var profileInfo = result.profileInfo
+  if (profileInfo !== undefined && profileInfo !== "[]") {
+    var profileInfoObj = JSON.parse(profileInfo)
+    title.textContent = "Main Page - Welcome " + profileInfoObj.username + "!"
+    render("home")
+  }
+
+  profileFileButton.addEventListener("click", function () {
+    var input = profileFileButton.parentElement.getElementsByTagName("input");
+    input[0].addEventListener("change", function () {
+      var fr = new FileReader();
+
+      fr.onload = function () {
+        chrome.storage.sync.set({ profileInfo: fr.result });
+        var profileInfo = JSON.parse(fr.result)
+        title.textContent = "Main Page - Welcome " + profileInfo.username + "!"
+        render("home")
+      };
+      fr.readAsText(this.files[0]);
+    });
+    $($(this).parent().find("input")).click();
+  })
   recordFileButton.addEventListener("click", function () {
     var input = recordFileButton.parentElement.getElementsByTagName("input");
     input[0].addEventListener("change", function () {
@@ -76,8 +122,6 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
   });
 
   profileButton.addEventListener("click", function () {
-    var firstWrapper = document.getElementById("firstWrapper")
-    var secondWrapper = document.getElementById("secondWrapper")
     firstWrapper.style.display = "none"
     secondWrapper.style.display = "flex"
   })
@@ -86,7 +130,12 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
     if (username === "" || selectedAvatar === "") {
       alert("Error: choose a username and an avatar")
     } else {
-      var profileInfo = { username: username, selectedAvatar: selectedAvatar }
+      var profileInfo = {
+        username: username,
+        selectedAvatar: selectedAvatar,
+        availableAvatars: [{ name: "Green Avatar", url: "../img/default_green.png" }, { name: "Red Avatar", url: "../img/default_red.png" }, { name: "Blue Avatar", url: "../img/default_blue.png" }],
+        achievements: []
+      }
       var blob = new Blob([JSON.stringify(profileInfo)], {
         type: "text/plain;charset=UTF-8",
       });
@@ -97,31 +146,14 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
       };
       chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) })
       chrome.runtime.sendMessage({ obj: obj, mess: "download" });
-      var firstWrapper = document.getElementById("firstWrapper")
-      var secondWrapper = document.getElementById("secondWrapper")
-      var newProfileDiv = document.getElementById("newProfileDiv")
-      var uploadProfileDiv = document.getElementById("uploadProfileDiv")
-      var uploadSessionDiv = document.getElementById("uploadSessionDiv")
-      var resetSessionDiv = document.getElementById("resetSessionDiv")
-      var urlDiv = document.getElementById("urlDiv")
-      var logoutDiv = document.getElementById("logoutDiv")
-      var title = document.getElementById("title")
       title.textContent = "Main Page - Welcome " + username + "!"
-      secondWrapper.style.display = "none"
-      firstWrapper.style.display = "flex"
-      newProfileDiv.style.display = "none"
-      uploadProfileDiv.style.display = "none"
-      uploadSessionDiv.style.display = "flex"
-      resetSessionDiv.style.display = "flex"
-      urlDiv.style.display = "flex"
-      logoutDiv.style.display = "flex"
+      render("home")
     }
 
   })
 
   function displayConfirmButton() {
     if (username !== "" && selectedAvatar !== "") {
-      var confirmButtonWrapper = document.getElementById("confirmButtonWrapper")
       confirmButtonWrapper.style.display = "flex"
     }
   }
@@ -131,55 +163,113 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
     displayConfirmButton()
   })
 
-  greenAvatar.addEventListener("click", function () {
-    var greenAvatarContainer = document.getElementById("greenAvatarContainer")
-    greenAvatarContainer.style = "border:3px; border-style:solid; border-color:#00FF00; padding: 1em;"
-    var redAvatarContainer = document.getElementById("redAvatarContainer")
-    redAvatarContainer.style = "border:0; border-style:solid;"
-    var blueAvatarContainer = document.getElementById("blueAvatarContainer")
-    blueAvatarContainer.style = "border:0; border-style:solid;"
-    selectedAvatar = "green"
+  greenAvatarContainer.addEventListener("click", function () {
+    highlightDefaultAvatar(greenAvatarContainer, redAvatarContainer, blueAvatarContainer, "00FF00")
+    selectedAvatar = "../img/default_green.png"
     displayConfirmButton()
   })
 
-  redAvatar.addEventListener("click", function () {
-    var redAvatarContainer = document.getElementById("redAvatarContainer")
-    redAvatarContainer.style = "border:3px; border-style:solid; border-color:#FF0000; padding: 1em;"
-    var greenAvatarContainer = document.getElementById("greenAvatarContainer")
-    greenAvatarContainer.style = "border:0; border-style:solid;"
-    var blueAvatarContainer = document.getElementById("blueAvatarContainer")
-    blueAvatarContainer.style = "border:0; border-style:solid;"
-    selectedAvatar = "red"
+  redAvatarContainer.addEventListener("click", function () {
+    highlightDefaultAvatar(redAvatarContainer, greenAvatarContainer, blueAvatarContainer, "FF0000")
+    selectedAvatar = "../img/default_red.png"
     displayConfirmButton()
   })
 
-  blueAvatar.addEventListener("click", function () {
-    var blueAvatarContainer = document.getElementById("blueAvatarContainer")
-    blueAvatarContainer.style = "border:3px; border-style:solid; border-color:#0000FF; padding: 1em;"
-    var greenAvatarContainer = document.getElementById("greenAvatarContainer")
-    greenAvatarContainer.style = "border:0; border-style:solid;"
-    var redAvatarContainer = document.getElementById("redAvatarContainer")
-    redAvatarContainer.style = "border:0; border-style:solid;"
-    selectedAvatar = "blue"
+  blueAvatarContainer.addEventListener("click", function () {
+    highlightDefaultAvatar(blueAvatarContainer, greenAvatarContainer, redAvatarContainer, "0000FF")
+    selectedAvatar = "../img/default_blue.png"
     displayConfirmButton()
   })
 
   logoutButton.addEventListener("click", function () {
     chrome.storage.sync.set({ profileInfo: "[]" })
-    var newProfileDiv = document.getElementById("newProfileDiv")
-    var uploadProfileDiv = document.getElementById("uploadProfileDiv")
-    var uploadSessionDiv = document.getElementById("uploadSessionDiv")
-    var resetSessionDiv = document.getElementById("resetSessionDiv")
-    var urlDiv = document.getElementById("urlDiv")
-    var logoutDiv = document.getElementById("logoutDiv")
-    var title = document.getElementById("title")
     title.textContent = "Main Page"
-    newProfileDiv.style.display = "flex"
-    uploadProfileDiv.style.display = "flex"
-    uploadSessionDiv.style.display = "none"
-    resetSessionDiv.style.display = "none"
-    urlDiv.style.display = "none"
-    logoutDiv.style.display = "none"
+    render("create")
+  })
+
+  viewProfileButton.addEventListener("click", function () {
+    chrome.storage.sync.get(["profileInfo"], function (result) {
+      var profileInfo = JSON.parse(result.profileInfo)
+      firstWrapper.style.display = "none"
+      thirdWrapper.style.display = "flex"
+      if (selectableAvatars.childNodes.length === 0 && achievementsContainer.childNodes.length === 0) {
+        for (var i = 0; i < profileInfo.availableAvatars.length; i++) {
+          var div = document.createElement("div")
+          div.className = "file"
+          var h2 = document.createElement("h2")
+          h2.style = "text-align: center;"
+          h2.textContent = profileInfo.availableAvatars[i].name
+          div.appendChild(h2)
+          var img = document.createElement("img")
+          img.style = "max-width:100%; max-height:100%;"
+          img.src = profileInfo.availableAvatars[i].url
+          div.appendChild(img)
+          selectableAvatars.appendChild(div)
+          if (profileInfo.selectedAvatar === profileInfo.availableAvatars[i].url) {
+            div.style = `border:3px; border-style:solid; border-color:#FFD700; padding: 1em;`
+          }
+          div.id = i + 1
+          avatarDivs.push(div)
+          function changeSelectedAvatar(divClicked, otherDivs) {
+            if (divClicked !== undefined) {
+              divClicked.style = `border:3px; border-style:solid; border-color:#FFD700; padding: 1em;`
+              otherDivs.map((d) => d.style = "border:0; border-style:solid;")
+              var child = divClicked.childNodes[1]
+              var pos = child.src.indexOf("/img")
+              var src = ".." + child.src.slice(pos)
+              profileInfo.selectedAvatar = src
+              chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) })
+            }
+          }
+          div.addEventListener("click", function (event) {
+            function filterAvatars(e) {
+              return e.id === event.target.id
+            }
+            function filterOthers(e) {
+              return e.id !== event.target.id
+            }
+            var divClicked = avatarDivs.filter(filterAvatars)[0]
+            var otherDivs = avatarDivs.filter(filterOthers)
+            changeSelectedAvatar(divClicked, otherDivs)
+          })
+          img.addEventListener("click", function (event) {
+            function filterAvatars(e) {
+              return e.childNodes[1].src === event.target.src
+            }
+            function filterOthers(e) {
+              return e.childNodes[1].src !== event.target.src
+            }
+            var divClicked = avatarDivs.filter(filterAvatars)[0]
+            var otherDivs = avatarDivs.filter(filterOthers)
+            changeSelectedAvatar(divClicked, otherDivs)
+          })
+        }
+        var achievements = profileInfo.achievements
+        if (achievements.length === 0) {
+          var h3 = document.createElement("h3")
+          h3.textContent = "You have obtained no achievements!"
+          h3.style = "text-align: center"
+          achievementsContainer.appendChild(h3)
+        } else {
+          achievements.map((a) => {
+            var div = document.createElement("div")
+            div.className = "file"
+            var p = document.createElement("h3")
+            p.style = "width: fit-content"
+            p.textContent = a
+            div.appendChild(p)
+            achievementsContainer.appendChild(div)
+          })
+        }
+      }
+
+    })
+
+  })
+
+  goBackButton.addEventListener("click", function () {
+    firstWrapper.style.display = "flex"
+    thirdWrapper.style.display = "none"
   })
 })
 
