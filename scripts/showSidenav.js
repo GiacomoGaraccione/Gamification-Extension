@@ -153,9 +153,7 @@ if (found === null) {
                     text = "Links";
                     break;
                 case 1:
-                    text = noStats
-                        ? 0
-                        : stats.interactedLinks.filter(onlyUnique).length;
+                    text = noStats ? 0 : stats.interactedLinks.filter(onlyUnique).length;
                     break;
                 case 2:
                     text = noStats ? 0 : stats.newLinks.filter(onlyUnique).length;

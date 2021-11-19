@@ -11,6 +11,7 @@ var viewProfileButton = document.getElementById("viewProfileButton")
 var firstWrapper = document.getElementById("firstWrapper")
 var secondWrapper = document.getElementById("secondWrapper")
 var thirdWrapper = document.getElementById("thirdWrapper")
+var fourthWrapper = document.getElementById("fourthWrapper")
 var newProfileDiv = document.getElementById("newProfileDiv")
 var uploadProfileDiv = document.getElementById("uploadProfileDiv")
 var uploadSessionDiv = document.getElementById("uploadSessionDiv")
@@ -26,6 +27,13 @@ var blueAvatarContainer = document.getElementById("blueAvatarContainer")
 var selectableAvatars = document.getElementById("selectableAvatars")
 var achievementsContainer = document.getElementById("achievements")
 var goBackButton = document.getElementById("goBackButton")
+var viewLeaderboardButton = document.getElementById("viewLeaderboardButton")
+var returnButton = document.getElementById("returnButton")
+var highestNewVisitedPages = document.getElementById("highestNewVisitedPages")
+var highestNewWidgets = document.getElementById("highestNewWidgets")
+var highestCoverage = document.getElementById("highestCoverage")
+var printLeaderboard = document.getElementById("printLeaderboard")
+var importLeaderboard = document.getElementById("importLeaderboard")
 
 var url = "";
 var username = ""
@@ -58,6 +66,48 @@ function highlightDefaultAvatar(selected, second, third, color) {
   selected.style = `border:3px; border-style:solid; border-color:#` + color + `; padding: 1em;`
   second.style = "border:0; border-style:solid;"
   third.style = "border:0; border-style:solid;"
+}
+
+function drawTable(container, mode, data) {
+  var copy = data
+  if (mode === "VP") {
+    copy.sort((a, b) => b.highestNewVisitedPages - a.highestNewVisitedPages)
+  } else if (mode === "W") {
+    copy.sort((a, b) => b.highestNewWidgets - a.highestNewWidgets)
+  } else if (mode === "C") {
+    copy.sort((a, b) => b.highestCoverage - a.highestCoverage)
+  }
+  if (container.childNodes.length === 3) {
+    var tableVP = document.createElement("table")
+    var tableVPHead = document.createElement("thead")
+    var cell1 = document.createElement("th")
+    var cell2 = document.createElement("th")
+    tableVP.appendChild(tableVPHead)
+    tableVPHead.appendChild(cell1)
+    tableVPHead.appendChild(cell2)
+    cell1.appendChild(document.createTextNode("Username"))
+    cell2.appendChild(document.createTextNode("Score"))
+    for (var i = 0; i < copy.length; i++) {
+      var row = tableVP.insertRow()
+      var cell3 = row.insertCell()
+      var cell4 = row.insertCell()
+      cell3.appendChild(document.createTextNode(copy[i].username))
+      var text = mode === "VP" ? copy[i].highestNewVisitedPages : mode === "W" ? copy[i].highestNewWidgets : copy[i].highestCoverage
+      cell4.appendChild(document.createTextNode(text))
+    }
+    container.appendChild(tableVP)
+  }
+}
+
+function drawLeaderboards() {
+
+  chrome.storage.sync.get(["registeredUsers"], function (result) {
+    var registeredUsers = JSON.parse(result.registeredUsers)
+    drawTable(highestNewVisitedPages, "VP", registeredUsers)
+    drawTable(highestNewWidgets, "W", registeredUsers)
+    drawTable(highestCoverage, "C", registeredUsers)
+
+  })
 }
 
 
@@ -127,28 +177,45 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
   })
 
   confirmProfileButton.addEventListener("click", function () {
-    if (username === "" || selectedAvatar === "") {
-      alert("Error: choose a username and an avatar")
-    } else {
-      var profileInfo = {
-        username: username,
-        selectedAvatar: selectedAvatar,
-        availableAvatars: [{ name: "Green Avatar", url: "../img/default_green.png" }, { name: "Red Avatar", url: "../img/default_red.png" }, { name: "Blue Avatar", url: "../img/default_blue.png" }],
-        achievements: []
+    chrome.storage.sync.get(["registeredUsers"], function (result) {
+      function filterUsers(event) {
+        return event.username === username
       }
-      var blob = new Blob([JSON.stringify(profileInfo)], {
-        type: "text/plain;charset=UTF-8",
-      });
-      var url = window.URL.createObjectURL(blob);
-      var obj = {
-        url: url,
-        filename: "gamification-extension-profile-" + username + ".txt",
-      };
-      chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) })
-      chrome.runtime.sendMessage({ obj: obj, mess: "download" });
-      title.textContent = "Main Page - Welcome " + username + "!"
-      render("home")
-    }
+      var registeredUsers = result.registeredUsers === undefined ? [] : JSON.parse(result.registeredUsers)
+      var userObj = {
+        username: username,
+        highestNewVisitedPages: 0,
+        highestNewWidgets: 0,
+        highestCoverage: 0
+      }
+      var filteredUsers = registeredUsers.filter(filterUsers)
+      if (filteredUsers.length > 0) {
+        alert("Error: this username is already taken")
+      } else if (username === "" || selectedAvatar === "") {
+        alert("Error: choose a username and an avatar")
+      } else {
+        registeredUsers.push(userObj)
+        var profileInfo = {
+          username: username,
+          selectedAvatar: selectedAvatar,
+          availableAvatars: [{ name: "Green Avatar", url: "../img/default_green.png" }, { name: "Red Avatar", url: "../img/default_red.png" }, { name: "Blue Avatar", url: "../img/default_blue.png" }],
+          achievements: []
+        }
+        var blob = new Blob([JSON.stringify(profileInfo)], {
+          type: "text/plain;charset=UTF-8",
+        });
+        var url = window.URL.createObjectURL(blob);
+        var obj = {
+          url: url,
+          filename: "gamification-extension-profile-" + username + ".txt",
+        };
+        chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo), registeredUsers: JSON.stringify(registeredUsers) })
+        chrome.runtime.sendMessage({ obj: obj, mess: "download" });
+        title.textContent = "Main Page - Welcome " + username + "!"
+        render("home")
+      }
+    })
+
 
   })
 
@@ -255,7 +322,7 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
             var div = document.createElement("div")
             div.className = "file"
             var p = document.createElement("h3")
-            p.style = "width: fit-content"
+            p.style = "text-align: center"
             p.textContent = a
             div.appendChild(p)
             achievementsContainer.appendChild(div)
@@ -270,6 +337,46 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
   goBackButton.addEventListener("click", function () {
     firstWrapper.style.display = "flex"
     thirdWrapper.style.display = "none"
+  })
+
+  viewLeaderboardButton.addEventListener("click", function () {
+    firstWrapper.style.display = "none"
+    fourthWrapper.style.display = "flex"
+    drawLeaderboards()
+  })
+
+  returnButton.addEventListener("click", function () {
+    firstWrapper.style.display = "flex"
+    fourthWrapper.style.display = "none"
+  })
+
+  printLeaderboard.addEventListener("click", function () {
+    chrome.storage.sync.get(["registeredUsers"], function (result) {
+      var blob = new Blob([result.registeredUsers], {
+        type: "text/plain;charset=UTF-8",
+      });
+      var url = window.URL.createObjectURL(blob);
+      var obj = {
+        url: url,
+        filename: "gamification-extension-leaderboard.txt",
+      };
+      chrome.runtime.sendMessage({ obj: obj, mess: "download" });
+    })
+  })
+
+  importLeaderboard.addEventListener("click", function () {
+    var input = importLeaderboard.parentElement.getElementsByTagName("input");
+    input[0].addEventListener("change", function () {
+      var fr = new FileReader();
+
+      fr.onload = function () {
+        chrome.storage.sync.set({ registeredUsers: fr.result }, function () {
+          drawLeaderboards()
+        });
+      };
+      fr.readAsText(this.files[0]);
+    });
+    $($(this).parent().find("input")).click();
   })
 })
 
