@@ -28,17 +28,19 @@ function downloadFile() {
     chrome.storage.sync.get(
         ["pastPages", "visitedPages", "pageActions"],
         function (result) {
-            var pageActions = result.pageActions;
-            var pageActionsObj = JSON.parse(pageActions);
-            for (var i = 0; i < pageActionsObj.length; i++) {
-                var filteredLinkIds = pageActionsObj[i].idsOfLinkObjects.filter(onlyUnique);
-                pageActionsObj[i].idsOfLinkObjects = filteredLinkIds;
-                var filteredInputIds = pageActionsObj[i].idsOfInputObjects.filter(onlyUnique);
-                pageActionsObj[i].idsOfInputObjects = filteredInputIds;
-                var filteredButtonIds = pageActionsObj[i].idsOfButtonObjects.filter(onlyUnique);
-                pageActionsObj[i].idsOfButtonObjects = filteredButtonIds;
+            var pageActions = JSON.parse(result.pageActions);
+            for (var i = 0; i < pageActions.length; i++) {
+                var pages = pageActions[i].pages
+                for (var j = 0; j < pages.length; j++) {
+                    var filteredLinkIds = pages[i].idsOfLinkObjects.filter(onlyUnique);
+                    pages[i].idsOfLinkObjects = filteredLinkIds;
+                    var filteredInputIds = pages[i].idsOfInputObjects.filter(onlyUnique);
+                    pages[i].idsOfInputObjects = filteredInputIds;
+                    var filteredButtonIds = pages[i].idsOfButtonObjects.filter(onlyUnique);
+                    pages[i].idsOfButtonObjects = filteredButtonIds;
+                }
             }
-            var blob = new Blob([JSON.stringify(pageActionsObj)], {
+            var blob = new Blob([JSON.stringify(pageActions)], {
                 type: "text/plain;charset=UTF-8",
             });
             var url = window.URL.createObjectURL(blob);
@@ -86,40 +88,40 @@ function drawBorderOnAll() {
 }
 
 function drawBorderOnInteracted() {
-    chrome.storage.sync.get(["pageActions", "currentURL"], function (result) {
+
+    chrome.storage.sync.get(["pageActions", "currentURL", "profileInfo"], function (result) {
+        var profileInfo = JSON.parse(result.profileInfo)
+        function filterUser(event) {
+            return event.username === profileInfo.username
+        }
+
+        function filterURL(event) {
+            return event.url === result.currentURL
+        }
         var retrievedObj = JSON.parse(result.pageActions);
+        console.log(retrievedObj)
+        var pageActions = retrievedObj.filter(filterUser)[0]
+        var pageActionsUser = pageActions.pages.filter(filterURL)[0]
+        console.log(pageActionsUser)
         var links = document.body.getElementsByTagName("a");
         var inputs = document.body.getElementsByTagName("input");
         var buttons = document.body.getElementsByTagName("button");
-
-        for (var i = 0; i < retrievedObj.length; i++) {
-            if (retrievedObj[i].url === result.currentURL) {
-                var idsOfLinkObjects = retrievedObj[i].idsOfLinkObjects;
-                for (var j = 0; j < links.length; j++) {
-                    if (idsOfLinkObjects.indexOf(j - 1) >= 0) {
-                        links[j - 1].style =
-                            "border:3px; border-style:solid; border-color:#FF0000; padding: 1em;";
-                    }
-                }
-
-                var idsOfInputObjects = retrievedObj[i].idsOfInputObjects;
-                for (var j = 0; j < inputs.length; j++) {
-                    if (idsOfInputObjects.indexOf(j - 1) >= 0) {
-                        inputs[j - 1].style =
-                            "border:3px; border-style:solid; border-color:#00FF00; padding: 1em;";
-                    }
-                }
-
-                var idsOfButtonObjects = retrievedObj[i].idsOfButtonObjects;
-                for (var j = 0; j < idsOfButtonObjects.length; j++) {
-                    if (
-                        idsOfButtonObjects.indexOf(j) >= 0 &&
-                        !isButtonOfExtension(buttons[j])
-                    ) {
-                        buttons[j].style =
-                            "border:3px; border-style:solid; border-color:#0000FF; padding: 1em;";
-                    }
-                }
+        var idsOfLinkObjects = pageActionsUser.idsOfLinkObjects
+        for (var j = 0; j < links.length; j++) {
+            if (idsOfLinkObjects.indexOf(j - 1) >= 0) {
+                links[j - 1].style = "border:3px; border-style:solid; border-color:#FF0000; padding: 1em;";
+            }
+        }
+        var idsOfInputObjects = pageActionsUser.idsOfInputObjects;
+        for (var j = 0; j < inputs.length; j++) {
+            if (idsOfInputObjects.indexOf(j - 1) >= 0) {
+                inputs[j - 1].style = "border:3px; border-style:solid; border-color:#00FF00; padding: 1em;";
+            }
+        }
+        var idsOfButtonObjects = pageActionsUser.idsOfButtonObjects;
+        for (var j = 0; j < idsOfButtonObjects.length; j++) {
+            if (idsOfButtonObjects.indexOf(j) >= 0 && !isButtonOfExtension(buttons[j])) {
+                buttons[j].style = "border:3px; border-style:solid; border-color:#0000FF; padding: 1em;";
             }
         }
     });

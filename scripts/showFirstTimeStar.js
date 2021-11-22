@@ -1,13 +1,18 @@
-chrome.storage.sync.get(["pageActions", "currentURL"], function (result) {
-    var pageActions = JSON.parse(result.pageActions);
-    var currentURL = result.currentURL;
-    var oldPage = false;
-    for (var i = 0; i < pageActions.length && !oldPage; i++) {
-        if (pageActions[i].url === currentURL) {
-            oldPage = true;
-        }
+chrome.storage.sync.get(["pageActions", "currentURL", "profileInfo"], function (result) {
+    var profileInfo = JSON.parse(result.profileInfo)
+    function filterURL(event) {
+        return event.url === result.currentURL
     }
-    if (!oldPage) {
+
+    function filterUser(event) {
+        return event.username === profileInfo.username
+    }
+    var pageActions = JSON.parse(result.pageActions);
+    var pageActionsUser = pageActions.filter(filterUser)[0]
+
+    var pagesUser = pageActionsUser.pages.filter(filterURL)
+
+    if (pagesUser.length === 0) {
         var found = document.getElementById("gamificationExtensionNewPageStar");
         if (found === null) {
             var div = document.createElement("img");

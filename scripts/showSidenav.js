@@ -40,7 +40,6 @@ if (found === null) {
         if (topnav != null) {
             document.body.removeChild(topnav);
         }
-        //l'url di partenza viene cancellato per evitare di mostrare di nuovo tutte le aggiunte alla pagina
 
         //mostrare modal di riepilogo
         chrome.storage.sync.get(
@@ -96,10 +95,7 @@ if (found === null) {
                 document.body.appendChild(modalContainer);
             }
         );
-        chrome.storage.sync.set({
-            startingURL: "",
-            pageStats: JSON.stringify([]),
-        });
+        chrome.storage.sync.set({ startingURL: "", pageStats: JSON.stringify([]) });
     };
     var toggleClickedElementsButton = document.createElement("button");
     div.appendChild(toggleClickedElementsButton);
@@ -126,17 +122,26 @@ if (found === null) {
         drawBorderOnAll()
         chrome.storage.sync.set({ overlayMode: "all" })
     };
-    chrome.storage.sync.get(["pageActions", "pageStats", "currentURL", "visitedPages", "startingURL", "newPages",], function (result) {
-        var pageActions = JSON.parse(result.pageActions);
-        var pageStats = JSON.parse(result.pageStats);
-        var visitedPages = result.visitedPages;
-        var startingURL = result.startingURL;
-        var newPages = result.newPages;
+    chrome.storage.sync.get(["pageActions", "pageStats", "currentURL", "visitedPages", "startingURL", "newPages", "profileInfo"], function (result) {
+        var profileInfo = JSON.parse(result.profileInfo)
+        function filterUser(event) {
+            return event.username === profileInfo.username
+        }
+
         function filterURL(event) {
             return event.url === result.currentURL;
         }
+
+        var pageActions = JSON.parse(result.pageActions);
+        var userActions = pageActions.filter(filterUser)[0]
+        var pageStats = JSON.parse(result.pageStats);
+        var userPageActions = userActions.pages
+        var visitedPages = result.visitedPages;
+        var startingURL = result.startingURL;
+        var newPages = result.newPages;
+
         var stats = pageStats.filter(filterURL)[0];
-        var actions = pageActions.filter(filterURL)[0];
+        var actions = userActions.pages.filter(filterURL)[0];
         var noStats = stats === undefined;
         var noActions = actions === undefined;
         var noNewPages = newPages === undefined;
@@ -225,11 +230,11 @@ if (found === null) {
         tablePages.id = "gamificationExtensionPagesTable"
         var totalPages = [];
         var currentPresent = false;
-        for (var i = 0; i < pageActions.length; i++) {
-            if (pageActions[i].url.indexOf(startingURL) >= 0 && startingURL != "") {
-                totalPages.push(pageActions[i].url);
+        for (var i = 0; i < userPageActions.length; i++) {
+            if (userPageActions[i].url.indexOf(startingURL) >= 0 && startingURL != "") {
+                totalPages.push(userPageActions[i].url);
             }
-            if (pageActions[i].url === result.currentURL) {
+            if (userPageActions[i].url === result.currentURL) {
                 currentPresent = true;
             }
         }
@@ -272,7 +277,6 @@ if (found === null) {
         hRow.appendChild(t2);
         hRow.appendChild(t3);
         hRow.appendChild(t4);
-
         div.appendChild(tablePages);
 
         var totalLinks = document.getElementsByTagName("a").length;
