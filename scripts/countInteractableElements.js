@@ -40,8 +40,10 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
         totalInputObjects: totalInputObjects,
         idsOfButtonObjects: [],
         totalButtonObjects: totalButtonObjects,
+        highestWidgets: 0,
+        coverage: 0,
     };
-    var wrap = { username: "", pages: [] }
+    var wrap = { username: "", pages: [], highestPages: 0, highestCoverage: 0, highestWidgets: 0, }
     var pages = []
     var retrievedObj = JSON.parse(result.pageActions);
     if (retrievedObj.filter(filterUser).length === 0) {
@@ -87,31 +89,32 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                         var newLink = false;
                         var userObj = retrievedObj.filter(filterUser)[0]
                         var userObjPageActions = userObj.pages.filter(filterURL)[0]
-                        var ids = userObjPageActions.idsOfLinkObjects
-                        var pos = ids.indexOf(j - 1);
-                        if (pos < 0) {
-                            ids.push(j - 1);
-                            userObjPageActions.idsOfLinkObjects = ids;
+                        var linkIds = userObjPageActions.idsOfLinkObjects
+                        var linkPos = linkIds.indexOf(j - 1);
+                        if (linkPos < 0) {
+                            linkIds.push(j - 1);
+                            userObjPageActions.idsOfLinkObjects = linkIds;
                             newLink = true;
                         }
                         var pageActions = JSON.stringify(retrievedObj);
 
                         var pageStatsObj = JSON.parse(result.pageStats);
                         var psObj = pageStatsObj.filter(filterURL)[0]
-                        var ids = psObj.interactedLinks
-                        var pos = ids.indexOf(j - 1);
-                        if (pos < 0) {
-                            ids.push(j - 1);
-                            psObj.interactedLinks = ids;
+                        var intLinkIds = psObj.interactedLinks
+                        var intLinkPos = intLinkIds.indexOf(j - 1);
+                        if (intLinkPos < 0) {
+                            intLinkIds.push(j - 1);
+                            psObj.interactedLinks = intLinkIds;
                         }
                         if (newLink) {
-                            var ids = psObj.newLinks;
-                            var pos = ids.indexOf(j - 1);
-                            if (pos < 0) {
-                                ids.push(j - 1);
-                                psObj.newLinks = ids;
+                            var newlinkIds = psObj.newLinks;
+                            var newLinkPos = newlinkIds.indexOf(j - 1);
+                            if (newLinkPos < 0) {
+                                newlinkIds.push(j - 1);
+                                psObj.newLinks = newlinkIds;
                             }
                         }
+                        //TODO: calcolare e aggiornare coverage
                         chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
                     }
                     );
@@ -133,31 +136,29 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                         var newInput = false;
                         var userObj = retrievedObj.filter(filterUser)[0]
                         var userObjPageActions = userObj.pages.filter(filterURL)[0]
-                        var ids = userObjPageActions.idsOfInputObjects;
-                        var pos = ids.indexOf(j - 1);
-                        if (pos < 0) {
-                            ids.push(j - 1);
-                            userObjPageActions.idsOfInputObjects = ids;
+                        var inputIds = userObjPageActions.idsOfInputObjects;
+                        var inputPos = inputIds.indexOf(j - 1);
+                        if (inputPos < 0) {
+                            inputIds.push(j - 1);
+                            userObjPageActions.idsOfInputObjects = inputIds;
                             newInput = true;
                         }
-                        var pageActions = JSON.stringify(retrievedObj);
                         var pageStatsObj = JSON.parse(result.pageStats);
                         var psObj = pageStatsObj.filter(filterURL)[0]
-                        var ids = psObj.interactedInputs;
-                        var pos = ids.indexOf(j - 1);
-                        if (pos < 0) {
-                            ids.push(j - 1);
-                            psObj.interactedInputs = ids;
+                        var intInputIds = psObj.interactedInputs;
+                        var intInputPos = intInputIds.indexOf(j - 1);
+                        if (intInputPos < 0) {
+                            intInputIds.push(j - 1);
+                            psObj.interactedInputs = intInputIds;
                         }
                         if (newInput === true) {
-                            var ids = psObj.newInputs;
-                            var pos = ids.indexOf(j - 1);
-                            if (pos < 0) {
-                                ids.push(j - 1);
-                                psObj.newInputs = ids;
+                            var newInputIds = psObj.newInputs;
+                            var newInputPos = newInputIds.indexOf(j - 1);
+                            if (newInputPos < 0) {
+                                newInputIds.push(j - 1);
+                                psObj.newInputs = newInputIds;
                             }
                         }
-                        chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
                         var innerDiv = document.getElementById("gamificationExtensionTopnavInner");
                         var totalLinkObjects = userObjPageActions.totalLinkObjects;
                         var totalInputObjects = userObjPageActions.totalInputObjects;
@@ -174,18 +175,21 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                         if (overlayMode === "interacted") {
                             drawBorderOnInteracted()
                         }
+                        userObjPageActions.coverage = progress
                         var sidenavProgress = document.getElementById("gamificationExtensionInputsProgress")
                         progress = interactedInputs * 100 / totalInputObjects
                         sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
                             progress +
                             `%; white-space:nowrap`;
-                        sidenavProgress.textContent = "Buttons Progress: " + progress + "%"
+                        sidenavProgress.textContent = "Forms Progress: " + progress + "%"
                         var table = document.getElementById("gamificationExtensionPageStatsTable")
                         var inputsRow = table.rows[2]
                         var pageStat = pageStatsObj.filter(filterURL)[0]
                         inputsRow.cells[1].innerHTML = pageStat.interactedInputs.length
                         inputsRow.cells[2].innerHTML = pageStat.interactedInputs.length
                         inputsRow.cells[3].innerHTML = userObjPageActions.idsOfInputObjects.length
+                        var pageActions = JSON.stringify(retrievedObj);
+                        chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
                     }
                     );
                 }
@@ -206,29 +210,28 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                             var newButton = false;
                             var userObj = retrievedObj.filter(filterUser)[0]
                             var userObjPageActions = userObj.pages.filter(filterURL)[0]
-                            var ids = userObjPageActions.idsOfButtonObjects;
-                            var pos = ids.indexOf(j - 1);
-                            if (pos < 0) {
-                                ids.push(j - 1);
-                                userObjPageActions.idsOfButtonObjects = ids;
+                            var buttonIds = userObjPageActions.idsOfButtonObjects;
+                            var buttonPos = buttonIds.indexOf(j - 1);
+                            if (buttonPos < 0) {
+                                buttonIds.push(j - 1);
+                                userObjPageActions.idsOfButtonObjects = buttonIds;
                                 newButton = true;
                             }
-                            var pageActions = JSON.stringify(retrievedObj);
 
                             var pageStatsObj = JSON.parse(result.pageStats);
                             var psObj = pageStatsObj.filter(filterURL)[0]
-                            var ids = psObj.interactedButtons;
-                            var pos = ids.indexOf(j - 1);
-                            if (pos < 0) {
-                                ids.push(j - 1);
-                                psObj.interactedButtons = ids;
+                            var intButtonIds = psObj.interactedButtons;
+                            var intButtonPos = intButtonIds.indexOf(j - 1);
+                            if (intButtonPos < 0) {
+                                intButtonIds.push(j - 1);
+                                psObj.interactedButtons = intButtonIds;
                             }
                             if (newButton) {
-                                var ids = psObj.newButtons;
-                                var pos = ids.indexOf(j - 1);
-                                if (pos < 0) {
-                                    ids.push(j - 1);
-                                    psObj.newButtons = ids;
+                                var newButtonIds = psObj.newButtons;
+                                var newButtonPos = newButtonIds.indexOf(j - 1);
+                                if (newButtonPos < 0) {
+                                    newButtonIds.push(j - 1);
+                                    psObj.newButtons = newButtonIds;
                                 }
                             }
                             var innerDiv = document.getElementById("gamificationExtensionTopnavInner");
@@ -244,6 +247,7 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                 progress +
                                 `%; white-space:nowrap`;
                             innerDiv.textContent = "Progress: " + progress + "%";
+                            userObjPageActions.coverage = progress
                             if (overlayMode === "interacted") {
                                 drawBorderOnInteracted()
                             }
@@ -259,6 +263,7 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                             buttonsRow.cells[1].innerHTML = pageStat.interactedButtons.length
                             buttonsRow.cells[2].innerHTML = pageStat.newButtons.length
                             buttonsRow.cells[3].innerHTML = userObjPageActions.idsOfButtonObjects.length
+                            var pageActions = JSON.stringify(retrievedObj);
                             chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
                         }
                         );

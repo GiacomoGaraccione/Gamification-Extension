@@ -10,7 +10,7 @@ chrome.storage.sync.get(["pageActions", "currentURL", "profileInfo"], function (
     var pageActions = JSON.parse(result.pageActions);
     var pageActionsUser = pageActions.filter(filterUser)[0]
 
-    var pagesUser = pageActionsUser.pages.filter(filterURL)
+    var pagesUser = pageActionsUser ? pageActionsUser.pages.filter(filterURL) : []
 
     if (pagesUser.length === 0) {
         var found = document.getElementById("gamificationExtensionNewPageStar");

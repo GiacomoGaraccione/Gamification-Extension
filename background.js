@@ -24,9 +24,13 @@ chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
       currentWindow: true,
     });
     if (tab.active === true && tab.url.indexOf(startingURL) >= 0 && startingURL !== "") {
-      chrome.storage.sync.get(["visitedPages", "newPages", "pageActions"], function (result) {
+      chrome.storage.sync.get(["visitedPages", "newPages", "pageActions", "profileInfo"], function (result) {
         var visitedPages = result.visitedPages;
         var newPages = result.newPages;
+        var profileInfo = JSON.parse(result.profileInfo)
+        function filterUser(event) {
+          return event.username === profileInfo.username
+        }
         chrome.storage.sync.set({ currentURL: tab.url }, function () {
           if (!visitedPages.includes(tab.url)) {
             visitedPages.push(tab.url);
@@ -36,9 +40,10 @@ chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
             return event.url === tab.url;
           }
           var pageActions = JSON.parse(result.pageActions);
-          var pageActionsFiltered = pageActions.filter(filterURL);
+          var pageActionsFiltered = pageActions.filter(filterUser)[0];
+          var pagesFiltered = pageActionsFiltered ? pageActionsFiltered.pages.filter(filterURL) : []
 
-          if (!newPages.includes(tab.url) && pageActionsFiltered.length === 0) {
+          if (!newPages.includes(tab.url) && pagesFiltered.length === 0) {
             newPages.push(tab.url);
             chrome.storage.sync.set({ newPages: newPages });
           }
@@ -50,8 +55,12 @@ chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
 });
 
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-  chrome.storage.sync.get(["pastPages", "startingURL"], async function (result) {
+  chrome.storage.sync.get(["pastPages", "startingURL", "profileInfo"], async function (result) {
     var startingURL = result.startingURL;
+    var profileInfo = JSON.parse(result.profileInfo)
+    function filterUser(event) {
+      return event.username === profileInfo.username
+    }
     if (changeInfo.status === "complete") {
       var reachedURL = tab.url;
       if (reachedURL.indexOf(startingURL) >= 0 && startingURL !== "") {
@@ -68,8 +77,9 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
               return event.url === tab.url;
             }
             var pageActions = JSON.parse(result.pageActions);
-            var pageActionsFiltered = pageActions.filter(filterURL);
-            if (!newPages.includes(tab.url) && pageActionsFiltered.length === 0) {
+            var pageActionsFiltered = pageActions.filter(filterUser)[0];
+            var pagesFiltered = pageActionsFiltered ? pageActionsFiltered.pages.filter(filterURL) : []
+            if (!newPages.includes(tab.url) && pagesFiltered.length === 0) {
               newPages.push(tab.url);
               chrome.storage.sync.set({ newPages: newPages });
             }

@@ -99,10 +99,8 @@ function drawBorderOnInteracted() {
             return event.url === result.currentURL
         }
         var retrievedObj = JSON.parse(result.pageActions);
-        console.log(retrievedObj)
         var pageActions = retrievedObj.filter(filterUser)[0]
         var pageActionsUser = pageActions.pages.filter(filterURL)[0]
-        console.log(pageActionsUser)
         var links = document.body.getElementsByTagName("a");
         var inputs = document.body.getElementsByTagName("input");
         var buttons = document.body.getElementsByTagName("button");

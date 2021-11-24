@@ -1,4 +1,4 @@
-var div = document.createElement("div");
+var sideDiv = document.createElement("div");
 var button = document.createElement("button");
 var found = document.getElementById("gamificationExtensionSidenav");
 if (found === null) {
@@ -9,18 +9,18 @@ if (found === null) {
     button.onclick = function () {
         document.getElementById("gamificationExtensionSidenav").style.width = "250px";
     };
-    document.body.appendChild(div);
-    div.id = "gamificationExtensionSidenav";
-    div.style = "height: 100%; width: 0; position: fixed; z-index: 1; top: 0; right: 0; background-color: rgb(211 245 230); overflow-x: hidden; padding-top: 60px; transition: 0.5s;";
+    document.body.appendChild(sideDiv);
+    sideDiv.id = "gamificationExtensionSidenav";
+    sideDiv.style = "height: 100%; width: 0; position: fixed; z-index: 1; top: 0; right: 0; background-color: rgb(211 245 230); overflow-x: hidden; padding-top: 60px; transition: 0.5s;";
     var closeButton = document.createElement("button");
-    div.appendChild(closeButton);
+    sideDiv.appendChild(closeButton);
     closeButton.id = "gamificationExtensionSidenavCloseButton";
     closeButton.textContent = "Close Menu";
     closeButton.onclick = function () {
         document.getElementById("gamificationExtensionSidenav").style.width = "0";
     };
     var endButton = document.createElement("button");
-    div.appendChild(endButton);
+    sideDiv.appendChild(endButton);
     endButton.id = "gamificationExtensionEndSessionButton";
     endButton.textContent = "End Session";
     endButton.style = "bottom: 10%; right: 50%;";
@@ -28,8 +28,10 @@ if (found === null) {
         downloadFile();
         //chiusura della sidenav
         document.getElementById("gamificationExtensionSidenav").style.width = "0";
-        button.parentElement.removeChild(button);
-        div.parentElement.removeChild(div);
+        document.getElementById("gamificationExtensionSidenav").remove()
+        document.getElementById("gamificationExtensionSidenavButton").remove()
+        //button.parentElement.removeChild(button);
+        //sideDiv.parentElement.removeChild(sideDiv);
         //rimozione della stella se la pagina è una vista per la prima volta
         var star = document.getElementById("gamificationExtensionNewPageStar");
         if (star != null) {
@@ -43,11 +45,43 @@ if (found === null) {
 
         //mostrare modal di riepilogo
         chrome.storage.sync.get(
-            ["visitedPages", "newPages", "pageStats"],
+            ["visitedPages", "newPages", "pageStats", "pageActions", "currentURL", "profileInfo"],
             function (result) {
+                var profileInfo = JSON.parse(result.profileInfo)
+                function filterUser(event) {
+                    return event.username === profileInfo.username
+                }
                 var visitedPages = result.visitedPages;
                 var newPages = result.newPages;
                 var modalContainer = document.createElement("div");
+                var pageStats = JSON.parse(result.pageStats);
+                var pageActions = JSON.parse(result.pageActions)
+                var userPages = pageActions.filter(filterUser)[0]
+                for (var page of userPages.pages) {
+                    function filterPageURL(event) {
+                        return event.url === page.url
+                    }
+                    var stats = pageStats.filter(filterPageURL)[0]
+                    var newWidgets = stats ? stats.newButtons.length + stats.newLinks.length + stats.newInputs.length : 0
+                    var oldRecord = page.highestWidgets
+                    if (newWidgets > oldRecord) {
+                        page.highestWidgets = newWidgets
+                    }
+                }
+                if (userPages.highestPages < newPages.length) {
+                    userPages.highestPages = newPages.length
+                }
+                var highestCoverage = Math.max.apply(Math, userPages.pages.map((u) => { return u.coverage }))
+                var highestWidgets = Math.max.apply(Math, userPages.pages.map((u => { return u.highestWidgets })))
+                if (highestCoverage > userPages.highestCoverage) {
+                    userPages.highestCoverage = highestCoverage
+                }
+                if (highestWidgets > userPages.highestWidgets) {
+                    userPages.highestWidgets = highestWidgets
+                }
+                //TODO: aggiornare profilo e scaricare file di profilo
+                chrome.storage.sync.set({ pageActions: JSON.stringify(pageActions) })
+
                 modalContainer.id = "gamificationExtensionModalContainer";
                 modalContainer.style =
                     " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
@@ -64,7 +98,7 @@ if (found === null) {
                 innerModal.appendChild(modalSpan);
                 var modalContent = document.createElement("p");
                 modalContent.id = "gamificationExtensionModalContent";
-                var pageStats = JSON.parse(result.pageStats);
+
                 var totalLinks = 0;
                 var totalInputs = 0;
                 var totalButtons = 0;
@@ -93,12 +127,14 @@ if (found === null) {
                     }
                 };
                 document.body.appendChild(modalContainer);
+
+
             }
         );
         chrome.storage.sync.set({ startingURL: "", pageStats: JSON.stringify([]) });
     };
     var toggleClickedElementsButton = document.createElement("button");
-    div.appendChild(toggleClickedElementsButton);
+    sideDiv.appendChild(toggleClickedElementsButton);
     toggleClickedElementsButton.id = "gamificationExtensionToggleClickedElementsButton";
     toggleClickedElementsButton.textContent = "Show Interacted Elements";
     toggleClickedElementsButton.onclick = function () {
@@ -107,7 +143,7 @@ if (found === null) {
         chrome.storage.sync.set({ overlayMode: "interacted" })
     };
     var removeOverlaysButton = document.createElement("button");
-    div.appendChild(removeOverlaysButton);
+    sideDiv.appendChild(removeOverlaysButton);
     removeOverlaysButton.id = "gamificationExtensionRemoveOverlaysButton";
     removeOverlaysButton.textContent = "Remove Overlays";
     removeOverlaysButton.onclick = function () {
@@ -115,7 +151,7 @@ if (found === null) {
         chrome.storage.sync.set({ overlayMode: "none" })
     };
     var toggleAllElementsButton = document.createElement("button");
-    div.appendChild(toggleAllElementsButton);
+    sideDiv.appendChild(toggleAllElementsButton);
     toggleAllElementsButton.id = "gamificationExtensionToggleAllElementsButton";
     toggleAllElementsButton.textContent = "Show All Elements";
     toggleAllElementsButton.onclick = function () {
@@ -135,13 +171,13 @@ if (found === null) {
         var pageActions = JSON.parse(result.pageActions);
         var userActions = pageActions.filter(filterUser)[0]
         var pageStats = JSON.parse(result.pageStats);
-        var userPageActions = userActions.pages
+        var userPageActions = userActions ? userActions.pages : []
         var visitedPages = result.visitedPages;
         var startingURL = result.startingURL;
         var newPages = result.newPages;
 
         var stats = pageStats.filter(filterURL)[0];
-        var actions = userActions.pages.filter(filterURL)[0];
+        var actions = userActions ? userActions.pages.filter(filterURL)[0] : undefined;
         var noStats = stats === undefined;
         var noActions = actions === undefined;
         var noNewPages = newPages === undefined;
@@ -224,7 +260,7 @@ if (found === null) {
         headRow.appendChild(th3);
         headRow.appendChild(th4);
 
-        div.appendChild(table);
+        sideDiv.appendChild(table);
 
         var tablePages = document.createElement("table");
         tablePages.id = "gamificationExtensionPagesTable"
@@ -277,7 +313,7 @@ if (found === null) {
         hRow.appendChild(t2);
         hRow.appendChild(t3);
         hRow.appendChild(t4);
-        div.appendChild(tablePages);
+        sideDiv.appendChild(tablePages);
 
         var totalLinks = document.getElementsByTagName("a").length;
         var totalInputs = document.getElementsByTagName("input").length;
@@ -297,7 +333,7 @@ if (found === null) {
         var buttonsPerc = (buttonObjects * 100) / buttonsCount;
 
         var linksProgressTop = document.createElement("div");
-        div.appendChild(linksProgressTop);
+        sideDiv.appendChild(linksProgressTop);
         linksProgressTop.style =
             "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
         var linksProgress = document.createElement("div");
@@ -309,7 +345,7 @@ if (found === null) {
         linksProgressTop.appendChild(linksProgress);
         linksProgress.textContent = "Links Progress: " + linksPerc + "%";
         var inputsProgressTop = document.createElement("div");
-        div.appendChild(inputsProgressTop);
+        sideDiv.appendChild(inputsProgressTop);
         inputsProgressTop.style =
             "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
         var inputsProgress = document.createElement("div");
@@ -321,7 +357,7 @@ if (found === null) {
         inputsProgressTop.appendChild(inputsProgress);
         inputsProgress.textContent = "Forms Progress: " + inputsPerc + "%";
         var buttonsProgressTop = document.createElement("div");
-        div.appendChild(buttonsProgressTop);
+        sideDiv.appendChild(buttonsProgressTop);
         buttonsProgressTop.style =
             "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
         var buttonsProgress = document.createElement("div");
