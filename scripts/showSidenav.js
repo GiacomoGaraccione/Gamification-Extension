@@ -1,4 +1,5 @@
 var sideDiv = document.createElement("div");
+sideDiv.style.overflowY = "scroll"
 var button = document.createElement("button");
 var found = document.getElementById("gamificationExtensionSidenav");
 if (found === null) {
@@ -7,11 +8,11 @@ if (found === null) {
     button.style = "position: absolute; top: 50%; right: 0; width: 100;";
     button.textContent = "Open Menu";
     button.onclick = function () {
-        document.getElementById("gamificationExtensionSidenav").style.width = "250px";
+        document.getElementById("gamificationExtensionSidenav").style.width = "50%";
     };
     document.body.appendChild(sideDiv);
     sideDiv.id = "gamificationExtensionSidenav";
-    sideDiv.style = "height: 100%; width: 0; position: fixed; z-index: 1; top: 0; right: 0; background-color: rgb(211 245 230); overflow-x: hidden; padding-top: 60px; transition: 0.5s;";
+    sideDiv.style = "height: 100%; width: 0; position: fixed; z-index: 1; top: 0; right: 0; background-color: rgb(211 245 230); overflow-x: hidden; padding-top: 10px; transition: 0.5s;";
     var closeButton = document.createElement("button");
     sideDiv.appendChild(closeButton);
     closeButton.id = "gamificationExtensionSidenavCloseButton";
@@ -79,7 +80,8 @@ if (found === null) {
                 if (highestWidgets > userPages.highestWidgets) {
                     userPages.highestWidgets = highestWidgets
                 }
-                //TODO: aggiornare profilo e scaricare file di profilo
+                //TODO: aggiornare profilo
+                downloadUserProfile()
                 chrome.storage.sync.set({ pageActions: JSON.stringify(pageActions) })
 
                 modalContainer.id = "gamificationExtensionModalContainer";
@@ -368,6 +370,26 @@ if (found === null) {
             buttonsPerc +
             `%; white-space:nowrap`;
         buttonsProgress.textContent = "Buttons Progress: " + buttonsPerc + "%";
+
+        var recordsTitle = document.createElement("h2")
+        recordsTitle.textContent = "Records"
+        sideDiv.appendChild(recordsTitle)
+        var coverageRecord = document.createElement("h4")
+        coverageRecord.style.textTransform = "Inherit"
+        coverageRecord.textContent = "Highest Page Coverage: " + userActions.highestCoverage
+        sideDiv.appendChild(coverageRecord)
+        var pagesRecord = document.createElement("h4")
+        pagesRecord.style.textTransform = "Inherit"
+        pagesRecord.textContent = "Highest Number of New Pages Found in a Session: " + userActions.highestPages
+        sideDiv.appendChild(pagesRecord)
+        var widgetsRecord = document.createElement("h4")
+        widgetsRecord.style.textTransform = "Inherit"
+        widgetsRecord.textContent = "Highest Number of New Widgets Found in a Session - Globally: " + userActions.highestWidgets
+        sideDiv.appendChild(widgetsRecord)
+        var pageWidgetsRecord = document.createElement("h4")
+        pageWidgetsRecord.style.textTransform = "Inherit"
+        pageWidgetsRecord.textContent = "Highest Number of New Widgets Found in a Session - This Page: " + actions.highestWidgets
+        sideDiv.appendChild(pageWidgetsRecord)
     }
     );
 }

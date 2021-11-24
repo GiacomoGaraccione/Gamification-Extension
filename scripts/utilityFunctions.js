@@ -25,32 +25,46 @@ function downloadFile() {
     function onlyUnique(value, index, self) {
         return self.indexOf(value) === index;
     }
-    chrome.storage.sync.get(
-        ["pastPages", "visitedPages", "pageActions"],
-        function (result) {
-            var pageActions = JSON.parse(result.pageActions);
-            for (var i = 0; i < pageActions.length; i++) {
-                var pages = pageActions[i].pages
-                for (var j = 0; j < pages.length; j++) {
-                    var filteredLinkIds = pages[i].idsOfLinkObjects.filter(onlyUnique);
-                    pages[i].idsOfLinkObjects = filteredLinkIds;
-                    var filteredInputIds = pages[i].idsOfInputObjects.filter(onlyUnique);
-                    pages[i].idsOfInputObjects = filteredInputIds;
-                    var filteredButtonIds = pages[i].idsOfButtonObjects.filter(onlyUnique);
-                    pages[i].idsOfButtonObjects = filteredButtonIds;
-                }
+    chrome.storage.sync.get(["pastPages", "visitedPages", "pageActions"], function (result) {
+        var pageActions = JSON.parse(result.pageActions);
+        for (var i = 0; i < pageActions.length; i++) {
+            var pages = pageActions[i].pages
+            for (var j = 0; j < pages.length; j++) {
+                var filteredLinkIds = pages[i].idsOfLinkObjects.filter(onlyUnique);
+                pages[i].idsOfLinkObjects = filteredLinkIds;
+                var filteredInputIds = pages[i].idsOfInputObjects.filter(onlyUnique);
+                pages[i].idsOfInputObjects = filteredInputIds;
+                var filteredButtonIds = pages[i].idsOfButtonObjects.filter(onlyUnique);
+                pages[i].idsOfButtonObjects = filteredButtonIds;
             }
-            var blob = new Blob([JSON.stringify(pageActions)], {
-                type: "text/plain;charset=UTF-8",
-            });
-            var url = window.URL.createObjectURL(blob);
-            var obj = {
-                url: url,
-                filename: "gamification-extension-session-records.txt",
-            };
-            chrome.runtime.sendMessage({ obj: obj, mess: "download" });
         }
+        var blob = new Blob([JSON.stringify(pageActions)], {
+            type: "text/plain;charset=UTF-8",
+        });
+        var url = window.URL.createObjectURL(blob);
+        var obj = {
+            url: url,
+            filename: "gamification-extension-session-records.txt",
+        };
+        chrome.runtime.sendMessage({ obj: obj, mess: "download" });
+    }
     );
+}
+
+function downloadUserProfile() {
+    chrome.storage.sync.get(["profileInfo"], function (result) {
+        var profileInfo = JSON.parse(result.profileInfo)
+        var blob = new Blob([result.profileInfo], {
+            type: "text/plain;charset=UTF-8",
+        })
+
+        var url = window.URL.createObjectURL(blob);
+        var obj = {
+            url: url,
+            filename: "gamification-extension-profile-" + profileInfo.username + ".txt",
+        };
+        chrome.runtime.sendMessage({ obj: obj, mess: "download" });
+    })
 }
 
 function isButtonOfExtension(button) {
