@@ -146,7 +146,6 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                         inputsRow.cells[3].innerHTML = userObjPageActions.idsOfInputObjects.length
                         var pageActions = JSON.stringify(retrievedObj);
                         pageCoverageAchievements(progress, widgetProgress)
-                        //widgetsCoverageAchievements(widgetProgress)
                         chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
                     }
                     );
@@ -222,7 +221,6 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                         inputsRow.cells[3].innerHTML = userObjPageActions.idsOfInputObjects.length
                         var pageActions = JSON.stringify(retrievedObj);
                         pageCoverageAchievements(progress, widgetProgress)
-                        //widgetsCoverageAchievements(widgetProgress)
                         chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
                     }
                     );
@@ -299,7 +297,6 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                             buttonsRow.cells[3].innerHTML = userObjPageActions.idsOfButtonObjects.length
                             var pageActions = JSON.stringify(retrievedObj);
                             pageCoverageAchievements(progress, widgetProgress)
-                            //widgetsCoverageAchievements(widgetProgress)
                             chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
                         }
                         );
