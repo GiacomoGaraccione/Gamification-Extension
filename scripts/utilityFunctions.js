@@ -2,6 +2,14 @@ function onlyUnique(value, index, self) {
     return self.indexOf(value) === index;
 }
 
+function filterHeartAvatar(event) {
+    return event.name === "Heart Avatar"
+}
+
+function filterStarAvatar(event) {
+    return event.name === "Star Avatar"
+}
+
 function removeBorders() {
     var linksToRemove = document.body.getElementsByTagName("a");
     for (var i = 0; i < linksToRemove.length; i++) {
@@ -137,4 +145,123 @@ function drawBorderOnInteracted() {
             }
         }
     });
+}
+
+function widgetsCoverageAchievements(progress) {
+    chrome.storage.sync.get(["profileInfo"], function (result) {
+        var profileInfo = JSON.parse(result.profileInfo)
+        console.log("wCA", profileInfo.achievements)
+        //profileInfo.achievements = [] //debug
+        if (progress >= 25) {
+            var text = "Obtained 25% coverage for a type of widgets!"
+            if (profileInfo.achievements.indexOf(text) === -1) {
+                profileInfo.achievements.push(text)
+                var obj = {
+                    title: "New Achievement!",
+                    message: text,
+                    path: "./img/achievement_bronze.png"
+                }
+                chrome.runtime.sendMessage({ obj: obj, mess: "notification" });
+            }
+        }
+        if (progress >= 50) {
+            var text = "Obtained 50% coverage for a type of widgets!"
+            if (profileInfo.achievements.indexOf(text) === -1) {
+                profileInfo.achievements.push(text)
+                var obj = {
+                    title: "New Achievement!",
+                    message: text,
+                    path: "./img/achievement_silver.png"
+                }
+                chrome.runtime.sendMessage({ obj: obj, mess: "notification" });
+            }
+        }
+        if (progress === 100) {
+            var text = "Obtained 100% coverage for a type of widgets!"
+            if (profileInfo.achievements.indexOf(text) === -1) {
+                profileInfo.achievements.push(text)
+                var obj = {
+                    title: "New Achievement!",
+                    message: text,
+                    path: "./img/achievement_gold.png"
+                }
+                chrome.runtime.sendMessage({ obj: obj, mess: "notification" });
+                if (profileInfo.achievements.length === 3) {
+                    if (profileInfo.availableAvatars.filter(filterHeartAvatar).length === 0) {
+                        var unlocked = {
+                            name: "Heart Avatar",
+                            url: "../img/heart_avatar.png"
+                        }
+                        var notification = {
+                            title: "New Avatar Unlocked",
+                            message: "Unlocked: Heart Avatar!",
+                            path: "./img/heart_avatar.png"
+                        }
+                        profileInfo.availableAvatars.push(unlocked)
+                        chrome.runtime.sendMessage({ obj: notification, mess: "notification" })
+                    }
+                }
+                if (profileInfo.availableAvatars.filter(filterStarAvatar).length === 0) {
+                    var unlocked = {
+                        name: "Star Avatar",
+                        url: "../img/star_avatar.png"
+                    }
+                    var notification = {
+                        title: "New Avatar Unlocked",
+                        message: "Unlocked: Star Avatar",
+                        path: "./img/star_avatar.png"
+                    }
+                    profileInfo.availableAvatars.push(unlocked)
+                    chrome.runtime.sendMessage({ obj: notification, mess: "notification" })
+                }
+            }
+        }
+        chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) })
+    })
+}
+
+function pageCoverageAchievements(progress, widgetProgress) {
+    chrome.storage.sync.get(["profileInfo"], function (result) {
+        var profileInfo = JSON.parse(result.profileInfo)
+        console.log("pCA", profileInfo.achievements)
+        if (progress >= 4) {
+            var text = "Obtained 25% page coverage!"
+            if (profileInfo.achievements.indexOf(text) === -1) {
+                profileInfo.achievements.push(text)
+                var obj = {
+                    title: "New Achievement!",
+                    message: text,
+                    path: "./img/achievement_bronze.png"
+                }
+                chrome.runtime.sendMessage({ obj: obj, mess: "notification" });
+            }
+        }
+        if (progress >= 50) {
+            var text = "Obtained 50% page coverage!"
+            if (profileInfo.achievements.indexOf(text) === -1) {
+                profileInfo.achievements.push(text)
+                var obj = {
+                    title: "New Achievement!",
+                    message: text,
+                    path: "./img/achievement_silver.png"
+                }
+                chrome.runtime.sendMessage({ obj: obj, mess: "notification" });
+            }
+        }
+        if (progress === 100) {
+            var text = "Obtained 100% page coverage!"
+            if (profileInfo.achievements.indexOf(text) === -1) {
+                profileInfo.achievements.push(text)
+                var obj = {
+                    title: "New Achievement!",
+                    message: text,
+                    path: "./img/achievement_gold.png"
+                }
+                chrome.runtime.sendMessage({ obj: obj, mess: "notification" });
+            }
+        }
+        chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) }, function () {
+            widgetsCoverageAchievements(widgetProgress)
+        })
+    })
 }

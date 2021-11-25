@@ -31,8 +31,7 @@ if (found === null) {
         document.getElementById("gamificationExtensionSidenav").style.width = "0";
         document.getElementById("gamificationExtensionSidenav").remove()
         document.getElementById("gamificationExtensionSidenavButton").remove()
-        //button.parentElement.removeChild(button);
-        //sideDiv.parentElement.removeChild(sideDiv);
+
         //rimozione della stella se la pagina è una vista per la prima volta
         var star = document.getElementById("gamificationExtensionNewPageStar");
         if (star != null) {
@@ -46,7 +45,7 @@ if (found === null) {
 
         //mostrare modal di riepilogo
         chrome.storage.sync.get(
-            ["visitedPages", "newPages", "pageStats", "pageActions", "currentURL", "profileInfo"],
+            ["visitedPages", "newPages", "pageStats", "pageActions", "currentURL", "profileInfo", "registeredUsers"],
             function (result) {
                 var profileInfo = JSON.parse(result.profileInfo)
                 function filterUser(event) {
@@ -80,9 +79,20 @@ if (found === null) {
                 if (highestWidgets > userPages.highestWidgets) {
                     userPages.highestWidgets = highestWidgets
                 }
+                var registeredUsers = JSON.parse(result.registeredUsers)
+                var userRankings = registeredUsers.filter(filterUser)[0]
+                if (userPages.highestPages > userRankings.highestNewVisitedPages) {
+                    userRankings.highestNewVisitedPages = userPages.highestPages
+                }
+                if (userPages.highestCoverage > userRankings.highestCoverage) {
+                    userRankings.highestCoverage = userPages.highestCoverage
+                }
+                if (userPages.highestWidgets > userRankings.highestNewWidgets) {
+                    userRankings.highestNewWidgets = userPages.highestWidgets
+                }
                 //TODO: aggiornare profilo
                 downloadUserProfile()
-                chrome.storage.sync.set({ pageActions: JSON.stringify(pageActions) })
+                chrome.storage.sync.set({ pageActions: JSON.stringify(pageActions), registeredUsers: JSON.stringify(registeredUsers) })
 
                 modalContainer.id = "gamificationExtensionModalContainer";
                 modalContainer.style =
@@ -129,8 +139,6 @@ if (found === null) {
                     }
                 };
                 document.body.appendChild(modalContainer);
-
-
             }
         );
         chrome.storage.sync.set({ startingURL: "", pageStats: JSON.stringify([]) });
@@ -384,7 +392,7 @@ if (found === null) {
         sideDiv.appendChild(pagesRecord)
         var widgetsRecord = document.createElement("h4")
         widgetsRecord.style.textTransform = "Inherit"
-        widgetsRecord.textContent = "Highest Number of New Widgets Found in a Session - Globally: " + userActions.highestWidgets
+        widgetsRecord.textContent = "Highest Number of New Widgets Found in a Session - Global: " + userActions.highestWidgets
         sideDiv.appendChild(widgetsRecord)
         var pageWidgetsRecord = document.createElement("h4")
         pageWidgetsRecord.style.textTransform = "Inherit"

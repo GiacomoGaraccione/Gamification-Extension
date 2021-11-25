@@ -12,6 +12,17 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       url: request.obj.url,
       filename: request.obj.filename,
     });
+  } else if (request.mess === "notification") {
+    chrome.notifications.create(
+      null,
+      {
+        type: 'basic',
+        iconUrl: request.obj.path,
+        title: request.obj.title,
+        message: request.obj.message,
+        priority: 2
+      }
+    )
   }
 });
 

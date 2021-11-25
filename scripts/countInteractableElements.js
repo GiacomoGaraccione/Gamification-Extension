@@ -115,6 +115,38 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                             }
                         }
                         //TODO: calcolare e aggiornare coverage
+                        var innerDiv = document.getElementById("gamificationExtensionTopnavInner");
+                        var totalLinkObjects = userObjPageActions.totalLinkObjects;
+                        var totalInputObjects = userObjPageActions.totalInputObjects;
+                        var totalButtonObjects = userObjPageActions.totalButtonObjects;
+                        var interactedLinks = userObjPageActions.idsOfLinkObjects.filter(onlyUnique).length;
+                        var interactedInputs = userObjPageActions.idsOfInputObjects.filter(onlyUnique).length;
+                        var interactedButtons = userObjPageActions.idsOfButtonObjects.filter(onlyUnique).length;
+                        var progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (totalLinkObjects + totalInputObjects + totalButtonObjects);
+                        innerDiv.style =
+                            `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+                            progress +
+                            `%; white-space:nowrap`;
+                        innerDiv.textContent = "Progress: " + progress + "%";
+                        if (overlayMode === "interacted") {
+                            drawBorderOnInteracted()
+                        }
+                        userObjPageActions.coverage = progress
+                        var sidenavProgress = document.getElementById("gamificationExtensionLinksProgress")
+                        var widgetProgress = interactedInputs * 100 / totalInputObjects
+                        sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+                            widgetProgress +
+                            `%; white-space:nowrap`;
+                        sidenavProgress.textContent = "Links Progress: " + widgetProgress + "%"
+                        var table = document.getElementById("gamificationExtensionPageStatsTable")
+                        var inputsRow = table.rows[1]
+                        var pageStat = pageStatsObj.filter(filterURL)[0]
+                        inputsRow.cells[1].innerHTML = pageStat.interactedInputs.length
+                        inputsRow.cells[2].innerHTML = pageStat.interactedInputs.length
+                        inputsRow.cells[3].innerHTML = userObjPageActions.idsOfInputObjects.length
+                        var pageActions = JSON.stringify(retrievedObj);
+                        pageCoverageAchievements(progress, widgetProgress)
+                        //widgetsCoverageAchievements(widgetProgress)
                         chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
                     }
                     );
@@ -177,11 +209,11 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                         }
                         userObjPageActions.coverage = progress
                         var sidenavProgress = document.getElementById("gamificationExtensionInputsProgress")
-                        progress = interactedInputs * 100 / totalInputObjects
+                        var widgetProgress = interactedInputs * 100 / totalInputObjects
                         sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
-                            progress +
+                            widgetProgress +
                             `%; white-space:nowrap`;
-                        sidenavProgress.textContent = "Forms Progress: " + progress + "%"
+                        sidenavProgress.textContent = "Forms Progress: " + widgetProgress + "%"
                         var table = document.getElementById("gamificationExtensionPageStatsTable")
                         var inputsRow = table.rows[2]
                         var pageStat = pageStatsObj.filter(filterURL)[0]
@@ -189,6 +221,8 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                         inputsRow.cells[2].innerHTML = pageStat.interactedInputs.length
                         inputsRow.cells[3].innerHTML = userObjPageActions.idsOfInputObjects.length
                         var pageActions = JSON.stringify(retrievedObj);
+                        pageCoverageAchievements(progress, widgetProgress)
+                        //widgetsCoverageAchievements(widgetProgress)
                         chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
                     }
                     );
@@ -252,11 +286,11 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                 drawBorderOnInteracted()
                             }
                             var sidenavProgress = document.getElementById("gamificationExtensionButtonsProgress")
-                            progress = interactedButtons * 100 / totalButtonObjects
+                            var widgetProgress = interactedButtons * 100 / totalButtonObjects
                             sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
-                                progress +
+                                widgetProgress +
                                 `%; white-space:nowrap`;
-                            sidenavProgress.textContent = "Buttons Progress: " + progress + "%"
+                            sidenavProgress.textContent = "Buttons Progress: " + widgetProgress + "%"
                             var table = document.getElementById("gamificationExtensionPageStatsTable")
                             var buttonsRow = table.rows[3]
                             var pageStat = pageStatsObj.filter(filterURL)[0]
@@ -264,6 +298,8 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                             buttonsRow.cells[2].innerHTML = pageStat.newButtons.length
                             buttonsRow.cells[3].innerHTML = userObjPageActions.idsOfButtonObjects.length
                             var pageActions = JSON.stringify(retrievedObj);
+                            pageCoverageAchievements(progress, widgetProgress)
+                            //widgetsCoverageAchievements(widgetProgress)
                             chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
                         }
                         );
