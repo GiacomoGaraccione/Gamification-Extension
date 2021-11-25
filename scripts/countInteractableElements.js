@@ -11,6 +11,10 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
         return event.username === profileInfo.username
     }
 
+    function filterCoverage(event) {
+        return event.coverage >= 50
+    }
+
     function onlyUnique(value, index, self) {
         return self.indexOf(value) === index;
     }
@@ -56,6 +60,31 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
             pages.push(obj)
             retrievedObj.filter(filterUser)[0].pages = pages
         }
+    }
+    if (pages.length === 5) {
+        var ach = {
+            text: "Visited 5 different pages!",
+            obj: {
+                title: "New Achievement!",
+                message: "Visited 5 different pages!",
+                path: "./img/achievement_bronze.png"
+            }
+        }
+        unlockAchievement(ach, profileInfo.achievements)
+        chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) })
+    }
+    profileInfo.achievements = profileInfo.achievements.slice(0, profileInfo.achievements.length - 1)
+    if (pages.filter(filterCoverage).length >= 5) {
+        var ach = {
+            text: "Obtained 50% coverage on 5 pages!",
+            obj: {
+                title: "New Achievement!",
+                message: "Obtained 50% coverage on 5 pages!",
+                path: "./img/achievement_silver.png"
+            }
+        }
+        unlockAchievement(ach, profileInfo.achievements)
+        chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) })
     }
     var pageActions = JSON.stringify(retrievedObj);
     chrome.storage.sync.set({ pageActions: pageActions });
