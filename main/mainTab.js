@@ -168,7 +168,15 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
   });
 
   resetButton.addEventListener("click", function () {
-    chrome.storage.sync.set({ pageActions: JSON.stringify([]) });
+    chrome.storage.sync.get(["profileInfo"], function (result) {
+      var profileInfo = JSON.parse(result.profileInfo)
+      console.log(profileInfo)
+      profileInfo.achievements = []
+      profileInfo.availableAvatars = profileInfo.availableAvatars.slice(0, 3)
+      //console.log(profileInfo)
+      chrome.storage.sync.set({ pageActions: JSON.stringify([]), profileInfo: JSON.stringify(profileInfo) });
+
+    })
   });
 
   profileButton.addEventListener("click", function () {
@@ -257,6 +265,7 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
   viewProfileButton.addEventListener("click", function () {
     chrome.storage.sync.get(["profileInfo"], function (result) {
       var profileInfo = JSON.parse(result.profileInfo)
+      console.log(profileInfo)
       firstWrapper.style.display = "none"
       thirdWrapper.style.display = "flex"
       if (selectableAvatars.childNodes.length === 0 && achievementsContainer.childNodes.length === 0) {

@@ -26,7 +26,6 @@ if (found === null) {
     endButton.textContent = "End Session";
     endButton.style = "bottom: 10%; right: 50%;";
     endButton.onclick = function () {
-        downloadFile();
         //chiusura della sidenav
         document.getElementById("gamificationExtensionSidenav").style.width = "0";
         document.getElementById("gamificationExtensionSidenav").remove()
@@ -139,6 +138,7 @@ if (found === null) {
                     }
                 };
                 document.body.appendChild(modalContainer);
+                downloadFile();
             }
         );
         chrome.storage.sync.set({ startingURL: "", pageStats: JSON.stringify([]) });
