@@ -140,8 +140,15 @@ function drawBorderOnInteracted() {
 }
 
 function unlockAchievement(achievement, array) {
-    if (array.indexOf(achievement.text) === -1) {
-        array.push(achievement.text)
+    function filterText(event) {
+        return event.text === achievement.text
+    }
+    if (array.filter(filterText).length === 0) {
+        var obj = {
+            text: achievement.text,
+            path: "." + achievement.obj.path
+        }
+        array.push(obj)
         chrome.runtime.sendMessage({ obj: achievement.obj, mess: "notification" })
     }
 }
@@ -174,8 +181,6 @@ function unlockAvatar(avatar, array, path, url) {
 function pageCoverageAchievements(progress, widgetProgress) {
     chrome.storage.sync.get(["profileInfo"], function (result) {
         var profileInfo = JSON.parse(result.profileInfo)
-        //profileInfo.achievements = [] //DEBUG: reset achievements
-        //profileInfo.availableAvatars = profileInfo.availableAvatars.slice(0, 3) //DEBUG: reset to default avatars
         if (progress >= 25) {
             var ach = {
                 text: "Obtained 25% page coverage!",

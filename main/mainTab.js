@@ -40,6 +40,24 @@ var username = ""
 var selectedAvatar = ""
 var avatarDivs = []
 
+function compareAchievements(a, b) {
+  if (a.path === "../img/achievement_bronze.png") {
+    if (b.path === "../img/achievement_silver.png" || b.path === "../img/achievement_gold.png") {
+      return -1
+    } else {
+      return 0
+    }
+  } else if (a.path === "../img/achievement_silver.png") {
+    if (b.path === "../img/achievement_bronze.png") {
+      return 1
+    } else {
+      return 0
+    }
+  } else {
+    return 0
+  }
+}
+
 function render(flag) {
   if (flag === "home") {
     secondWrapper.style.display = "none"
@@ -170,7 +188,6 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
   resetButton.addEventListener("click", function () {
     chrome.storage.sync.get(["profileInfo"], function (result) {
       var profileInfo = JSON.parse(result.profileInfo)
-      console.log(profileInfo)
       profileInfo.achievements = []
       profileInfo.availableAvatars = profileInfo.availableAvatars.slice(0, 3)
       //console.log(profileInfo)
@@ -265,7 +282,6 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
   viewProfileButton.addEventListener("click", function () {
     chrome.storage.sync.get(["profileInfo"], function (result) {
       var profileInfo = JSON.parse(result.profileInfo)
-      console.log(profileInfo)
       firstWrapper.style.display = "none"
       thirdWrapper.style.display = "flex"
       if (selectableAvatars.childNodes.length === 0 && achievementsContainer.childNodes.length === 0) {
@@ -327,12 +343,17 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
           h3.style = "text-align: center"
           achievementsContainer.appendChild(h3)
         } else {
+          achievements.sort(compareAchievements)
           achievements.map((a) => {
             var div = document.createElement("div")
             div.className = "file"
+            var img = document.createElement("img")
+            img.style = "max-width:50%; max-height:50%;"
+            img.src = a.path
+            div.appendChild(img)
             var p = document.createElement("h3")
             p.style = "text-align: center"
-            p.textContent = a
+            p.textContent = a.text
             div.appendChild(p)
             achievementsContainer.appendChild(div)
           })
