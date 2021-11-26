@@ -24,7 +24,13 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
     var totalLinkObjects = linkObjects.length;
 
     //ottiene tutti i campi di input della pagina
-    var inputObjects = document.body.getElementsByTagName("input");
+    var inputs = document.body.getElementsByTagName("input");
+    var inputObjects = []
+    for (var i = 0; i < inputs.length; i++) {
+        if (inputs[i].type !== "hidden") {
+            inputObjects.push(inputs[i])
+        }
+    }
     var totalInputObjects = inputObjects.length;
 
     //ottiene tutti i buttons presenti nella pagina
