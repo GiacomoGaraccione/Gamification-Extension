@@ -30,10 +30,11 @@ chrome.storage.sync.get(["pageActions", "currentURL", "profileInfo"], function (
     var totalLinkObjects = newPage ? document.getElementsByTagName("a").length : pageActs.totalLinkObjects;
     var totalInputObjects = newPage ? document.getElementsByTagName("input").length : pageActs.totalInputObjects;
     var totalButtonObjects = newPage ? buttonsCount : pageActs.totalButtonObjects;
+    var denom = (totalLinkObjects + totalInputObjects + totalButtonObjects) !== 0
     var interactedLinks = newPage ? 0 : pageActs.idsOfLinkObjects.filter(onlyUnique).length;
     var interactedInputs = newPage ? 0 : pageActs.idsOfInputObjects.filter(onlyUnique).length;
     var interactedButtons = newPage ? 0 : pageActs.idsOfButtonObjects.filter(onlyUnique).length;
-    var progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (totalLinkObjects + totalInputObjects + totalButtonObjects);
+    var progress = denom ? ((interactedLinks + interactedInputs + interactedButtons) * 100) / (totalLinkObjects + totalInputObjects + totalButtonObjects) : -1;
 
 
     var topnav = document.createElement("div");
@@ -56,7 +57,7 @@ chrome.storage.sync.get(["pageActions", "currentURL", "profileInfo"], function (
             `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
             progress +
             `%; white-space:nowrap`;
-        innerDiv.textContent = "Progress: " + progress + "%";
+        innerDiv.textContent = denom ? "Progress: " + progress + "%" : "There are no widgets in this page";
         outerDiv.appendChild(innerDiv);
         chrome.storage.sync.get(["currentURL", "pageActions", "profileInfo"], function (result) {
             var profileInfo = JSON.parse(result.profileInfo)

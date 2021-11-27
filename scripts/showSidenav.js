@@ -326,7 +326,14 @@ if (found === null) {
         sideDiv.appendChild(tablePages);
 
         var totalLinks = document.getElementsByTagName("a").length;
-        var totalInputs = document.getElementsByTagName("input").length;
+        var inputs = document.getElementsByTagName("input");
+        var filteredInputs = []
+        for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i].type !== "hidden") {
+                filteredInputs.push(inputs[i])
+            }
+        }
+        var totalInputs = filteredInputs.length
 
         var totalButtons = document.getElementsByTagName("button");
         var buttonsCount = 0;
@@ -338,9 +345,12 @@ if (found === null) {
         var linkObjects = noActions ? 0 : actions.idsOfLinkObjects.length;
         var inputObjects = noActions ? 0 : actions.idsOfInputObjects.length;
         var buttonObjects = noActions ? 0 : actions.idsOfButtonObjects.length;
-        var linksPerc = (linkObjects * 100) / totalLinks;
-        var inputsPerc = (inputObjects * 100) / totalInputs;
-        var buttonsPerc = (buttonObjects * 100) / buttonsCount;
+        var denomLinks = totalLinks !== 0
+        var denomInputs = totalInputs !== 0
+        var denomButtons = totalButtons !== 0
+        var linksPerc = denomLinks ? (linkObjects * 100) / totalLinks : -1;
+        var inputsPerc = denomInputs ? (inputObjects * 100) / totalInputs : -1;
+        var buttonsPerc = denomButtons ? (buttonObjects * 100) / buttonsCount : -1;
 
         var linksProgressTop = document.createElement("div");
         sideDiv.appendChild(linksProgressTop);
@@ -353,7 +363,7 @@ if (found === null) {
             linksPerc +
             `%; white-space:nowrap`;
         linksProgressTop.appendChild(linksProgress);
-        linksProgress.textContent = "Links Progress: " + linksPerc + "%";
+        linksProgress.textContent = denomLinks ? "Links Progress: " + linksPerc + "%" : "There are no links in this page";
         var inputsProgressTop = document.createElement("div");
         sideDiv.appendChild(inputsProgressTop);
         inputsProgressTop.style =
@@ -365,7 +375,7 @@ if (found === null) {
             inputsPerc +
             `%; white-space:nowrap`;
         inputsProgressTop.appendChild(inputsProgress);
-        inputsProgress.textContent = "Forms Progress: " + inputsPerc + "%";
+        inputsProgress.textContent = denomInputs ? "Forms Progress: " + inputsPerc + "%" : "There are no forms in this page";
         var buttonsProgressTop = document.createElement("div");
         sideDiv.appendChild(buttonsProgressTop);
         buttonsProgressTop.style =
@@ -377,7 +387,7 @@ if (found === null) {
             `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
             buttonsPerc +
             `%; white-space:nowrap`;
-        buttonsProgress.textContent = "Buttons Progress: " + buttonsPerc + "%";
+        buttonsProgress.textContent = denomButtons ? "Buttons Progress: " + buttonsPerc + "%" : "There are no buttons in this page";
 
         var recordsTitle = document.createElement("h2")
         recordsTitle.textContent = "Records"
