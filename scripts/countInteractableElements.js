@@ -1,4 +1,4 @@
-chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode", "profileInfo", "registeredUsers"], function (result) {
+chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode", "profileInfo", "registeredUsers", "signaledIssues"], function (result) {
     var currentURL = result.currentURL;
     var overlayMode = result.overlayMode
     var profileInfo = JSON.parse(result.profileInfo)
@@ -79,7 +79,6 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
         unlockAchievement(ach, profileInfo.achievements)
         chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) })
     }
-    profileInfo.achievements = profileInfo.achievements.slice(0, profileInfo.achievements.length - 1)
     if (pages.filter(filterCoverage).length >= 5) {
         var ach = {
             text: "Obtained 50% coverage on 5 pages!",
@@ -111,6 +110,27 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
 
     chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) });
 
+    var signaledIssues = JSON.parse(result.signaledIssues)
+    var issueWrap = { username: "", pages: [] }
+    var issueObj = {
+        url: currentURL,
+        signaledLinks: [],
+        signaledInputs: [],
+        signaledButtons: [],
+    }
+    if (signaledIssues.filter(filterUser).length === 0) {
+        issueWrap.username = profileInfo.username
+        issueWrap.pages.push(issueObj)
+        signaledIssues.push(issueWrap)
+    } else {
+        pages = signaledIssues.filter(filterUser)[0].pages
+        if (pages.filter(filterURL).length === 0) {
+            pages.push(issueObj)
+            signaledIssues.filter(filterUser)[0].pages = pages
+        }
+    }
+    chrome.storage.sync.set({ signaledIssues: JSON.stringify(signaledIssues) })
+
     for (var i = 0; i < linkObjects.length; i++) {
         //funzione chiamata ogni volta che un link viene cliccato
         linkObjects[i].addEventListener("click", function (event) {
@@ -119,186 +139,35 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
             for (var j = 0; j < els.length && !found; j++) {
                 if (els[j].href === event.target.href) {
                     found = true;
-                    chrome.storage.sync.get(["pageActions", "pageStats"], function (result) {
-                        var retrievedObj = JSON.parse(result.pageActions);
-                        var newLink = false;
-                        var userObj = retrievedObj.filter(filterUser)[0]
-                        var userObjPageActions = userObj.pages.filter(filterURL)[0]
-                        var linkIds = userObjPageActions.idsOfLinkObjects
-                        var linkPos = linkIds.indexOf(j - 1);
-                        if (linkPos < 0) {
-                            linkIds.push(j - 1);
-                            userObjPageActions.idsOfLinkObjects = linkIds;
-                            newLink = true;
-                        }
-                        var pageActions = JSON.stringify(retrievedObj);
-
-                        var pageStatsObj = JSON.parse(result.pageStats);
-                        var psObj = pageStatsObj.filter(filterURL)[0]
-                        var intLinkIds = psObj.interactedLinks
-                        var intLinkPos = intLinkIds.indexOf(j - 1);
-                        if (intLinkPos < 0) {
-                            intLinkIds.push(j - 1);
-                            psObj.interactedLinks = intLinkIds;
-                        }
-                        if (newLink) {
-                            var newlinkIds = psObj.newLinks;
-                            var newLinkPos = newlinkIds.indexOf(j - 1);
-                            if (newLinkPos < 0) {
-                                newlinkIds.push(j - 1);
-                                psObj.newLinks = newlinkIds;
-                            }
-                        }
-                        //TODO: calcolare e aggiornare coverage
-                        var innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                        var totalLinkObjects = userObjPageActions.totalLinkObjects;
-                        var totalInputObjects = userObjPageActions.totalInputObjects;
-                        var totalButtonObjects = userObjPageActions.totalButtonObjects;
-                        var interactedLinks = userObjPageActions.idsOfLinkObjects.filter(onlyUnique).length;
-                        var interactedInputs = userObjPageActions.idsOfInputObjects.filter(onlyUnique).length;
-                        var interactedButtons = userObjPageActions.idsOfButtonObjects.filter(onlyUnique).length;
-                        var progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (totalLinkObjects + totalInputObjects + totalButtonObjects);
-                        innerDiv.style =
-                            `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
-                            progress +
-                            `%; white-space:nowrap`;
-                        innerDiv.textContent = "Progress: " + progress + "%";
-                        if (overlayMode === "interacted") {
-                            drawBorderOnInteracted()
-                        }
-                        userObjPageActions.coverage = progress
-                        var sidenavProgress = document.getElementById("gamificationExtensionLinksProgress")
-                        var widgetProgress = interactedInputs * 100 / totalInputObjects
-                        sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
-                            widgetProgress +
-                            `%; white-space:nowrap`;
-                        sidenavProgress.textContent = "Links Progress: " + widgetProgress + "%"
-                        var table = document.getElementById("gamificationExtensionPageStatsTable")
-                        var inputsRow = table.rows[1]
-                        var pageStat = pageStatsObj.filter(filterURL)[0]
-                        inputsRow.cells[1].innerHTML = pageStat.interactedInputs.length
-                        inputsRow.cells[2].innerHTML = pageStat.interactedInputs.length
-                        inputsRow.cells[3].innerHTML = userObjPageActions.idsOfInputObjects.length
-                        var pageActions = JSON.stringify(retrievedObj);
-                        pageCoverageAchievements(progress, widgetProgress)
-                        chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
-                    }
-                    );
-                }
-            }
-        });
-    }
-
-    for (var i = 0; i < inputObjects.length; i++) {
-        inputObjects[i].addEventListener("click", function (event) {
-            event.preventDefault();
-            var els = document.body.getElementsByTagName("input");
-            var found = false;
-            for (var j = 0; j < els.length && !found; j++) {
-                if (els[j].id === event.target.id) {
-                    found = true;
-                    chrome.storage.sync.get(["pageActions", "pageStats"], function (result) {
-                        var retrievedObj = JSON.parse(result.pageActions);
-                        var newInput = false;
-                        var userObj = retrievedObj.filter(filterUser)[0]
-                        var userObjPageActions = userObj.pages.filter(filterURL)[0]
-                        var inputIds = userObjPageActions.idsOfInputObjects;
-                        var inputPos = inputIds.indexOf(j - 1);
-                        if (inputPos < 0) {
-                            inputIds.push(j - 1);
-                            userObjPageActions.idsOfInputObjects = inputIds;
-                            newInput = true;
-                        }
-                        var pageStatsObj = JSON.parse(result.pageStats);
-                        var psObj = pageStatsObj.filter(filterURL)[0]
-                        var intInputIds = psObj.interactedInputs;
-                        var intInputPos = intInputIds.indexOf(j - 1);
-                        if (intInputPos < 0) {
-                            intInputIds.push(j - 1);
-                            psObj.interactedInputs = intInputIds;
-                        }
-                        if (newInput === true) {
-                            var newInputIds = psObj.newInputs;
-                            var newInputPos = newInputIds.indexOf(j - 1);
-                            if (newInputPos < 0) {
-                                newInputIds.push(j - 1);
-                                psObj.newInputs = newInputIds;
-                            }
-                        }
-                        var innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                        var totalLinkObjects = userObjPageActions.totalLinkObjects;
-                        var totalInputObjects = userObjPageActions.totalInputObjects;
-                        var totalButtonObjects = userObjPageActions.totalButtonObjects;
-                        var interactedLinks = userObjPageActions.idsOfLinkObjects.filter(onlyUnique).length;
-                        var interactedInputs = userObjPageActions.idsOfInputObjects.filter(onlyUnique).length;
-                        var interactedButtons = userObjPageActions.idsOfButtonObjects.filter(onlyUnique).length;
-                        var progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (totalLinkObjects + totalInputObjects + totalButtonObjects);
-                        innerDiv.style =
-                            `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
-                            progress +
-                            `%; white-space:nowrap`;
-                        innerDiv.textContent = "Progress: " + progress + "%";
-                        if (overlayMode === "interacted") {
-                            drawBorderOnInteracted()
-                        }
-                        userObjPageActions.coverage = progress
-                        var sidenavProgress = document.getElementById("gamificationExtensionInputsProgress")
-                        var widgetProgress = interactedInputs * 100 / totalInputObjects
-                        sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
-                            widgetProgress +
-                            `%; white-space:nowrap`;
-                        sidenavProgress.textContent = "Forms Progress: " + widgetProgress + "%"
-                        var table = document.getElementById("gamificationExtensionPageStatsTable")
-                        var inputsRow = table.rows[2]
-                        var pageStat = pageStatsObj.filter(filterURL)[0]
-                        inputsRow.cells[1].innerHTML = pageStat.interactedInputs.length
-                        inputsRow.cells[2].innerHTML = pageStat.interactedInputs.length
-                        inputsRow.cells[3].innerHTML = userObjPageActions.idsOfInputObjects.length
-                        var pageActions = JSON.stringify(retrievedObj);
-                        pageCoverageAchievements(progress, widgetProgress)
-                        chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
-                    }
-                    );
-                }
-            }
-        });
-    }
-
-    for (var i = 0; i < buttonObjects.length; i++) {
-        if (!isButtonOfExtension(buttonObjects[i])) {
-            buttonObjects[i].addEventListener("click", function (event) {
-                var els = document.body.getElementsByTagName("button");
-                var found = false;
-                for (var j = 0; j < els.length && !found; j++) {
-                    if (els[j].id === event.target.id) {
-                        found = true;
-                        chrome.storage.sync.get(["pageActions", "pageStats"], function (result) {
+                    chrome.storage.sync.get(["pageActions", "pageStats", "interactionMode", "signaledIssues"], function (result) {
+                        if (result.interactionMode === "interact") {
                             var retrievedObj = JSON.parse(result.pageActions);
-                            var newButton = false;
+                            var newLink = false;
                             var userObj = retrievedObj.filter(filterUser)[0]
                             var userObjPageActions = userObj.pages.filter(filterURL)[0]
-                            var buttonIds = userObjPageActions.idsOfButtonObjects;
-                            var buttonPos = buttonIds.indexOf(j - 1);
-                            if (buttonPos < 0) {
-                                buttonIds.push(j - 1);
-                                userObjPageActions.idsOfButtonObjects = buttonIds;
-                                newButton = true;
+                            var linkIds = userObjPageActions.idsOfLinkObjects
+                            var linkPos = linkIds.indexOf(j - 1);
+                            if (linkPos < 0) {
+                                linkIds.push(j - 1);
+                                userObjPageActions.idsOfLinkObjects = linkIds;
+                                newLink = true;
                             }
+                            var pageActions = JSON.stringify(retrievedObj);
 
                             var pageStatsObj = JSON.parse(result.pageStats);
                             var psObj = pageStatsObj.filter(filterURL)[0]
-                            var intButtonIds = psObj.interactedButtons;
-                            var intButtonPos = intButtonIds.indexOf(j - 1);
-                            if (intButtonPos < 0) {
-                                intButtonIds.push(j - 1);
-                                psObj.interactedButtons = intButtonIds;
+                            var intLinkIds = psObj.interactedLinks
+                            var intLinkPos = intLinkIds.indexOf(j - 1);
+                            if (intLinkPos < 0) {
+                                intLinkIds.push(j - 1);
+                                psObj.interactedLinks = intLinkIds;
                             }
-                            if (newButton) {
-                                var newButtonIds = psObj.newButtons;
-                                var newButtonPos = newButtonIds.indexOf(j - 1);
-                                if (newButtonPos < 0) {
-                                    newButtonIds.push(j - 1);
-                                    psObj.newButtons = newButtonIds;
+                            if (newLink) {
+                                var newlinkIds = psObj.newLinks;
+                                var newLinkPos = newlinkIds.indexOf(j - 1);
+                                if (newLinkPos < 0) {
+                                    newlinkIds.push(j - 1);
+                                    psObj.newLinks = newlinkIds;
                                 }
                             }
                             var innerDiv = document.getElementById("gamificationExtensionTopnavInner");
@@ -314,25 +183,216 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                 progress +
                                 `%; white-space:nowrap`;
                             innerDiv.textContent = "Progress: " + progress + "%";
-                            userObjPageActions.coverage = progress
                             if (overlayMode === "interacted") {
                                 drawBorderOnInteracted()
                             }
-                            var sidenavProgress = document.getElementById("gamificationExtensionButtonsProgress")
-                            var widgetProgress = interactedButtons * 100 / totalButtonObjects
+                            userObjPageActions.coverage = progress
+                            var sidenavProgress = document.getElementById("gamificationExtensionLinksProgress")
+                            var widgetProgress = interactedInputs * 100 / totalInputObjects
                             sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
                                 widgetProgress +
                                 `%; white-space:nowrap`;
-                            sidenavProgress.textContent = "Buttons Progress: " + widgetProgress + "%"
+                            sidenavProgress.textContent = "Links Progress: " + widgetProgress + "%"
                             var table = document.getElementById("gamificationExtensionPageStatsTable")
-                            var buttonsRow = table.rows[3]
+                            var inputsRow = table.rows[1]
                             var pageStat = pageStatsObj.filter(filterURL)[0]
-                            buttonsRow.cells[1].innerHTML = pageStat.interactedButtons.length
-                            buttonsRow.cells[2].innerHTML = pageStat.newButtons.length
-                            buttonsRow.cells[3].innerHTML = userObjPageActions.idsOfButtonObjects.length
+                            inputsRow.cells[1].innerHTML = pageStat.interactedInputs.length
+                            inputsRow.cells[2].innerHTML = pageStat.interactedInputs.length
+                            inputsRow.cells[3].innerHTML = userObjPageActions.idsOfInputObjects.length
                             var pageActions = JSON.stringify(retrievedObj);
                             pageCoverageAchievements(progress, widgetProgress)
                             chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
+                        } else if (result.interactionMode === "signal") {
+                            var signaledIssues = JSON.parse(result.signaledIssues)
+                            var pageIssues = signaledIssues.filter(filterUser)[0].pages.filter(filterURL)[0]
+                            var linkIds = pageIssues.signaledLinks;
+                            var linkPos = linkIds.indexOf(j - 1);
+                            if (linkPos < 0) {
+                                linkIds.push(j - 1);
+                                pageIssues.signaledLinks = linkIds;
+                            }
+                            drawBackground()
+                            chrome.storage.sync.set({ signaledIssues: JSON.stringify(signaledIssues) })
+                        }
+
+                    }
+                    );
+                }
+            }
+        });
+    }
+
+    for (var i = 0; i < inputObjects.length; i++) {
+        inputObjects[i].addEventListener("click", function (event) {
+            event.preventDefault();
+            var els = document.body.getElementsByTagName("input");
+            var found = false;
+            for (var j = 0; j < els.length && !found; j++) {
+                if (els[j].id === event.target.id) {
+                    found = true;
+                    chrome.storage.sync.get(["pageActions", "pageStats", "interactionMode", "signaledIssues"], function (result) {
+                        if (result.interactionMode === "interact") {
+                            var retrievedObj = JSON.parse(result.pageActions);
+                            var newInput = false;
+                            var userObj = retrievedObj.filter(filterUser)[0]
+                            var userObjPageActions = userObj.pages.filter(filterURL)[0]
+                            var inputIds = userObjPageActions.idsOfInputObjects;
+                            var inputPos = inputIds.indexOf(j - 1);
+                            if (inputPos < 0) {
+                                inputIds.push(j - 1);
+                                userObjPageActions.idsOfInputObjects = inputIds;
+                                newInput = true;
+                            }
+                            var pageStatsObj = JSON.parse(result.pageStats);
+                            var psObj = pageStatsObj.filter(filterURL)[0]
+                            var intInputIds = psObj.interactedInputs;
+                            var intInputPos = intInputIds.indexOf(j - 1);
+                            if (intInputPos < 0) {
+                                intInputIds.push(j - 1);
+                                psObj.interactedInputs = intInputIds;
+                            }
+                            if (newInput === true) {
+                                var newInputIds = psObj.newInputs;
+                                var newInputPos = newInputIds.indexOf(j - 1);
+                                if (newInputPos < 0) {
+                                    newInputIds.push(j - 1);
+                                    psObj.newInputs = newInputIds;
+                                }
+                            }
+                            var innerDiv = document.getElementById("gamificationExtensionTopnavInner");
+                            var totalLinkObjects = userObjPageActions.totalLinkObjects;
+                            var totalInputObjects = userObjPageActions.totalInputObjects;
+                            var totalButtonObjects = userObjPageActions.totalButtonObjects;
+                            var interactedLinks = userObjPageActions.idsOfLinkObjects.filter(onlyUnique).length;
+                            var interactedInputs = userObjPageActions.idsOfInputObjects.filter(onlyUnique).length;
+                            var interactedButtons = userObjPageActions.idsOfButtonObjects.filter(onlyUnique).length;
+                            var progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (totalLinkObjects + totalInputObjects + totalButtonObjects);
+                            innerDiv.style =
+                                `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+                                progress +
+                                `%; white-space:nowrap`;
+                            innerDiv.textContent = "Progress: " + progress + "%";
+                            if (overlayMode === "interacted") {
+                                drawBorderOnInteracted()
+                            }
+                            userObjPageActions.coverage = progress
+                            var sidenavProgress = document.getElementById("gamificationExtensionInputsProgress")
+                            var widgetProgress = interactedInputs * 100 / totalInputObjects
+                            sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+                                widgetProgress +
+                                `%; white-space:nowrap`;
+                            sidenavProgress.textContent = "Forms Progress: " + widgetProgress + "%"
+                            var table = document.getElementById("gamificationExtensionPageStatsTable")
+                            var inputsRow = table.rows[2]
+                            var pageStat = pageStatsObj.filter(filterURL)[0]
+                            inputsRow.cells[1].innerHTML = pageStat.interactedInputs.length
+                            inputsRow.cells[2].innerHTML = pageStat.interactedInputs.length
+                            inputsRow.cells[3].innerHTML = userObjPageActions.idsOfInputObjects.length
+                            var pageActions = JSON.stringify(retrievedObj);
+                            pageCoverageAchievements(progress, widgetProgress)
+                            chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
+                        } else if (result.interactionMode === "signal") {
+                            var signaledIssues = JSON.parse(result.signaledIssues)
+                            var pageIssues = signaledIssues.filter(filterUser)[0].pages.filter(filterURL)[0]
+                            var inputIds = pageIssues.signaledInputs;
+                            var inputPos = inputIds.indexOf(j - 1);
+                            if (inputPos < 0) {
+                                inputIds.push(j - 1);
+                                pageIssues.signaledInputs = inputIds;
+                            }
+                            drawBackground()
+                            chrome.storage.sync.set({ signaledIssues: JSON.stringify(signaledIssues) })
+                        }
+                    }
+                    );
+                }
+            }
+        });
+    }
+
+    for (var i = 0; i < buttonObjects.length; i++) {
+        if (!isButtonOfExtension(buttonObjects[i])) {
+            buttonObjects[i].addEventListener("click", function (event) {
+                var els = document.body.getElementsByTagName("button");
+                var found = false;
+                for (var j = 0; j < els.length && !found; j++) {
+                    if (els[j].id === event.target.id) {
+                        found = true;
+                        chrome.storage.sync.get(["pageActions", "pageStats", "interactionMode", "signaledIssues"], function (result) {
+                            if (result.interactionMode === "interact") {
+                                var retrievedObj = JSON.parse(result.pageActions);
+                                var newButton = false;
+                                var userObj = retrievedObj.filter(filterUser)[0]
+                                var userObjPageActions = userObj.pages.filter(filterURL)[0]
+                                var buttonIds = userObjPageActions.idsOfButtonObjects;
+                                var buttonPos = buttonIds.indexOf(j - 1);
+                                if (buttonPos < 0) {
+                                    buttonIds.push(j - 1);
+                                    userObjPageActions.idsOfButtonObjects = buttonIds;
+                                    newButton = true;
+                                }
+
+                                var pageStatsObj = JSON.parse(result.pageStats);
+                                var psObj = pageStatsObj.filter(filterURL)[0]
+                                var intButtonIds = psObj.interactedButtons;
+                                var intButtonPos = intButtonIds.indexOf(j - 1);
+                                if (intButtonPos < 0) {
+                                    intButtonIds.push(j - 1);
+                                    psObj.interactedButtons = intButtonIds;
+                                }
+                                if (newButton) {
+                                    var newButtonIds = psObj.newButtons;
+                                    var newButtonPos = newButtonIds.indexOf(j - 1);
+                                    if (newButtonPos < 0) {
+                                        newButtonIds.push(j - 1);
+                                        psObj.newButtons = newButtonIds;
+                                    }
+                                }
+                                var innerDiv = document.getElementById("gamificationExtensionTopnavInner");
+                                var totalLinkObjects = userObjPageActions.totalLinkObjects;
+                                var totalInputObjects = userObjPageActions.totalInputObjects;
+                                var totalButtonObjects = userObjPageActions.totalButtonObjects;
+                                var interactedLinks = userObjPageActions.idsOfLinkObjects.filter(onlyUnique).length;
+                                var interactedInputs = userObjPageActions.idsOfInputObjects.filter(onlyUnique).length;
+                                var interactedButtons = userObjPageActions.idsOfButtonObjects.filter(onlyUnique).length;
+                                var progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (totalLinkObjects + totalInputObjects + totalButtonObjects);
+                                innerDiv.style =
+                                    `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+                                    progress +
+                                    `%; white-space:nowrap`;
+                                innerDiv.textContent = "Progress: " + progress + "%";
+                                userObjPageActions.coverage = progress
+                                if (overlayMode === "interacted") {
+                                    drawBorderOnInteracted()
+                                }
+                                var sidenavProgress = document.getElementById("gamificationExtensionButtonsProgress")
+                                var widgetProgress = interactedButtons * 100 / totalButtonObjects
+                                sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
+                                    widgetProgress +
+                                    `%; white-space:nowrap`;
+                                sidenavProgress.textContent = "Buttons Progress: " + widgetProgress + "%"
+                                var table = document.getElementById("gamificationExtensionPageStatsTable")
+                                var buttonsRow = table.rows[3]
+                                var pageStat = pageStatsObj.filter(filterURL)[0]
+                                buttonsRow.cells[1].innerHTML = pageStat.interactedButtons.length
+                                buttonsRow.cells[2].innerHTML = pageStat.newButtons.length
+                                buttonsRow.cells[3].innerHTML = userObjPageActions.idsOfButtonObjects.length
+                                var pageActions = JSON.stringify(retrievedObj);
+                                pageCoverageAchievements(progress, widgetProgress)
+                                chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
+                            } else if (result.interactionMode === "signal") {
+                                var signaledIssues = JSON.parse(result.signaledIssues)
+                                var pageIssues = signaledIssues.filter(filterUser)[0].pages.filter(filterURL)[0]
+                                var buttonIds = pageIssues.signaledButtons;
+                                var buttonPos = buttonIds.indexOf(j - 1);
+                                if (buttonPos < 0) {
+                                    buttonIds.push(j - 1);
+                                    pageIssues.signaledButtons = buttonIds;
+                                }
+                                drawBackground()
+                                chrome.storage.sync.set({ signaledIssues: JSON.stringify(signaledIssues) })
+                            }
+
                         }
                         );
                     }

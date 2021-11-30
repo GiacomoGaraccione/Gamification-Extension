@@ -29,7 +29,7 @@
         "background",
         "notifications"
     ],
-    "version": "0.3",
+    "version": "0.4",
     "web_accessible_resources": [{
         "resources": ["img/*"], 
         "matches": ["<all_urls>"]

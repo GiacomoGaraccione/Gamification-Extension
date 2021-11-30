@@ -21,6 +21,24 @@ function removeBorders() {
     }
 }
 
+function removeBackground() {
+    var linksToRemove = document.body.getElementsByTagName("a")
+    for (var i = 0; i < linksToRemove.length; i++) {
+        linksToRemove[i].style = "background-image: none"
+    }
+
+    var inputsToRemove = document.body.getElementsByTagName("input");
+    for (var i = 0; i < inputsToRemove.length; i++) {
+        inputsToRemove[i].style = "background-image: none";
+    }
+
+    var buttonsToRemove = document.body.getElementsByTagName("button");
+    for (var i = 0; i < buttonsToRemove.length; i++) {
+        if (!isButtonOfExtension(buttonsToRemove[i]))
+            buttonsToRemove[i].style = "background-image: none";
+    }
+}
+
 function downloadFile() {
     function onlyUnique(value, index, self) {
         return self.indexOf(value) === index;
@@ -67,6 +85,21 @@ function downloadUserProfile() {
     })
 }
 
+function downloadSignaledIssues() {
+    chrome.storage.sync.get(["signaledIssues"], function (result) {
+        var blob = new Blob([result.signaledIssues], {
+            type: "text/plain;charset=UTF-8",
+        })
+
+        var url = window.URL.createObjectURL(blob)
+        var obj = {
+            url: url,
+            filename: "gamification-extension-signaled-issues.txt"
+        }
+        chrome.runtime.sendMessage({ obj: obj, mess: "download" })
+    })
+}
+
 function isButtonOfExtension(button) {
     return (
         button.id === "gamificationExtensionRemoveOverlaysButton" ||
@@ -75,7 +108,9 @@ function isButtonOfExtension(button) {
         button.id === "gamificationExtensionEndSessionButton" ||
         button.id === "gamificationExtensionToggleClickedElementsButton" ||
         button.id === "gamificationExtensionRemoveOverlaysButton" ||
-        button.id === "gamificationExtensionToggleAllElementsButton"
+        button.id === "gamificationExtensionToggleAllElementsButton" ||
+        button.id === "GamificationExtensionSignalModeButton" ||
+        button.id === "GamificationExtensionInteractModeButton"
     );
 }
 
@@ -131,12 +166,67 @@ function drawBorderOnInteracted() {
             }
         }
         var idsOfButtonObjects = pageActionsUser.idsOfButtonObjects;
-        for (var j = 0; j < idsOfButtonObjects.length; j++) {
+        for (var j = 0; j < buttons.length; j++) {
             if (idsOfButtonObjects.indexOf(j) >= 0 && !isButtonOfExtension(buttons[j])) {
                 buttons[j].style = "border:3px; border-style:solid; border-color:#0000FF; padding: 1em;";
             }
         }
     });
+}
+
+function drawBackground() {
+    chrome.storage.sync.get(["signaledIssues", "currentURL", "profileInfo"], function (result) {
+        var profileInfo = JSON.parse(result.profileInfo)
+        function filterUser(event) {
+            return event.username === profileInfo.username
+        }
+
+        function filterURL(event) {
+            return event.url === result.currentURL
+        }
+        var signaledIssues = JSON.parse(result.signaledIssues)
+        var issues = signaledIssues.filter(filterUser)[0].pages.filter(filterURL)[0]
+        var links = document.body.getElementsByTagName("a")
+        var inputs = document.body.getElementsByTagName("input")
+        var buttons = document.body.getElementsByTagName("button")
+
+        var signaledLinks = issues.signaledLinks
+        for (var j = 0; j < links.length; j++) {
+            if (signaledLinks.indexOf(j) >= 0) {
+                links[j].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
+            }
+        }
+
+        var signaledInputs = issues.signaledInputs
+        for (var j = 0; j < inputs.length; j++) {
+            if (signaledInputs.indexOf(j) >= 0) {
+                inputs[j].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
+            }
+        }
+
+        var signaledButtons = issues.signaledButtons
+        for (var j = 0; j < buttons.length; j++) {
+            if (signaledButtons.indexOf(j) >= 0 && !isButtonOfExtension(buttons[j])) {
+                buttons[j].style = "border:3px; border-style:solid; border-color:rgb(243 0 0); padding: 1em;";
+                //buttons[j].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
+            }
+        }
+    })
+}
+
+function drawBorders() {
+    chrome.storage.sync.get(["overlayMode", "interactionMode"], function (result) {
+        if (result.interactionMode === "interact") {
+            if (result.overlayMode === "interacted") {
+                drawBorderOnInteracted()
+            } else if (result.overlayMode === "all") {
+                drawBorderOnAll()
+            }
+        } else if (result.interactionMode === "signal") {
+            drawBackground()
+        }
+
+    })
 }
 
 function unlockAchievement(achievement, array) {

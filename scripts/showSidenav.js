@@ -12,7 +12,7 @@ if (found === null) {
     };
     document.body.appendChild(sideDiv);
     sideDiv.id = "gamificationExtensionSidenav";
-    sideDiv.style = "height: 100%; width: 0; position: fixed; z-index: 1; top: 0; right: 0; background-color: rgb(211 245 230); overflow-x: hidden; padding-top: 10px; transition: 0.5s;";
+    sideDiv.style = "height: 100%; width: 0; position: fixed; z-index: 1; top: 0; right: 0; background-color: rgb(211 245 230); overflow-x: hidden; padding-top: 10px; transition: 0.5s; overflow-y: scroll";
     var closeButton = document.createElement("button");
     sideDiv.appendChild(closeButton);
     closeButton.id = "gamificationExtensionSidenavCloseButton";
@@ -37,6 +37,7 @@ if (found === null) {
             document.body.removeChild(star);
         }
         removeBorders();
+        removeBackground()
         var topnav = document.getElementById("gamificationExtensionTopnav");
         if (topnav != null) {
             document.body.removeChild(topnav);
@@ -89,7 +90,6 @@ if (found === null) {
                 if (userPages.highestWidgets > userRankings.highestNewWidgets) {
                     userRankings.highestNewWidgets = userPages.highestWidgets
                 }
-                //TODO: aggiornare profilo
                 downloadUserProfile()
                 chrome.storage.sync.set({ pageActions: JSON.stringify(pageActions), registeredUsers: JSON.stringify(registeredUsers) })
 
@@ -139,6 +139,7 @@ if (found === null) {
                 };
                 document.body.appendChild(modalContainer);
                 downloadFile();
+                downloadSignaledIssues()
             }
         );
         chrome.storage.sync.set({ startingURL: "", pageStats: JSON.stringify([]) });
@@ -410,4 +411,48 @@ if (found === null) {
         sideDiv.appendChild(pageWidgetsRecord)
     }
     );
+    chrome.storage.sync.get(["interactionMode"], function (result) {
+        var interactionMode = result.interactionMode
+        var currentModeText = document.createElement("h3")
+        var currentText = interactionMode === "interact" ? "Current Mode: Page Interaction" : "Current Mode: Signal Issues"
+        currentModeText.textContent = currentText
+        sideDiv.appendChild(currentModeText)
+        var enterSignalModeButton = document.createElement("button")
+        enterSignalModeButton.id = "GamificationExtensionSignalModeButton"
+        sideDiv.appendChild(enterSignalModeButton)
+        enterSignalModeButton.textContent = "Signal Issues"
+        enterSignalModeButton.style.display = interactionMode === "interact" ? "flex" : "none"
+        var enterInteractModeButton = document.createElement("button")
+        enterInteractModeButton.id = "GamificationExtensionInteractModeButton"
+        sideDiv.appendChild(enterInteractModeButton)
+        enterInteractModeButton.textContent = "Interact with Page"
+        enterInteractModeButton.style.display = interactionMode === "signal" ? "flex" : "none"
+        enterSignalModeButton.onclick = function () {
+            chrome.storage.sync.set({ interactionMode: "signal" })
+            enterSignalModeButton.style.display = "none"
+            enterInteractModeButton.style.display = "flex"
+            currentModeText.textContent = "Current Mode: Signal Issues"
+            document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "none"
+            document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "none"
+            document.getElementById("gamificationExtensionToggleAllElementsButton").style.display = "none"
+            removeBorders()
+            drawBackground()
+        }
+        enterInteractModeButton.onclick = function () {
+            chrome.storage.sync.set({ interactionMode: "interact" })
+            enterSignalModeButton.style.display = "flex"
+            enterInteractModeButton.style.display = "none"
+            currentModeText.textContent = "Current Mode: Page Interaction"
+            document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "flex"
+            document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "flex"
+            document.getElementById("gamificationExtensionToggleAllElementsButton").style.display = "flex"
+            removeBackground()
+            drawBorders()
+        }
+        if (interactionMode === "signal") {
+            document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "none"
+            document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "none"
+            document.getElementById("gamificationExtensionToggleAllElementsButton").style.display = "none"
+        }
+    })
 }
