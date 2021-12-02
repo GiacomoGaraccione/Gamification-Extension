@@ -45,7 +45,7 @@ if (found === null) {
 
         //mostrare modal di riepilogo
         chrome.storage.sync.get(
-            ["visitedPages", "newPages", "pageStats", "pageActions", "currentURL", "profileInfo", "registeredUsers"],
+            ["visitedPages", "newPages", "pageStats", "pageActions", "currentURL", "profileInfo", "registeredUsers", "pageSession"],
             function (result) {
                 var profileInfo = JSON.parse(result.profileInfo)
                 function filterUser(event) {
@@ -140,6 +140,7 @@ if (found === null) {
                 document.body.appendChild(modalContainer);
                 downloadFile();
                 downloadSignaledIssues()
+                chrome.storage.sync.set({ previousSession: result.pageSession })
             }
         );
         chrome.storage.sync.set({ startingURL: "", pageStats: JSON.stringify([]) });
@@ -411,26 +412,33 @@ if (found === null) {
         sideDiv.appendChild(pageWidgetsRecord)
     }
     );
-    chrome.storage.sync.get(["interactionMode"], function (result) {
+    chrome.storage.sync.get(["interactionMode", "previousSession"], function (result) {
         var interactionMode = result.interactionMode
+        var previousSession = JSON.parse(result.previousSession)
         var currentModeText = document.createElement("h3")
-        var currentText = interactionMode === "interact" ? "Current Mode: Page Interaction" : "Current Mode: Signal Issues"
+        var currentText = interactionMode === "interact" ? "Current Mode: Page Interaction" : interactionMode === "signal" ? "Current Mode: Signal Issues" : "Current Mode: Replay Session"
         currentModeText.textContent = currentText
         sideDiv.appendChild(currentModeText)
         var enterSignalModeButton = document.createElement("button")
         enterSignalModeButton.id = "GamificationExtensionSignalModeButton"
         sideDiv.appendChild(enterSignalModeButton)
         enterSignalModeButton.textContent = "Signal Issues"
-        enterSignalModeButton.style.display = interactionMode === "interact" ? "flex" : "none"
+        enterSignalModeButton.style.display = interactionMode !== "signal" ? "flex" : "none"
         var enterInteractModeButton = document.createElement("button")
         enterInteractModeButton.id = "GamificationExtensionInteractModeButton"
         sideDiv.appendChild(enterInteractModeButton)
         enterInteractModeButton.textContent = "Interact with Page"
-        enterInteractModeButton.style.display = interactionMode === "signal" ? "flex" : "none"
+        enterInteractModeButton.style.display = interactionMode !== "interact" ? "flex" : "none"
+        var enterSessionModeButton = document.createElement("button")
+        enterSessionModeButton.id = "GamificationExtensionSessionModeButton"
+        sideDiv.appendChild(enterSessionModeButton)
+        enterSessionModeButton.textContent = "Replay Past Session"
+        enterSessionModeButton.style.display = interactionMode !== "session" ? "flex" : "none"
         enterSignalModeButton.onclick = function () {
             chrome.storage.sync.set({ interactionMode: "signal" })
             enterSignalModeButton.style.display = "none"
             enterInteractModeButton.style.display = "flex"
+            enterSessionModeButton.style.display = "flex"
             currentModeText.textContent = "Current Mode: Signal Issues"
             document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "none"
             document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "none"
@@ -442,6 +450,7 @@ if (found === null) {
             chrome.storage.sync.set({ interactionMode: "interact" })
             enterSignalModeButton.style.display = "flex"
             enterInteractModeButton.style.display = "none"
+            enterSessionModeButton.style.display = "flex"
             currentModeText.textContent = "Current Mode: Page Interaction"
             document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "flex"
             document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "flex"
@@ -449,7 +458,26 @@ if (found === null) {
             removeBackground()
             drawBorders()
         }
-        if (interactionMode === "signal") {
+        enterSessionModeButton.onclick = function () {
+            chrome.storage.sync.get(["sessionPosition"], function (result) {
+                if (result.sessionPosition >= previousSession.length) {
+                    chrome.storage.sync.set({ sessionPosition: 0 })
+                }
+                chrome.storage.sync.set({ interactionMode: "session" })
+                enterSessionModeButton.style.display = "none"
+                enterSignalModeButton.style.display = "flex"
+                enterInteractModeButton.style.display = "flex"
+                currentModeText.textContent = "Current Mode: Replay Session"
+                document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "none"
+                document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "none"
+                document.getElementById("gamificationExtensionToggleAllElementsButton").style.display = "none"
+                removeBackground()
+                removeBorders()
+                drawNextSessionElement()
+            })
+
+        }
+        if (interactionMode === "signal" || interactionMode === "session") {
             document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "none"
             document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "none"
             document.getElementById("gamificationExtensionToggleAllElementsButton").style.display = "none"

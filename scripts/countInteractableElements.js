@@ -131,6 +131,31 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
     }
     chrome.storage.sync.set({ signaledIssues: JSON.stringify(signaledIssues) })
 
+    /*chrome.storage.sync.set({
+        previousSession: JSON.stringify([
+            {
+                "url": "https://elite.polito.it/teaching/current-courses/513-02jskov-hci",
+                "id": 34,
+                "type": "link"
+            },
+            {
+                "url": "https://elite.polito.it/teaching/current-courses/513-02jskov-hci?start=1",
+                "id": 33,
+                "type": "link"
+            },
+            {
+                "url": "https://elite.polito.it/teaching/current-courses/513-02jskov-hci",
+                "id": 5,
+                "type": "input"
+            },
+            {
+                "url": "https://elite.polito.it/teaching/current-courses/513-02jskov-hci",
+                "id": 5,
+                "type": "input"
+            }
+        ]), sessionPosition: 0
+    })*/
+
     for (var i = 0; i < linkObjects.length; i++) {
         //funzione chiamata ogni volta che un link viene cliccato
         linkObjects[i].addEventListener("click", function (event) {
@@ -139,7 +164,7 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
             for (var j = 0; j < els.length && !found; j++) {
                 if (els[j].href === event.target.href) {
                     found = true;
-                    chrome.storage.sync.get(["pageActions", "pageStats", "interactionMode", "signaledIssues"], function (result) {
+                    chrome.storage.sync.get(["pageActions", "pageStats", "interactionMode", "signaledIssues", "pageSession", "previousSession", "sessionPosition"], function (result) {
                         if (result.interactionMode === "interact") {
                             var retrievedObj = JSON.parse(result.pageActions);
                             var newLink = false;
@@ -201,7 +226,14 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                             inputsRow.cells[3].innerHTML = userObjPageActions.idsOfInputObjects.length
                             var pageActions = JSON.stringify(retrievedObj);
                             pageCoverageAchievements(progress, widgetProgress)
-                            chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
+                            var pageSession = JSON.parse(result.pageSession)
+                            var pageSessionObj = {
+                                url: currentURL,
+                                id: j,
+                                type: "link"
+                            }
+                            pageSession.push(pageSessionObj)
+                            chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj), pageSession: JSON.stringify(pageSession) });
                         } else if (result.interactionMode === "signal") {
                             var signaledIssues = JSON.parse(result.signaledIssues)
                             var pageIssues = signaledIssues.filter(filterUser)[0].pages.filter(filterURL)[0]
@@ -213,8 +245,17 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                             }
                             drawBackground()
                             chrome.storage.sync.set({ signaledIssues: JSON.stringify(signaledIssues) })
+                        } else if (result.interactionMode === "session") {
+                            if (result.sessionPosition < JSON.parse(result.previousSession).length) {
+                                var previousSession = JSON.parse(result.previousSession)[result.sessionPosition]
+                                if (previousSession.id === j) {
+                                    cancelPreviousSessionElement()
+                                    chrome.storage.sync.set({ sessionPosition: result.sessionPosition + 1 }, function () {
+                                        drawNextSessionElement()
+                                    })
+                                }
+                            }
                         }
-
                     }
                     );
                 }
@@ -230,7 +271,7 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
             for (var j = 0; j < els.length && !found; j++) {
                 if (els[j].id === event.target.id) {
                     found = true;
-                    chrome.storage.sync.get(["pageActions", "pageStats", "interactionMode", "signaledIssues"], function (result) {
+                    chrome.storage.sync.get(["pageActions", "pageStats", "interactionMode", "signaledIssues", "pageSession", "previousSession", "sessionPosition"], function (result) {
                         if (result.interactionMode === "interact") {
                             var retrievedObj = JSON.parse(result.pageActions);
                             var newInput = false;
@@ -290,7 +331,15 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                             inputsRow.cells[3].innerHTML = userObjPageActions.idsOfInputObjects.length
                             var pageActions = JSON.stringify(retrievedObj);
                             pageCoverageAchievements(progress, widgetProgress)
-                            chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
+                            var pageSession = JSON.parse(result.pageSession)
+                            var pageSessionObj = {
+                                url: currentURL,
+                                id: j,
+                                type: "input"
+                            }
+                            pageSession.push(pageSessionObj)
+                            chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj), pageSession: JSON.stringify(pageSession) });
+
                         } else if (result.interactionMode === "signal") {
                             var signaledIssues = JSON.parse(result.signaledIssues)
                             var pageIssues = signaledIssues.filter(filterUser)[0].pages.filter(filterURL)[0]
@@ -302,6 +351,15 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                             }
                             drawBackground()
                             chrome.storage.sync.set({ signaledIssues: JSON.stringify(signaledIssues) })
+                        } else if (result.interactionMode === "session") {
+                            if (result.sessionPosition < JSON.parse(result.previousSession).length) {
+                                var previousSession = JSON.parse(result.previousSession)[result.sessionPosition]
+                                if (previousSession.id === j) {
+                                    chrome.storage.sync.set({ sessionPosition: result.sessionPosition + 1 }, function () {
+                                        drawNextSessionElement()
+                                    })
+                                }
+                            }
                         }
                     }
                     );
@@ -318,7 +376,7 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                 for (var j = 0; j < els.length && !found; j++) {
                     if (els[j].id === event.target.id) {
                         found = true;
-                        chrome.storage.sync.get(["pageActions", "pageStats", "interactionMode", "signaledIssues"], function (result) {
+                        chrome.storage.sync.get(["pageActions", "pageStats", "interactionMode", "signaledIssues", "pageSession", "previousSession", "sessionPosition"], function (result) {
                             if (result.interactionMode === "interact") {
                                 var retrievedObj = JSON.parse(result.pageActions);
                                 var newButton = false;
@@ -379,7 +437,14 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                 buttonsRow.cells[3].innerHTML = userObjPageActions.idsOfButtonObjects.length
                                 var pageActions = JSON.stringify(retrievedObj);
                                 pageCoverageAchievements(progress, widgetProgress)
-                                chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj) });
+                                var pageSession = JSON.parse(result.pageSession)
+                                var pageSessionObj = {
+                                    url: currentURL,
+                                    id: j - 1,
+                                    type: "button"
+                                }
+                                pageSession.push(pageSessionObj)
+                                chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj), pageSession: JSON.stringify(pageSession) });
                             } else if (result.interactionMode === "signal") {
                                 var signaledIssues = JSON.parse(result.signaledIssues)
                                 var pageIssues = signaledIssues.filter(filterUser)[0].pages.filter(filterURL)[0]
@@ -391,6 +456,15 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                 }
                                 drawBackground()
                                 chrome.storage.sync.set({ signaledIssues: JSON.stringify(signaledIssues) })
+                            } else if (result.interactionMode === "session") {
+                                if (result.sessionPosition < JSON.parse(result.previousSession).length) {
+                                    var previousSession = JSON.parse(result.previousSession)[result.sessionPosition]
+                                    if (previousSession.id === j) {
+                                        chrome.storage.sync.set({ sessionPosition: result.sessionPosition + 1 }, function () {
+                                            drawNextSessionElement()
+                                        })
+                                    }
+                                }
                             }
 
                         }

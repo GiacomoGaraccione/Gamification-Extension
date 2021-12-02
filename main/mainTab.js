@@ -175,6 +175,7 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
     chrome.storage.sync.set({ visitedPages: [] });
     chrome.storage.sync.set({ pageStats: JSON.stringify(empty) });
     chrome.storage.sync.set({ newPages: [] });
+    chrome.storage.sync.set({ pageSession: JSON.stringify(empty) })
     if (tab === undefined) {
       chrome.runtime.sendMessage({
         mess: "openNew",

@@ -110,8 +110,51 @@ function isButtonOfExtension(button) {
         button.id === "gamificationExtensionRemoveOverlaysButton" ||
         button.id === "gamificationExtensionToggleAllElementsButton" ||
         button.id === "GamificationExtensionSignalModeButton" ||
-        button.id === "GamificationExtensionInteractModeButton"
+        button.id === "GamificationExtensionInteractModeButton" ||
+        button.id === "GamificationExtensionSessionModeButton"
     );
+}
+
+function cancelPreviousSessionElement() {
+    chrome.storage.sync.get(["previousSession", "sessionPosition", "currentURL"], function (result) {
+        var elementToCancel = JSON.parse(result.previousSession)[result.sessionPosition]
+        var elements = elementToCancel.type !== "link" ? document.getElementsByTagName(elementToCancel.type) : document.getElementsByTagName("a")
+        for (var i = 0; i < elements.length; i++) {
+            if (elementToCancel.url === result.currentURL) {
+                if (i === elementToCancel.id) {
+                    if (elementToCancel.type === "button" && !isButtonOfExtension(elements[i])) {
+                        elements[i].style = "border:0; border-style:solid;"
+                    } else if (elementToCancel.type === "input" || elementToCancel.type === "link") {
+                        elements[i - 1].style = "border:0; border-style:solid;"
+
+                    }
+                }
+            }
+        }
+    })
+}
+
+function drawNextSessionElement() {
+    chrome.storage.sync.get(["previousSession", "sessionPosition", "currentURL"], function (result) {
+        var elementToShow = JSON.parse(result.previousSession)[result.sessionPosition]
+        if (result.sessionPosition >= JSON.parse(result.previousSession).length) {
+            alert("Replay ended")
+        } else {
+            var elements = elementToShow.type !== "link" ? document.getElementsByTagName(elementToShow.type) : document.getElementsByTagName("a")
+            for (var i = 0; i < elements.length; i++) {
+                if (elementToShow.url === result.currentURL) {
+                    if (i === elementToShow.id) {
+                        if (elementToShow.type === "button" && !isButtonOfExtension(elements[i])) {
+                            elements[i].style = "border:3px; border-style:solid; border-color:#FFD700; padding: 1em;";
+                        } else if (elementToShow.type === "input" || elementToShow.type === "link") {
+                            elements[i - 1].style = "border:3px; border-style:solid; border-color:#FFD700; padding: 1em;";
+
+                        }
+                    }
+                }
+            }
+        }
+    })
 }
 
 function drawBorderOnAll() {
@@ -224,6 +267,8 @@ function drawBorders() {
             }
         } else if (result.interactionMode === "signal") {
             drawBackground()
+        } else if (result.interactionMode === "session") {
+            drawNextSessionElement()
         }
 
     })

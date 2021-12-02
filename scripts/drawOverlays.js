@@ -7,6 +7,8 @@ chrome.storage.sync.get(["overlayMode", "interactionMode"], function (result) {
         }
     } else if (result.interactionMode === "signal") {
         drawBackground()
+    } else if (result.interactionMode === "session") {
+        drawNextSessionElement()
     }
 
 })
