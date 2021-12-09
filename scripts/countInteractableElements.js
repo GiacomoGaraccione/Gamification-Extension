@@ -163,9 +163,23 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
             var els = document.body.getElementsByTagName("a");
             for (var j = 0; j < els.length && !found; j++) {
                 if (els[j].href === event.target.href) {
+                    event.preventDefault()
                     found = true;
                     chrome.storage.sync.get(["pageActions", "pageStats", "interactionMode", "signaledIssues", "pageSession", "previousSession", "sessionPosition"], function (result) {
                         if (result.interactionMode === "interact") {
+                            const goTo = event.target.href
+                            var coords = {
+                                x: els[j - 1].getBoundingClientRect().x,
+                                y: els[j - 1].getBoundingClientRect().y,
+                                height: els[j - 1].getBoundingClientRect().height,
+                                width: els[j - 1].getBoundingClientRect().width
+                            }
+                            alert("Select Scheda Chrome to have the crop taken correctly")
+                            chrome.runtime.sendMessage({ obj: coords, mess: "capture" }, function () {
+                                setTimeout(function () {
+                                    window.location = goTo;
+                                }, 3000);
+                            })
                             var retrievedObj = JSON.parse(result.pageActions);
                             var newLink = false;
                             var userObj = retrievedObj.filter(filterUser)[0]
@@ -273,6 +287,14 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                     found = true;
                     chrome.storage.sync.get(["pageActions", "pageStats", "interactionMode", "signaledIssues", "pageSession", "previousSession", "sessionPosition"], function (result) {
                         if (result.interactionMode === "interact") {
+                            var coords = {
+                                x: els[j].parentElement.getBoundingClientRect().x,
+                                y: els[j].parentElement.getBoundingClientRect().y,
+                                height: els[j].parentElement.getBoundingClientRect().height,
+                                width: els[j].parentElement.getBoundingClientRect().width
+                            }
+                            alert("Select Scheda Chrome to have the crop taken correctly")
+                            chrome.runtime.sendMessage({ obj: coords, mess: "capture" })
                             var retrievedObj = JSON.parse(result.pageActions);
                             var newInput = false;
                             var userObj = retrievedObj.filter(filterUser)[0]
@@ -339,6 +361,9 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                             }
                             pageSession.push(pageSessionObj)
                             chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj), pageSession: JSON.stringify(pageSession) });
+                            /*chrome.runtime.sendMessage({ obj: null, mess: "screenshot" }, function (imageString) {
+                                console.log(imageString);
+                            })*/
 
                         } else if (result.interactionMode === "signal") {
                             var signaledIssues = JSON.parse(result.signaledIssues)
@@ -378,6 +403,14 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                         found = true;
                         chrome.storage.sync.get(["pageActions", "pageStats", "interactionMode", "signaledIssues", "pageSession", "previousSession", "sessionPosition"], function (result) {
                             if (result.interactionMode === "interact") {
+                                var coords = {
+                                    x: els[j - 1].getBoundingClientRect().x,
+                                    y: els[j - 1].getBoundingClientRect().y,
+                                    height: els[j - 1].getBoundingClientRect().height,
+                                    width: els[j - 1].getBoundingClientRect().width
+                                }
+                                alert("Select Scheda Chrome to have the crop taken correctly")
+                                chrome.runtime.sendMessage({ obj: coords, mess: "capture" })
                                 var retrievedObj = JSON.parse(result.pageActions);
                                 var newButton = false;
                                 var userObj = retrievedObj.filter(filterUser)[0]

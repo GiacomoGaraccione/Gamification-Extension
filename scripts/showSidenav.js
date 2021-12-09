@@ -140,6 +140,7 @@ if (found === null) {
                 document.body.appendChild(modalContainer);
                 downloadFile();
                 downloadSignaledIssues()
+                downloadSessionImage()
                 chrome.storage.sync.set({ previousSession: result.pageSession })
             }
         );

@@ -100,6 +100,37 @@ function downloadSignaledIssues() {
     })
 }
 
+function downloadSessionImage() {
+    chrome.storage.sync.get(["widgetCrops"], function (result) {
+        var widgetCrops = JSON.parse(result.widgetCrops)
+        var height = 0
+        var width = 0
+        widgetCrops.forEach((el) => {
+            height += el.height;
+            if (el.width > width) {
+                width = el.width
+            }
+        })
+        var can = createCanvas(width, height)
+        var ctx = can.getContext("2d")
+
+        async function combine(images) {
+            const imgs = await Promise.all(images.map((imageObj) => {
+                return new Promise(function (resolve) {
+                    var img = new Image();
+                    img.onload = function () { resolve(img); };
+                    img.src = imageObj.imageUrl;
+                });
+            }));
+            for (var i = 0; i < images.length; i++) {
+                ctx.drawImage(imgs[i], 0, images[i].offY, images[i].width, images[i].height)
+            }
+            chrome.runtime.sendMessage({ mess: "img", url: can.toDataURL() })
+        }
+        combine(widgetCrops)
+    })
+}
+
 function isButtonOfExtension(button) {
     return (
         button.id === "gamificationExtensionRemoveOverlaysButton" ||

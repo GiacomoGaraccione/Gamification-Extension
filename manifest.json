@@ -27,7 +27,9 @@
         "scripting",
         "downloads",
         "background",
-        "notifications"
+        "notifications",
+        "<all_urls>",
+        "desktopCapture"
     ],
     "version": "0.4",
     "web_accessible_resources": [{

@@ -23,6 +23,30 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         priority: 2
       }
     )
+  } else if (request.mess === "capture") {
+    async function capture() {
+      var [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true
+      })
+      chrome.desktopCapture.chooseDesktopMedia([
+        "screen",
+        "window",
+        "tab"
+      ], tab, (streamId) => {
+        if (streamId && streamId.length) {
+          setTimeout(() => {
+            chrome.tabs.sendMessage(tab.id, { name: "stream", streamId: streamId, coords: request.obj })
+          }, 200)
+        }
+      })
+    }
+    capture()
+  } else if (request.mess === "img") {
+    chrome.downloads.download({
+      filename: "screenshot.png",
+      url: request.url
+    })
   }
 });
 
@@ -109,6 +133,8 @@ function callScripts(tab) {
       "scripts/showSidenav.js",
       "scripts/countInteractableElements.js",
       "scripts/showTopbar.js",
-      "scripts/drawOverlays.js"]
+      "scripts/drawOverlays.js",
+      "scripts/messageListener.js"]
   });
 }
+
