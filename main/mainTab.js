@@ -169,13 +169,15 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
     var url = document.getElementById("pageURL").value;
     var [tab] = await chrome.tabs.query({ url: url });
     var domain = new URL(url);
-    var empty = [];
 
-    chrome.storage.sync.set({ startingURL: domain.hostname });
-    chrome.storage.sync.set({ visitedPages: [] });
-    chrome.storage.sync.set({ pageStats: JSON.stringify(empty) });
-    chrome.storage.sync.set({ newPages: [] });
-    chrome.storage.sync.set({ pageSession: JSON.stringify(empty) })
+    chrome.storage.sync.set({
+      startingURL: domain.hostname,
+      visitedPages: [],
+      pageStats: JSON.stringify([]),
+      newPages: [],
+      pageSession: JSON.stringify([]),
+      widgetCrops: JSON.stringify([])
+    });
     if (tab === undefined) {
       chrome.runtime.sendMessage({
         mess: "openNew",
@@ -192,7 +194,13 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
       profileInfo.achievements = []
       profileInfo.availableAvatars = profileInfo.availableAvatars.slice(0, 3)
       //console.log(profileInfo)
-      chrome.storage.sync.set({ pageActions: JSON.stringify([]), profileInfo: JSON.stringify(profileInfo) });
+      chrome.storage.sync.set({
+        pageActions: JSON.stringify([]),
+        profileInfo: JSON.stringify(profileInfo),
+        signaledIssues: JSON.stringify([]),
+        previousSession: JSON.stringify([]),
+        widgetCrops: JSON.stringify([])
+      });
 
     })
   });

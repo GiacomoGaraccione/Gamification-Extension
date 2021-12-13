@@ -19,6 +19,10 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
         return self.indexOf(value) === index;
     }
 
+    chrome.runtime.sendMessage({ mess: "fetch" }, (response) => {
+        console.log(response)
+    })
+
     //ottiene tutti gli elementi di tipo 'a' (link ad altre pagine)
     var linkObjects = document.body.getElementsByTagName("a");
     var totalLinkObjects = linkObjects.length;
@@ -159,15 +163,15 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
     for (var i = 0; i < linkObjects.length; i++) {
         //funzione chiamata ogni volta che un link viene cliccato
         linkObjects[i].addEventListener("click", function (event) {
+            event.preventDefault()
+            const goTo = event.target.href
             var found = false;
             var els = document.body.getElementsByTagName("a");
             for (var j = 0; j < els.length && !found; j++) {
                 if (els[j].href === event.target.href) {
-                    event.preventDefault()
                     found = true;
                     chrome.storage.sync.get(["pageActions", "pageStats", "interactionMode", "signaledIssues", "pageSession", "previousSession", "sessionPosition"], function (result) {
                         if (result.interactionMode === "interact") {
-                            const goTo = event.target.href
                             var coords = {
                                 x: els[j - 1].getBoundingClientRect().x,
                                 y: els[j - 1].getBoundingClientRect().y,
@@ -222,9 +226,6 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                 progress +
                                 `%; white-space:nowrap`;
                             innerDiv.textContent = "Progress: " + progress + "%";
-                            if (overlayMode === "interacted") {
-                                drawBorderOnInteracted()
-                            }
                             userObjPageActions.coverage = progress
                             var sidenavProgress = document.getElementById("gamificationExtensionLinksProgress")
                             var widgetProgress = interactedInputs * 100 / totalInputObjects
@@ -247,7 +248,11 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                 type: "link"
                             }
                             pageSession.push(pageSessionObj)
-                            chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj), pageSession: JSON.stringify(pageSession) });
+                            chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj), pageSession: JSON.stringify(pageSession) }, function () {
+                                if (overlayMode === "interacted") {
+                                    drawBorderOnInteracted()
+                                }
+                            });
                         } else if (result.interactionMode === "signal") {
                             var signaledIssues = JSON.parse(result.signaledIssues)
                             var pageIssues = signaledIssues.filter(filterUser)[0].pages.filter(filterURL)[0]
@@ -265,7 +270,11 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                 if (previousSession.id === j) {
                                     cancelPreviousSessionElement()
                                     chrome.storage.sync.set({ sessionPosition: result.sessionPosition + 1 }, function () {
+                                        cancelPreviousSessionElement()
                                         drawNextSessionElement()
+                                        setTimeout(function () {
+                                            window.location = goTo;
+                                        }, 1000);
                                     })
                                 }
                             }
@@ -335,9 +344,6 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                 progress +
                                 `%; white-space:nowrap`;
                             innerDiv.textContent = "Progress: " + progress + "%";
-                            if (overlayMode === "interacted") {
-                                drawBorderOnInteracted()
-                            }
                             userObjPageActions.coverage = progress
                             var sidenavProgress = document.getElementById("gamificationExtensionInputsProgress")
                             var widgetProgress = interactedInputs * 100 / totalInputObjects
@@ -360,11 +366,11 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                 type: "input"
                             }
                             pageSession.push(pageSessionObj)
-                            chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj), pageSession: JSON.stringify(pageSession) });
-                            /*chrome.runtime.sendMessage({ obj: null, mess: "screenshot" }, function (imageString) {
-                                console.log(imageString);
-                            })*/
-
+                            chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj), pageSession: JSON.stringify(pageSession) }, function () {
+                                if (overlayMode === "interacted") {
+                                    drawBorderOnInteracted()
+                                }
+                            });
                         } else if (result.interactionMode === "signal") {
                             var signaledIssues = JSON.parse(result.signaledIssues)
                             var pageIssues = signaledIssues.filter(filterUser)[0].pages.filter(filterURL)[0]
@@ -374,13 +380,15 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                 inputIds.push(j - 1);
                                 pageIssues.signaledInputs = inputIds;
                             }
-                            drawBackground()
-                            chrome.storage.sync.set({ signaledIssues: JSON.stringify(signaledIssues) })
+                            chrome.storage.sync.set({ signaledIssues: JSON.stringify(signaledIssues) }, function () {
+                                drawBackground()
+                            })
                         } else if (result.interactionMode === "session") {
                             if (result.sessionPosition < JSON.parse(result.previousSession).length) {
                                 var previousSession = JSON.parse(result.previousSession)[result.sessionPosition]
                                 if (previousSession.id === j) {
                                     chrome.storage.sync.set({ sessionPosition: result.sessionPosition + 1 }, function () {
+                                        cancelPreviousSessionElement()
                                         drawNextSessionElement()
                                     })
                                 }
@@ -453,9 +461,6 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                     `%; white-space:nowrap`;
                                 innerDiv.textContent = "Progress: " + progress + "%";
                                 userObjPageActions.coverage = progress
-                                if (overlayMode === "interacted") {
-                                    drawBorderOnInteracted()
-                                }
                                 var sidenavProgress = document.getElementById("gamificationExtensionButtonsProgress")
                                 var widgetProgress = interactedButtons * 100 / totalButtonObjects
                                 sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
@@ -477,7 +482,11 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                     type: "button"
                                 }
                                 pageSession.push(pageSessionObj)
-                                chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj), pageSession: JSON.stringify(pageSession) });
+                                chrome.storage.sync.set({ pageActions: pageActions, pageStats: JSON.stringify(pageStatsObj), pageSession: JSON.stringify(pageSession) }, function () {
+                                    if (overlayMode === "interacted") {
+                                        drawBorderOnInteracted()
+                                    }
+                                });
                             } else if (result.interactionMode === "signal") {
                                 var signaledIssues = JSON.parse(result.signaledIssues)
                                 var pageIssues = signaledIssues.filter(filterUser)[0].pages.filter(filterURL)[0]
@@ -494,6 +503,7 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                     var previousSession = JSON.parse(result.previousSession)[result.sessionPosition]
                                     if (previousSession.id === j) {
                                         chrome.storage.sync.set({ sessionPosition: result.sessionPosition + 1 }, function () {
+                                            cancelPreviousSessionElement()
                                             drawNextSessionElement()
                                         })
                                     }

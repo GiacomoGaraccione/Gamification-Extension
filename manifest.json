@@ -31,7 +31,7 @@
         "<all_urls>",
         "desktopCapture"
     ],
-    "version": "0.4",
+    "version": "0.5",
     "web_accessible_resources": [{
         "resources": ["img/*"], 
         "matches": ["<all_urls>"]

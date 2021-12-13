@@ -47,7 +47,17 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       filename: "screenshot.png",
       url: request.url
     })
+  } else if (request.mess === "fetch") {
+    const apiCall = "http://localhost:3001/api/users/Giacomo/avatars"
+    fetch(apiCall).then(function (res) {
+      res.json().then(function (data) {
+        console.log(data)
+        sendResponse({ data: data })
+      })
+    })
   }
+
+  return true
 });
 
 chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {

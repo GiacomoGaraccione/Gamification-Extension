@@ -148,14 +148,14 @@ function isButtonOfExtension(button) {
 
 function cancelPreviousSessionElement() {
     chrome.storage.sync.get(["previousSession", "sessionPosition", "currentURL"], function (result) {
-        var elementToCancel = JSON.parse(result.previousSession)[result.sessionPosition]
+        var elementToCancel = JSON.parse(result.previousSession)[result.sessionPosition - 1]
         var elements = elementToCancel.type !== "link" ? document.getElementsByTagName(elementToCancel.type) : document.getElementsByTagName("a")
         for (var i = 0; i < elements.length; i++) {
             if (elementToCancel.url === result.currentURL) {
                 if (i === elementToCancel.id) {
                     if (elementToCancel.type === "button" && !isButtonOfExtension(elements[i])) {
                         elements[i].style = "border:0; border-style:solid;"
-                    } else if (elementToCancel.type === "input" || elementToCancel.type === "link") {
+                    } else if (elementToCancel.type === "input" || elementToCancel.type === "input") {
                         elements[i - 1].style = "border:0; border-style:solid;"
 
                     }
