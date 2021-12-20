@@ -1,3 +1,5 @@
+let apiUrl = "http://localhost:3001/api"
+
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.mess === "create") {
@@ -25,7 +27,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     )
   } else if (request.mess === "capture") {
     async function capture() {
-      var [tab] = await chrome.tabs.query({
+      let [tab] = await chrome.tabs.query({
         active: true,
         currentWindow: true
       })
@@ -48,13 +50,247 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       url: request.url
     })
   } else if (request.mess === "fetch") {
-    const apiCall = "http://localhost:3001/api/users/Giacomo/avatars"
-    fetch(apiCall).then(function (res) {
-      res.json().then(function (data) {
-        console.log(data)
-        sendResponse({ data: data })
+    const apiCall = apiUrl + request.body
+    //called when a page is visited
+    //updates the count of widgets present in the page
+    if (request.body === "/pages" && request.method === "post") {
+      fetch(apiCall, {
+        method: 'post',
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify({
+          url: request.content.url,
+          totalLinkObjects: request.content.totalLinkObjects,
+          totalInputObjects: request.content.totalInputObjects,
+          totalButtonObjects: request.content.totalButtonObjects
+        })
+      }).then(function () {
+        sendResponse({ data: request.content })
       })
-    })
+    } else if (request.body === "/pages" && request.method === "get") {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          function filterURL(event) {
+            return event.url === request.content.url
+          }
+          sendResponse({ data: data.filter(filterURL) })
+        })
+      })
+    } else if (request.body.indexOf("/pages/actions") >= 0 && request.method === "get") {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          function filterURL(event) {
+            return event.url === request.content.url
+          }
+          sendResponse({ data: data.filter(filterURL) })
+        })
+      })
+    } else if (request.body.indexOf("/pages/actions") >= 0 && request.method === "post") {
+      fetch(apiCall, {
+        method: "post",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify({
+          url: request.content.url,
+          username: request.content.username,
+          objectId: request.content.objectId,
+          objectType: request.content.objectType
+        })
+      }).then((res) => {
+        if (res.ok) {
+          sendResponse({ data: "OK" })
+        } else {
+          sendResponse({ data: "ERROR" })
+        }
+      })
+    } else if (request.body.indexOf("/pages/issues") >= 0 && request.method === "get") {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          function filterURL(event) {
+            return event.url === request.content.url
+          }
+          sendResponse({ data: data.filter(filterURL) })
+        })
+      })
+    } else if (request.body.indexOf("/pages/issues") >= 0 && request.method === "post") {
+      fetch(apiCall, {
+        method: "post",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify({
+          url: request.content.url,
+          username: request.content.username,
+          objectId: request.content.objectId,
+          objectType: request.content.objectType
+        })
+      }).then((res) => {
+        if (res.ok) {
+          sendResponse({ data: "OK" })
+        } else {
+          sendResponse({ data: "ERROR" })
+        }
+      })
+    } else if (request.body.indexOf("/pages/records") >= 0 && request.method === "post" && request.firstTime) {
+      let body = {
+        url: request.content.url,
+        username: request.content.username,
+        highestWidgets: 0,
+        coverage: 0,
+        linksCoverage: 0,
+        inputsCoverage: 0,
+        buttonsCoverage: 0,
+        highestLinks: 0,
+        highestInputs: 0,
+        highestButtons: 0
+      }
+      fetch(apiCall, {
+        method: "post",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify(body)
+      }).then((res) => {
+        res.json().then((data) => {
+          sendResponse({ data: data })
+        })
+      })
+    } else if (request.body.indexOf("/pages/records") >= 0 && request.method === "post" && !request.firstTime) {
+      let pos = apiCall.indexOf(request.content.username)
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          function filterURL(event) {
+            return event.url === request.content.url
+          }
+          let record = data.filter(filterURL)[0]
+          let body = {
+            username: request.content.username,
+            url: request.content.url,
+            coverage: request.content.coverage,
+            highestWidgets: request.content.highestWidgets ? request.content.highestWidgets : record.highestWidgets,
+            linksCoverage: request.content.linksCoverage ? request.content.linksCoverage : record.linksCoverage,
+            inputsCoverage: request.content.inputsCoverage ? request.content.inputsCoverage : record.inputsCoverage,
+            buttonsCoverage: request.content.buttonsCoverage ? request.content.buttonsCoverage : record.buttonsCoverage,
+            highestLinks: request.content.highestLinks ? request.content.highestLinks : record.highestLinks,
+            highestInputs: request.content.highestInputs ? request.content.highestInputs : record.highestInputs,
+            highestButtons: request.content.highestButtons ? request.content.highestButtons : record.highestButtons
+          }
+          fetch(apiCall.slice(0, pos - 1), {
+            method: "post",
+            headers: {
+              "Content-type": "application/json"
+            },
+            body: JSON.stringify(body)
+          }).then((res) => {
+            res.json().then((data) => {
+              sendResponse({ data: data })
+            })
+          })
+        })
+      })
+    } else if (request.body.indexOf("/pages/records") >= 0 && request.method === "get") {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          sendResponse({ data: data })
+        })
+      })
+    } else if (request.body.indexOf("/users") >= 0 && request.body.indexOf("/records") >= 0 && request.method === "get") {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          sendResponse({ data: data })
+        })
+      })
+    } else if (request.body.indexOf("/users") >= 0 && request.body.indexOf("/records") >= 0 && request.method === "post") {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          let body = {
+            username: request.content.username,
+            highestNewVisitedPages: request.content.highestNewVisitedPages > data.highestNewVisitedPages ? request.content.highestNewVisitedPages : data.highestNewVisitedPages,
+            highestNewWidgets: request.content.highestNewWidgets > data.highestNewWidgets ? request.content.highestNewWidgets : data.highestNewWidgets,
+            highestCoverage: request.content.highestCoverage > data.highestCoverage ? request.content.highestCoverage : data.highestCoverage
+          }
+          fetch(apiCall, {
+            method: "PATCH",
+            headers: {
+              "Content-type": "application/json"
+            },
+            body: JSON.stringify(body)
+          }).then((res) => {
+            res.json().then((data) => {
+              sendResponse({ data: data })
+            })
+          })
+        })
+      })
+    } else if (request.body.indexOf("/users") >= 0 && request.body.indexOf("/achievements") >= 0 && request.method === "get") {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          sendResponse({ data: data })
+        })
+      })
+    } else if (request.body.indexOf("/users") >= 0 && request.body.indexOf("/achievements") >= 0 && request.method === "post") {
+      fetch(apiCall, {
+        method: "post",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify({ text: request.content.text })
+      }).then((res) => {
+        if (res.ok) {
+          sendResponse({ data: "OK" })
+        } else {
+          sendResponse({ data: "ERROR" })
+        }
+      })
+    } else if (request.body.indexOf("/users") >= 0 && request.body.indexOf("/avatars") >= 0 && request.method === "get") {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          sendResponse({ data: data })
+        })
+      })
+    } else if (request.body.indexOf("/users") >= 0 && request.body.indexOf("/avatars") >= 0 && request.method === "post") {
+      fetch(apiCall, {
+        method: "post",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify({ name: request.content.name })
+      }).then((res) => {
+        if (res.ok) {
+          sendResponse({ data: "OK" })
+        } else {
+          sendResponse({ data: "ERROR" })
+        }
+      })
+    } else if (request.body.indexOf("/users/records/") >= 0) {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          sendResponse({ data: data })
+        })
+      })
+    }
   }
 
   return true
@@ -63,19 +299,16 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
 
   chrome.storage.sync.get(["pastPages", "startingURL"], async function (result) {
-    var startingURL = result.startingURL;
-    var [tab] = await chrome.tabs.query({
+    let startingURL = result.startingURL;
+    let [tab] = await chrome.tabs.query({
       active: true,
       currentWindow: true,
     });
     if (tab.active === true && tab.url.indexOf(startingURL) >= 0 && startingURL !== "") {
       chrome.storage.sync.get(["visitedPages", "newPages", "pageActions", "profileInfo"], function (result) {
-        var visitedPages = result.visitedPages;
-        var newPages = result.newPages;
-        var profileInfo = JSON.parse(result.profileInfo)
-        function filterUser(event) {
-          return event.username === profileInfo.username
-        }
+        let visitedPages = result.visitedPages;
+        let newPages = result.newPages;
+        let profileInfo = JSON.parse(result.profileInfo)
         chrome.storage.sync.set({ currentURL: tab.url }, function () {
           if (!visitedPages.includes(tab.url)) {
             visitedPages.push(tab.url);
@@ -84,15 +317,20 @@ chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
           function filterURL(event) {
             return event.url === tab.url;
           }
-          var pageActions = JSON.parse(result.pageActions);
-          var pageActionsFiltered = pageActions.filter(filterUser)[0];
-          var pagesFiltered = pageActionsFiltered ? pageActionsFiltered.pages.filter(filterURL) : []
+          let apiCall = apiUrl + "/pages/records/" + profileInfo.username
+          fetch(apiCall, {
+            method: "get"
+          }).then((res) => {
+            res.json().then((data) => {
+              let pagesFiltered = data.filter(filterURL)
 
-          if (!newPages.includes(tab.url) && pagesFiltered.length === 0) {
-            newPages.push(tab.url);
-            chrome.storage.sync.set({ newPages: newPages });
-          }
-          callScripts(tab)
+              if (!newPages.includes(tab.url) && pagesFiltered.length === 0) {
+                newPages.push(tab.url);
+                chrome.storage.sync.set({ newPages: newPages });
+              }
+              callScripts(tab)
+            })
+          })
         });
       });
     }
@@ -101,18 +339,15 @@ chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
 
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   chrome.storage.sync.get(["pastPages", "startingURL", "profileInfo"], async function (result) {
-    var startingURL = result.startingURL;
-    var profileInfo = JSON.parse(result.profileInfo)
-    function filterUser(event) {
-      return event.username === profileInfo.username
-    }
+    let startingURL = result.startingURL;
+    let profileInfo = JSON.parse(result.profileInfo)
     if (changeInfo.status === "complete") {
-      var reachedURL = tab.url;
+      let reachedURL = tab.url;
       if (reachedURL.indexOf(startingURL) >= 0 && startingURL !== "") {
         chrome.storage.sync.get(["visitedPages", "newPages", "pageActions"], function (result) {
           chrome.storage.sync.set({ currentURL: tab.url, tabId: tab.id }, function () {
-            var visitedPages = result.visitedPages;
-            var newPages = result.newPages;
+            let visitedPages = result.visitedPages;
+            let newPages = result.newPages;
             if (!visitedPages.includes(tab.url)) {
               visitedPages.push(tab.url);
               chrome.storage.sync.set({ visitedPages: visitedPages });
@@ -121,14 +356,20 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
             function filterURL(event) {
               return event.url === tab.url;
             }
-            var pageActions = JSON.parse(result.pageActions);
-            var pageActionsFiltered = pageActions.filter(filterUser)[0];
-            var pagesFiltered = pageActionsFiltered ? pageActionsFiltered.pages.filter(filterURL) : []
-            if (!newPages.includes(tab.url) && pagesFiltered.length === 0) {
-              newPages.push(tab.url);
-              chrome.storage.sync.set({ newPages: newPages });
-            }
-            callScripts(tab)
+            let apiCall = apiUrl + "/pages/records/" + profileInfo.username
+            fetch(apiCall, {
+              method: "get"
+            }).then((res) => {
+              res.json().then((data) => {
+                let pagesFiltered = data.filter(filterURL)
+
+                if (!newPages.includes(tab.url) && pagesFiltered.length === 0) {
+                  newPages.push(tab.url);
+                  chrome.storage.sync.set({ newPages: newPages });
+                }
+                callScripts(tab)
+              })
+            })
           });
         });
       }

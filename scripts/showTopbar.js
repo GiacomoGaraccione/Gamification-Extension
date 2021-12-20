@@ -1,78 +1,58 @@
-chrome.storage.sync.get(["pageActions", "currentURL", "profileInfo"], function (result) {
+chrome.storage.sync.get(["currentURL", "profileInfo"], function (result) {
     var profileInfo = JSON.parse(result.profileInfo)
-    function filterUser(event) {
-        return event.username === profileInfo.username
+
+    function filterLink(event) {
+        return event.objectType === "link"
+    }
+    function filterInput(event) {
+        return event.objectType === "input"
+    }
+    function filterButton(event) {
+        return event.objectType === "button"
     }
 
-    function filterURL(event) {
-        return event.url === result.currentURL
-    }
-    var pageActions = JSON.parse(result.pageActions);
-    var userActions = pageActions.filter(filterUser)[0]
-    var firstTime = userActions === undefined
-    var pageActs = firstTime ? {} : userActions.pages.filter(filterURL)[0]
-    var newPage = true
-    if (!firstTime) {
-        var pages = userActions.pages.filter(filterURL)[0]
-        if (pages) {
-            newPage = false
-        }
-    }
+    chrome.runtime.sendMessage({
+        mess: "fetch",
+        method: "get",
+        body: "/pages/actions/" + profileInfo.username,
+        content: { url: result.currentURL }
+    }, (response) => {
+        let pageActions = response.data
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            method: "get",
+            body: "/pages",
+            content: { url: result.currentURL }
+        }, (response2) => {
+            let pageInfo = response2.data[0]
+            let totalLinkObjects = pageInfo.totalLinkObjects;
+            let totalInputObjects = pageInfo.totalInputObjects;
+            let totalButtonObjects = pageInfo.totalButtonObjects;
+            let denom = (totalLinkObjects + totalInputObjects + totalButtonObjects) !== 0
+            let interactedLinks = pageActions.filter(filterLink).length;
+            let interactedInputs = pageActions.filter(filterInput).length;
+            let interactedButtons = pageActions.filter(filterButton).length;
+            let progress = denom ? ((interactedLinks + interactedInputs + interactedButtons) * 100) / (totalLinkObjects + totalInputObjects + totalButtonObjects) : -1;
 
-    var buttons = document.getElementsByTagName("button")
-    var buttonsCount = 0
-    for (var i = 0; i < buttons.length; i++) {
-        if (!isButtonOfExtension(buttons[i])) {
-            buttonsCount++
-        }
-    }
-
-    var totalLinkObjects = newPage ? document.getElementsByTagName("a").length : pageActs.totalLinkObjects;
-    var totalInputObjects = newPage ? document.getElementsByTagName("input").length : pageActs.totalInputObjects;
-    var totalButtonObjects = newPage ? buttonsCount : pageActs.totalButtonObjects;
-    var denom = (totalLinkObjects + totalInputObjects + totalButtonObjects) !== 0
-    var interactedLinks = newPage ? 0 : pageActs.idsOfLinkObjects.filter(onlyUnique).length;
-    var interactedInputs = newPage ? 0 : pageActs.idsOfInputObjects.filter(onlyUnique).length;
-    var interactedButtons = newPage ? 0 : pageActs.idsOfButtonObjects.filter(onlyUnique).length;
-    var progress = denom ? ((interactedLinks + interactedInputs + interactedButtons) * 100) / (totalLinkObjects + totalInputObjects + totalButtonObjects) : -1;
-
-
-    var topnav = document.createElement("div");
-    topnav.id = "gamificationExtensionTopnav";
-    var found = document.getElementById("gamificationExtensionTopnav");
-    if (found === null) {
-        document.body.appendChild(topnav);
-        topnav.style = "background-color: transparent;position: fixed;bottom: 0;width: 100%;";
-        var outerDiv = document.createElement("div");
-        outerDiv.id = "gamificationExtensionTopnavOuter";
-        outerDiv.style =
-            "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
-        topnav.appendChild(outerDiv);
-        var innerDiv = document.createElement("div");
-        innerDiv.id = "gamificationExtensionTopnavInner";
-        if (progress === undefined) {
-            progress = 0;
-        }
-        innerDiv.style =
-            `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` +
-            progress +
-            `%; white-space:nowrap`;
-        innerDiv.textContent = denom ? "Progress: " + progress + "%" : "There are no widgets in this page";
-        outerDiv.appendChild(innerDiv);
-        chrome.storage.sync.get(["currentURL", "pageActions", "profileInfo"], function (result) {
-            var profileInfo = JSON.parse(result.profileInfo)
-            function filterUser(event) {
-                return event.username === profileInfo.username
+            let topnav = document.createElement("div");
+            topnav.id = "gamificationExtensionTopnav";
+            let found = document.getElementById("gamificationExtensionTopnav");
+            if (found === null) {
+                document.body.appendChild(topnav);
+                topnav.style = "background-color: transparent;position: fixed;bottom: 0;width: 100%;";
+                let outerDiv = document.createElement("div");
+                outerDiv.id = "gamificationExtensionTopnavOuter";
+                outerDiv.style = "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
+                topnav.appendChild(outerDiv);
+                let innerDiv = document.createElement("div");
+                innerDiv.id = "gamificationExtensionTopnavInner";
+                if (progress === undefined) {
+                    progress = 0;
+                }
+                innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
+                innerDiv.textContent = denom ? "Progress: " + progress + "%" : "There are no widgets in this page";
+                outerDiv.appendChild(innerDiv);
             }
-            function filterURL(event) {
-                return event.url === result.currentURL
-            }
-            var pageActions = JSON.parse(result.pageActions);
-            var pageActionsUser = pageActions.filter(filterUser)[0]
-
-            var page = pageActionsUser.pages.filter(filterURL)[0]
-            page.coverage = progress
-            chrome.storage.sync.set({ pageActions: JSON.stringify(pageActions) })
         })
-    }
+    })
 });

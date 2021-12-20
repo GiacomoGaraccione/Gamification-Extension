@@ -135,6 +135,18 @@ app.patch("/api/users/:username/records", [
     }
 })
 
+
+app.get("/api/users/:username/records", [
+    param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
+], (req, res) => {
+    if (utilities.resolveExpressValidator(validationResult(req), res)) {
+        const username = req.params.username
+        userDao.getUserRecords(username)
+            .then((records) => res.json(records))
+            .catch((err) => utilities.resolveErrors(err, res))
+    }
+})
+
 /**
  * GET API - Retrieval of the ranking of all users, ordered by their "highestNewVisitedPages" score
  * Request Parameters: none
@@ -186,6 +198,54 @@ app.get("/api/users/records/coverage", (req, res) => {
         .catch((err) => utilities.resolveErrors(err, res))
 })
 
+/**
+ * POST API - Unlock of a new avatar by a user
+ * Request Parameters: a string equal to the username of the user that unlocked the new avatar
+ *      Example input: {"username": "Giacomo"}
+ * Request Body Content: a string equal to the name of the unlocked avatar
+ *      Example input:
+ *          {"name":"Heart Avatar"}
+ * Response Body Content: none
+ */
+app.post("/api/users/:username/avatars", [
+    param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/),
+    body("name", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
+], (req, res) => {
+    if (utilities.resolveExpressValidator(validationResult(req), res)) {
+        const username = req.params.username
+        const name = req.body.name
+        userDao.addAvatar(username, name)
+            .then(() => res.status(200).json(utilities.successObj))
+            .catch((err) => {
+                utilities.resolveErrors(err, res)
+            })
+    }
+})
+
+/**
+ * POST API - Unlock of a new achievement by a user
+ * Request Parameters: a string equal to the username of the user that unlocked the new achievement
+ *      Example input: {"username": "Giacomo"}
+ * Request Body Content: a string equal to the name of the unlocked achievement
+ *      Example input:
+ *          {"text":"Obtained 100% coverage for a type of widgets!"}
+ * Response Body Content: none
+ */
+app.post("/api/users/:username/achievements", [
+    param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/),
+    body("text", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
+], (req, res) => {
+    if (utilities.resolveExpressValidator(validationResult(req), res)) {
+        const username = req.params.username
+        const text = req.body.text
+        userDao.addAchievement(username, text)
+            .then(() => res.status(200).json(utilities.successObj))
+            .catch((err) => {
+                utilities.resolveErrors(err, res)
+            })
+    }
+})
+
 
 //------------------------ Page APIs ---------------------------------
 
@@ -213,6 +273,12 @@ app.post("/api/pages", [
     }
 })
 
+app.get("/api/pages", (req, res) => {
+    pageDao.getPages()
+        .then((pages) => res.json(pages))
+        .catch((err) => utilities.resolveErrors(err, res))
+})
+
 /**
  * GET API - Retrieval of the count of all widgets present in a page
  * Request Parameters: none
@@ -223,11 +289,11 @@ app.post("/api/pages", [
  *      Example output:
  *          {"url":"https://elite.polito.it/teaching/current-courses/513-02jskov-hci","totalLinkObjects":64,"totalInputObjects":2,"totalButtonObjects":1}
  */
-app.get("/api/pages", [
-    body("url", "Parameter doesn't respect specifications").notEmpty().isURL()
+app.get("/api/pages/:url", [
+    param("url", "Parameter doesn't respect specifications").notEmpty()
 ], (req, res) => {
     if (utilities.resolveExpressValidator(validationResult(req), res)) {
-        const url = req.body.url
+        const url = req.params.url
         pageDao.getPage(url)
             .then((page) => res.json(page))
             .catch((err) => utilities.resolveErrors(err, res))
@@ -260,22 +326,20 @@ app.post("/api/pages/actions", [
 
 /**
  * GET API - Retrieval of the count of all widgets interacted with by a user in a page
- * Request Parameters: none
- * Request Body Content: an object containing the url of the page whose information is to be retrieved and the username of the user that made the actions in the page
+ * Request Parameters: a string equal to the username of the user whose actions are requested
  *      Example input:
- *          {"url":"https://elite.polito.it/teaching/current-courses/513-02jskov-hci", "username":"Giacomo"}
+ *          {"username":"Giacomo"}
+ * Request Body Content: none
  * Response Body Content: an array of objects, each one containing id and type of an interacted widget
  *      Example output:
  *          [{"username":"Giacomo","url":"https://elite.polito.it/teaching/current-courses/513-02jskov-hci","objectId":32,"objectType":"link"},{"username":"Giacomo","url":"https://elite.polito.it/teaching/current-courses/513-02jskov-hci","objectId":33,"objectType":"link"}]
  */
-app.get("/api/pages/actions", [
-    body("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/),
-    body("url", "Parameter doesn't respect specifications").notEmpty().isURL()
+app.get("/api/pages/actions/:username", [
+    param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
 ], (req, res) => {
     if (utilities.resolveExpressValidator(validationResult(req), res)) {
-        const username = req.body.username
-        const url = req.body.url
-        pageDao.getPageActions(username, url)
+        const username = req.params.username
+        pageDao.getPageActions(username)
             .then((actions) => res.json(actions))
             .catch((err) => utilities.resolveErrors(err, res))
     }
@@ -305,53 +369,51 @@ app.post("/api/pages/issues", [
 
 /**
  * GET API - Retrieval of the count of all issues reported by a user in a page
- * Request Parameters: none
- * Request Body Content: an object containing the url of the page whose information is to be retrieved and the username of the user that signaled the issues
+ * Request Parameters: a string equal to the username of the user whose reported issues are requested
  *      Example input:
- *          {"url":"https://elite.polito.it/teaching/current-courses/513-02jskov-hci", "username":"Giacomo"}
+ *          {"username":"Giacomo"}
+ * Request Body Content: none
  * Response Body Content: an array of objects, each one containing id and type of a signaled widget
  *      Example output:
  *          [{"username":"Giacomo","url":"https://elite.polito.it/teaching/current-courses/513-02jskov-hci","objectId":32,"objectType":"link"}]
  */
-app.get("/api/pages/issues", [
-    body("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/),
-    body("url", "Parameter doesn't respect specifications").notEmpty().isURL()
+app.get("/api/pages/issues/:username", [
+    param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
 ], (req, res) => {
     if (utilities.resolveExpressValidator(validationResult(req), res)) {
-        const username = req.body.username
-        const url = req.body.url
-        pageDao.getPageIssues(username, url)
-            .then((actions) => res.json(actions))
+        const username = req.params.username
+        pageDao.getPageIssues(username)
+            .then((issues) => res.json(issues))
             .catch((err) => utilities.resolveErrors(err, res))
     }
 })
 
-app.post("/api/users/:username/avatars", [
-    param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/),
-    body("name", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
-], (req, res) => {
+app.post("/api/pages/records", /*[],*/(req, res) => {
     if (utilities.resolveExpressValidator(validationResult(req), res)) {
-        const username = req.params.username
-        const name = req.body.name
-        userDao.addAvatar(username, name)
-            .then(() => res.status(200).json(utilities.successObj))
+        const pageRecord = req.body
+        pageDao.addPageRecord(pageRecord)
+            .then((records) => res.json(records))
             .catch((err) => {
                 utilities.resolveErrors(err, res)
             })
     }
 })
 
-app.post("/api/users/:username/achievements", [
-    param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/),
-    body("text", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
+/**
+ * GET API - Retrieval of all records of all pages of a user
+ * Request Parameters: a string equal to the username of the user whose records are requested
+ *      Example input:
+ *          {"username":"Giacomo"}
+ * Request Body Content: none
+ * Response Body Content: none
+ */
+app.get("/api/pages/records/:username", [
+    param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
 ], (req, res) => {
     if (utilities.resolveExpressValidator(validationResult(req), res)) {
         const username = req.params.username
-        const text = req.body.text
-        userDao.addAchievement(username, text)
-            .then(() => res.status(200).json(utilities.successObj))
-            .catch((err) => {
-                utilities.resolveErrors(err, res)
-            })
+        pageDao.getPageRecords(username)
+            .then((records) => res.json(records))
+            .catch((err) => utilities.resolveErrors(err, res))
     }
 })

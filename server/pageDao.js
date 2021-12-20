@@ -37,9 +37,22 @@ exports.addPage = function (page) {
     })
 }
 
+exports.getPages = function () {
+    return new Promise((resolve, reject) => {
+        const sql = "SELECT * FROM PageInfo"
+        db.all(sql, [], (err, rows) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                resolve(rows)
+            }
+        })
+    })
+}
+
 exports.getPage = function (url) {
     return new Promise((resolve, reject) => {
-        console.log(url)
         const sql = "SELECT * FROM PageInfo WHERE url = ?"
         db.get(sql, [url], (err, row) => {
             if (err) {
@@ -66,10 +79,10 @@ exports.addPageAction = function (pageAction) {
     })
 }
 
-exports.getPageActions = function (username, url) {
+exports.getPageActions = function (username) {
     return new Promise((resolve, reject) => {
-        const sql = "SELECT * FROM PageActions WHERE username = ? AND url = ?"
-        db.all(sql, [username, url], (err, rows) => {
+        const sql = "SELECT * FROM PageActions WHERE username = ?"
+        db.all(sql, [username], (err, rows) => {
             if (err) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                 reject(utilities.errorObjs.dbError)
@@ -94,10 +107,79 @@ exports.addPageIssue = function (pageAction) {
     })
 }
 
-exports.getPageIssues = function (username, url) {
+exports.getPageIssues = function (username) {
     return new Promise((resolve, reject) => {
-        const sql = "SELECT * FROM PageIssues WHERE username = ? AND url = ?"
-        db.all(sql, [username, url], (err, rows) => {
+        const sql = "SELECT * FROM PageIssues WHERE username = ?"
+        db.all(sql, [username], (err, rows) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                resolve(rows)
+            }
+        })
+    })
+}
+
+exports.addPageRecord = function (pageRecord) {
+    return new Promise((resolve, reject) => {
+        const sqlCh = "SELECT * FROM PageRecords WHERE url = ?"
+        db.get(sqlCh, [pageRecord.url], (errCh, rowCh) => {
+            if (errCh) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + errCh.errno + " - code: " + errCh.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                if (!rowCh) {
+                    const sql = "INSERT INTO PageRecords(username, url, highestWidgets, coverage, linksCoverage, inputsCoverage, buttonsCoverage, highestLinks, highestInputs, highestButtons) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                    db.run(sql, [pageRecord.username, pageRecord.url, pageRecord.highestWidgets, pageRecord.coverage, pageRecord.linksCoverage, pageRecord.inputsCoverage, pageRecord.buttonsCoverage, pageRecord.highestLinks, pageRecord.highestInputs, pageRecord.highestButtons], (err, row) => {
+                        if (err) {
+                            utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                            reject(utilities.errorObjs.dbError)
+                        } else {
+                            resolve(pageRecord)
+                        }
+                    })
+
+                } else {
+                    let highestWidgets = pageRecord.highestWidgets > rowCh.highestWidgets ? pageRecord.highestWidgets : rowCh.highestWidgets
+                    let coverage = pageRecord.coverage > rowCh.coverage ? pageRecord.coverage : rowCh.coverage
+                    let linksCoverage = pageRecord.linksCoverage > rowCh.linksCoverage ? pageRecord.linksCoverage : rowCh.linksCoverage
+                    let inputsCoverage = pageRecord.inputsCoverage > rowCh.inputsCoverage ? pageRecord.inputsCoverage : rowCh.inputsCoverage
+                    let buttonsCoverage = pageRecord.buttonsCoverage > rowCh.buttonsCoverage ? pageRecord.buttonsCoverage : rowCh.buttonsCoverage
+                    let highestLinks = pageRecord.highestLinks > rowCh.highestLinks ? pageRecord.highestLinks : rowCh.highestLinks
+                    let highestInputs = pageRecord.highestInputs > rowCh.highestInputs ? pageRecord.highestInputs : rowCh.highestInputs
+                    let highestButtons = pageRecord.highestButtons > rowCh.highestButtons ? pageRecord.highestButtons : rowCh.highestButtons
+                    const sql = "UPDATE PageRecords SET highestWidgets = ?, coverage = ?, linksCoverage = ?, inputsCoverage = ?, buttonsCoverage = ?, highestLinks = ?, highestInputs = ?, highestButtons = ? WHERE url = ? AND username = ?"
+                    db.run(sql, [highestWidgets, coverage, linksCoverage, inputsCoverage, buttonsCoverage, highestLinks, highestInputs, highestButtons, pageRecord.url, pageRecord.username], (err, row) => {
+                        if (err) {
+                            utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                            reject(utilities.errorObjs.dbError)
+                        } else {
+                            let ret = {
+                                username: pageRecord.username,
+                                url: pageRecord.url,
+                                highestWidgets: highestWidgets,
+                                coverage: coverage,
+                                linksCoverage: linksCoverage,
+                                inputsCoverage: inputsCoverage,
+                                buttonsCoverage: buttonsCoverage,
+                                highestLinks: highestLinks,
+                                highestInputs: highestInputs,
+                                highestButtons: highestButtons
+                            }
+                            resolve(ret)
+                        }
+                    })
+                }
+            }
+        })
+    })
+}
+
+exports.getPageRecords = function (username) {
+    return new Promise((resolve, reject) => {
+        const sql = "SELECT * FROM PageRecords WHERE username = ?"
+        db.all(sql, [username], (err, rows) => {
             if (err) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                 reject(utilities.errorObjs.dbError)

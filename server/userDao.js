@@ -108,6 +108,20 @@ exports.updateUserRecords = function (record) {
     })
 }
 
+exports.getUserRecords = function (username) {
+    return new Promise((resolve, reject) => {
+        const sql = "SELECT * FROM Records WHERE username = ?"
+        db.get(sql, [username], (err, row) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                resolve(row)
+            }
+        })
+    })
+}
+
 exports.getRecords = function () {
     return new Promise((resolve, reject) => {
         const sql = "SELECT * FROM Records"

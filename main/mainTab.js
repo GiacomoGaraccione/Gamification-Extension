@@ -1,44 +1,44 @@
-var recordFileButton = document.getElementById("recordFileButton");
-var profileFileButton = document.getElementById("profileFileButton");
-var profileButton = document.getElementById("profileButton")
-var pageURL = document.getElementById("pageURL");
-var pageURLButton = document.getElementById("pageURLButton");
-var resetButton = document.getElementById("resetButton");
-var confirmProfileButton = document.getElementById("confirmProfileButton")
-var usernameField = document.getElementById("usernameField")
-var logoutButton = document.getElementById("logoutButton")
-var viewProfileButton = document.getElementById("viewProfileButton")
-var firstWrapper = document.getElementById("firstWrapper")
-var secondWrapper = document.getElementById("secondWrapper")
-var thirdWrapper = document.getElementById("thirdWrapper")
-var fourthWrapper = document.getElementById("fourthWrapper")
-var newProfileDiv = document.getElementById("newProfileDiv")
-var uploadProfileDiv = document.getElementById("uploadProfileDiv")
-var uploadSessionDiv = document.getElementById("uploadSessionDiv")
-var resetSessionDiv = document.getElementById("resetSessionDiv")
-var urlDiv = document.getElementById("urlDiv")
-var logoutDiv = document.getElementById("logoutDiv")
-var viewProfileDiv = document.getElementById("viewProfileDiv")
-var title = document.getElementById("title")
-var confirmButtonWrapper = document.getElementById("confirmButtonWrapper")
-var redAvatarContainer = document.getElementById("redAvatarContainer")
-var greenAvatarContainer = document.getElementById("greenAvatarContainer")
-var blueAvatarContainer = document.getElementById("blueAvatarContainer")
-var selectableAvatars = document.getElementById("selectableAvatars")
-var achievementsContainer = document.getElementById("achievements")
-var goBackButton = document.getElementById("goBackButton")
-var viewLeaderboardButton = document.getElementById("viewLeaderboardButton")
-var returnButton = document.getElementById("returnButton")
-var highestNewVisitedPages = document.getElementById("highestNewVisitedPages")
-var highestNewWidgets = document.getElementById("highestNewWidgets")
-var highestCoverage = document.getElementById("highestCoverage")
-var printLeaderboard = document.getElementById("printLeaderboard")
-var importLeaderboard = document.getElementById("importLeaderboard")
+let recordFileButton = document.getElementById("recordFileButton");
+let profileFileButton = document.getElementById("profileFileButton");
+let profileButton = document.getElementById("profileButton")
+let pageURL = document.getElementById("pageURL");
+let pageURLButton = document.getElementById("pageURLButton");
+let resetButton = document.getElementById("resetButton");
+let confirmProfileButton = document.getElementById("confirmProfileButton")
+let usernameField = document.getElementById("usernameField")
+let logoutButton = document.getElementById("logoutButton")
+let viewProfileButton = document.getElementById("viewProfileButton")
+let firstWrapper = document.getElementById("firstWrapper")
+let secondWrapper = document.getElementById("secondWrapper")
+let thirdWrapper = document.getElementById("thirdWrapper")
+let fourthWrapper = document.getElementById("fourthWrapper")
+let newProfileDiv = document.getElementById("newProfileDiv")
+let uploadProfileDiv = document.getElementById("uploadProfileDiv")
+let uploadSessionDiv = document.getElementById("uploadSessionDiv")
+let resetSessionDiv = document.getElementById("resetSessionDiv")
+let urlDiv = document.getElementById("urlDiv")
+let logoutDiv = document.getElementById("logoutDiv")
+let viewProfileDiv = document.getElementById("viewProfileDiv")
+let title = document.getElementById("title")
+let confirmButtonWrapper = document.getElementById("confirmButtonWrapper")
+let redAvatarContainer = document.getElementById("redAvatarContainer")
+let greenAvatarContainer = document.getElementById("greenAvatarContainer")
+let blueAvatarContainer = document.getElementById("blueAvatarContainer")
+let selectableAvatars = document.getElementById("selectableAvatars")
+let achievementsContainer = document.getElementById("achievements")
+let goBackButton = document.getElementById("goBackButton")
+let viewLeaderboardButton = document.getElementById("viewLeaderboardButton")
+let returnButton = document.getElementById("returnButton")
+let highestNewVisitedPages = document.getElementById("highestNewVisitedPages")
+let highestNewWidgets = document.getElementById("highestNewWidgets")
+let highestCoverage = document.getElementById("highestCoverage")
+let printLeaderboard = document.getElementById("printLeaderboard")
+let importLeaderboard = document.getElementById("importLeaderboard")
 
-var url = "";
-var username = ""
-var selectedAvatar = ""
-var avatarDivs = []
+let url = "";
+let username = ""
+let selectedAvatar = ""
+let avatarDivs = []
 
 function compareAchievements(a, b) {
   if (a.path === "../img/achievement_bronze.png") {
@@ -50,11 +50,17 @@ function compareAchievements(a, b) {
   } else if (a.path === "../img/achievement_silver.png") {
     if (b.path === "../img/achievement_bronze.png") {
       return 1
+    } else if (b.path === "../img/achievement_gold.png") {
+      return 1
     } else {
       return 0
     }
   } else {
-    return 0
+    if (b.path === "../img/achievement_gold.png") {
+      return 0
+    } else {
+      return 1
+    }
   }
 }
 
@@ -87,30 +93,30 @@ function highlightDefaultAvatar(selected, second, third, color) {
 }
 
 function drawTable(container, mode, data) {
-  var copy = data
+  /*let copy = data
   if (mode === "VP") {
     copy.sort((a, b) => b.highestNewVisitedPages - a.highestNewVisitedPages)
   } else if (mode === "W") {
     copy.sort((a, b) => b.highestNewWidgets - a.highestNewWidgets)
   } else if (mode === "C") {
     copy.sort((a, b) => b.highestCoverage - a.highestCoverage)
-  }
+  }*/
   if (container.childNodes.length === 3) {
-    var tableVP = document.createElement("table")
-    var tableVPHead = document.createElement("thead")
-    var cell1 = document.createElement("th")
-    var cell2 = document.createElement("th")
+    let tableVP = document.createElement("table")
+    let tableVPHead = document.createElement("thead")
+    let cell1 = document.createElement("th")
+    let cell2 = document.createElement("th")
     tableVP.appendChild(tableVPHead)
     tableVPHead.appendChild(cell1)
     tableVPHead.appendChild(cell2)
     cell1.appendChild(document.createTextNode("Username"))
     cell2.appendChild(document.createTextNode("Score"))
-    for (var i = 0; i < copy.length; i++) {
-      var row = tableVP.insertRow()
-      var cell3 = row.insertCell()
-      var cell4 = row.insertCell()
-      cell3.appendChild(document.createTextNode(copy[i].username))
-      var text = mode === "VP" ? copy[i].highestNewVisitedPages : mode === "W" ? copy[i].highestNewWidgets : copy[i].highestCoverage
+    for (let i = 0; i < data.length; i++) {
+      let row = tableVP.insertRow()
+      let cell3 = row.insertCell()
+      let cell4 = row.insertCell()
+      cell3.appendChild(document.createTextNode(data[i].username))
+      let text = mode === "VP" ? data[i].highestNewVisitedPages : mode === "W" ? data[i].highestNewWidgets : data[i].highestCoverage
       cell4.appendChild(document.createTextNode(text))
     }
     container.appendChild(tableVP)
@@ -118,13 +124,26 @@ function drawTable(container, mode, data) {
 }
 
 function drawLeaderboards() {
-
-  chrome.storage.sync.get(["registeredUsers"], function (result) {
-    var registeredUsers = JSON.parse(result.registeredUsers)
-    drawTable(highestNewVisitedPages, "VP", registeredUsers)
-    drawTable(highestNewWidgets, "W", registeredUsers)
-    drawTable(highestCoverage, "C", registeredUsers)
-
+  chrome.runtime.sendMessage({
+    mess: "fetch",
+    method: "get",
+    body: "/users/records/pages"
+  }, (response) => {
+    drawTable(highestNewVisitedPages, "VP", response.data)
+    chrome.runtime.sendMessage({
+      mess: "fetch",
+      method: "get",
+      body: "/users/records/widgets"
+    }, (response2) => {
+      drawTable(highestNewWidgets, "W", response2.data)
+      chrome.runtime.sendMessage({
+        mess: "fetch",
+        method: "get",
+        body: "/users/records/coverage"
+      }, (response3) => {
+        drawTable(highestCoverage, "C", response3.data)
+      })
+    })
   })
 }
 
@@ -138,9 +157,9 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
   }
 
   profileFileButton.addEventListener("click", function () {
-    var input = profileFileButton.parentElement.getElementsByTagName("input");
+    let input = profileFileButton.parentElement.getElementsByTagName("input");
     input[0].addEventListener("change", function () {
-      var fr = new FileReader();
+      let fr = new FileReader();
 
       fr.onload = function () {
         chrome.storage.sync.set({ profileInfo: fr.result });
@@ -166,9 +185,9 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
   });
 
   pageURLButton.addEventListener("click", async () => {
-    var url = document.getElementById("pageURL").value;
-    var [tab] = await chrome.tabs.query({ url: url });
-    var domain = new URL(url);
+    let url = document.getElementById("pageURL").value;
+    let [tab] = await chrome.tabs.query({ url: url });
+    let domain = new URL(url);
 
     chrome.storage.sync.set({
       startingURL: domain.hostname,
@@ -186,6 +205,7 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
     } else {
       chrome.tabs.update(tab.id, { highlighted: true });
     }
+    //chiudere tab con main page?
   });
 
   resetButton.addEventListener("click", function () {
@@ -210,26 +230,27 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
     secondWrapper.style.display = "flex"
   })
 
+  //LOGIN
   confirmProfileButton.addEventListener("click", function () {
     chrome.storage.sync.get(["registeredUsers"], function (result) {
       function filterUsers(event) {
         return event.username === username
       }
-      var registeredUsers = result.registeredUsers === undefined ? [] : JSON.parse(result.registeredUsers)
-      var userObj = {
+      let registeredUsers = result.registeredUsers === undefined ? [] : JSON.parse(result.registeredUsers)
+      let userObj = {
         username: username,
         highestNewVisitedPages: 0,
         highestNewWidgets: 0,
         highestCoverage: 0
       }
-      var filteredUsers = registeredUsers.filter(filterUsers)
+      let filteredUsers = registeredUsers.filter(filterUsers)
       if (filteredUsers.length > 0) {
         alert("Error: this username is already taken")
       } else if (username === "" || selectedAvatar === "") {
         alert("Error: choose a username and an avatar")
       } else {
         registeredUsers.push(userObj)
-        var profileInfo = {
+        let profileInfo = {
           username: username,
           selectedAvatar: selectedAvatar,
           availableAvatars: [{ name: "Green Avatar", url: "../img/default_green.png" }, { name: "Red Avatar", url: "../img/default_red.png" }, { name: "Blue Avatar", url: "../img/default_blue.png" }],
@@ -290,87 +311,100 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
 
   viewProfileButton.addEventListener("click", function () {
     chrome.storage.sync.get(["profileInfo"], function (result) {
-      var profileInfo = JSON.parse(result.profileInfo)
+      let profileInfo = JSON.parse(result.profileInfo)
       firstWrapper.style.display = "none"
       thirdWrapper.style.display = "flex"
       if (selectableAvatars.childNodes.length === 0 && achievementsContainer.childNodes.length === 0) {
-        for (var i = 0; i < profileInfo.availableAvatars.length; i++) {
-          var div = document.createElement("div")
-          div.className = "file"
-          var h2 = document.createElement("h2")
-          h2.style = "text-align: center;"
-          h2.textContent = profileInfo.availableAvatars[i].name
-          div.appendChild(h2)
-          var img = document.createElement("img")
-          img.style = "max-width:100%; max-height:100%;"
-          img.src = profileInfo.availableAvatars[i].url
-          div.appendChild(img)
-          selectableAvatars.appendChild(div)
-          if (profileInfo.selectedAvatar === profileInfo.availableAvatars[i].url) {
-            div.style = `border:3px; border-style:solid; border-color:#FFD700; padding: 1em;`
-          }
-          div.id = i + 1
-          avatarDivs.push(div)
-          function changeSelectedAvatar(divClicked, otherDivs) {
-            if (divClicked !== undefined) {
-              divClicked.style = `border:3px; border-style:solid; border-color:#FFD700; padding: 1em;`
-              otherDivs.map((d) => d.style = "border:0; border-style:solid;")
-              var child = divClicked.childNodes[1]
-              var pos = child.src.indexOf("/img")
-              var src = ".." + child.src.slice(pos)
-              profileInfo.selectedAvatar = src
-              chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) })
+        chrome.runtime.sendMessage({
+          mess: "fetch",
+          method: "get",
+          body: "/users/" + profileInfo.username + "/avatars"
+        }, (response) => {
+          let avatars = response.data
+          chrome.runtime.sendMessage({
+            mess: "fetch",
+            method: "get",
+            body: "/users/" + profileInfo.username + "/achievements"
+          }, (response2) => {
+            let achievements = response2.data
+            for (let i = 0; i < avatars.length; i++) {
+              let div = document.createElement("div")
+              div.className = "file"
+              let h2 = document.createElement("h2")
+              h2.style = "text-align: center;"
+              h2.textContent = avatars[i].name
+              div.appendChild(h2)
+              let img = document.createElement("img")
+              img.style = "max-width:100%; max-height:100%;"
+              img.src = avatars[i].url
+              div.appendChild(img)
+              selectableAvatars.appendChild(div)
+              if (profileInfo.selectedAvatar === avatars[i].url) {
+                div.style = `border:3px; border-style:solid; border-color:#FFD700; padding: 1em;`
+              }
+              div.id = i + 1
+              avatarDivs.push(div)
+              function changeSelectedAvatar(divClicked, otherDivs) {
+                if (divClicked !== undefined) {
+                  divClicked.style = `border:3px; border-style:solid; border-color:#FFD700; padding: 1em;`
+                  otherDivs.map((d) => d.style = "border:0; border-style:solid;")
+                  let child = divClicked.childNodes[1]
+                  let pos = child.src.indexOf("/img")
+                  let src = ".." + child.src.slice(pos)
+                  profileInfo.selectedAvatar = src
+                  chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) })
+                }
+              }
+              div.addEventListener("click", function (event) {
+                function filterAvatars(e) {
+                  return e.id === event.target.id
+                }
+                function filterOthers(e) {
+                  return e.id !== event.target.id
+                }
+                let divClicked = avatarDivs.filter(filterAvatars)[0]
+                let otherDivs = avatarDivs.filter(filterOthers)
+                changeSelectedAvatar(divClicked, otherDivs)
+              })
+              img.addEventListener("click", function (event) {
+                function filterAvatars(e) {
+                  return e.childNodes[1].src === event.target.src
+                }
+                function filterOthers(e) {
+                  return e.childNodes[1].src !== event.target.src
+                }
+                let divClicked = avatarDivs.filter(filterAvatars)[0]
+                let otherDivs = avatarDivs.filter(filterOthers)
+                changeSelectedAvatar(divClicked, otherDivs)
+              })
             }
-          }
-          div.addEventListener("click", function (event) {
-            function filterAvatars(e) {
-              return e.id === event.target.id
+            if (achievements.length === 0) {
+              let h3 = document.createElement("h3")
+              h3.textContent = "You have obtained no achievements!"
+              h3.style = "text-align: center"
+              achievementsContainer.appendChild(h3)
+            } else {
+              console.log(achievements)
+              achievements.sort(compareAchievements)
+              achievements.map((a) => {
+                let div = document.createElement("div")
+                div.className = "file"
+                let img = document.createElement("img")
+                img.style = "max-width:50%; max-height:50%;"
+                img.src = a.path
+                div.appendChild(img)
+                let p = document.createElement("h3")
+                p.style = "text-align: center"
+                p.textContent = a.text
+                div.appendChild(p)
+                achievementsContainer.appendChild(div)
+              })
             }
-            function filterOthers(e) {
-              return e.id !== event.target.id
-            }
-            var divClicked = avatarDivs.filter(filterAvatars)[0]
-            var otherDivs = avatarDivs.filter(filterOthers)
-            changeSelectedAvatar(divClicked, otherDivs)
           })
-          img.addEventListener("click", function (event) {
-            function filterAvatars(e) {
-              return e.childNodes[1].src === event.target.src
-            }
-            function filterOthers(e) {
-              return e.childNodes[1].src !== event.target.src
-            }
-            var divClicked = avatarDivs.filter(filterAvatars)[0]
-            var otherDivs = avatarDivs.filter(filterOthers)
-            changeSelectedAvatar(divClicked, otherDivs)
-          })
-        }
-        var achievements = profileInfo.achievements
-        if (achievements.length === 0) {
-          var h3 = document.createElement("h3")
-          h3.textContent = "You have obtained no achievements!"
-          h3.style = "text-align: center"
-          achievementsContainer.appendChild(h3)
-        } else {
-          achievements.sort(compareAchievements)
-          achievements.map((a) => {
-            var div = document.createElement("div")
-            div.className = "file"
-            var img = document.createElement("img")
-            img.style = "max-width:50%; max-height:50%;"
-            img.src = a.path
-            div.appendChild(img)
-            var p = document.createElement("h3")
-            p.style = "text-align: center"
-            p.textContent = a.text
-            div.appendChild(p)
-            achievementsContainer.appendChild(div)
-          })
-        }
+        })
       }
 
     })
-
   })
 
   goBackButton.addEventListener("click", function () {
@@ -391,11 +425,11 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
 
   printLeaderboard.addEventListener("click", function () {
     chrome.storage.sync.get(["registeredUsers"], function (result) {
-      var blob = new Blob([result.registeredUsers], {
+      let blob = new Blob([result.registeredUsers], {
         type: "text/plain;charset=UTF-8",
       });
-      var url = window.URL.createObjectURL(blob);
-      var obj = {
+      let url = window.URL.createObjectURL(blob);
+      let obj = {
         url: url,
         filename: "gamification-extension-leaderboard.txt",
       };
@@ -404,9 +438,9 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
   })
 
   importLeaderboard.addEventListener("click", function () {
-    var input = importLeaderboard.parentElement.getElementsByTagName("input");
+    let input = importLeaderboard.parentElement.getElementsByTagName("input");
     input[0].addEventListener("change", function () {
-      var fr = new FileReader();
+      let fr = new FileReader();
 
       fr.onload = function () {
         chrome.storage.sync.set({ registeredUsers: fr.result }, function () {

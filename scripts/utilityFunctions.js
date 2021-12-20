@@ -3,42 +3,43 @@ function onlyUnique(value, index, self) {
 }
 
 function removeBorders() {
-    var linksToRemove = document.body.getElementsByTagName("a");
-    for (var i = 0; i < linksToRemove.length; i++) {
+    let linksToRemove = document.body.getElementsByTagName("a");
+    for (let i = 0; i < linksToRemove.length; i++) {
         //rimuove i border a ogni oggetto interagibile
         linksToRemove[i].style = "border:0; border-style:solid;";
     }
 
-    var inputsToRemove = document.body.getElementsByTagName("input");
-    for (var i = 0; i < inputsToRemove.length; i++) {
+    let inputsToRemove = document.body.getElementsByTagName("input");
+    for (let i = 0; i < inputsToRemove.length; i++) {
         inputsToRemove[i].style = "border:0; border-style:solid;";
     }
 
-    var buttonsToRemove = document.body.getElementsByTagName("button");
-    for (var i = 0; i < buttonsToRemove.length; i++) {
+    let buttonsToRemove = document.body.getElementsByTagName("button");
+    for (let i = 0; i < buttonsToRemove.length; i++) {
         if (!isButtonOfExtension(buttonsToRemove[i]))
             buttonsToRemove[i].style = "border:0; border-style:solid;";
     }
 }
 
 function removeBackground() {
-    var linksToRemove = document.body.getElementsByTagName("a")
-    for (var i = 0; i < linksToRemove.length; i++) {
+    let linksToRemove = document.body.getElementsByTagName("a")
+    for (let i = 0; i < linksToRemove.length; i++) {
         linksToRemove[i].style = "background-image: none"
     }
 
-    var inputsToRemove = document.body.getElementsByTagName("input");
-    for (var i = 0; i < inputsToRemove.length; i++) {
+    let inputsToRemove = document.body.getElementsByTagName("input");
+    for (let i = 0; i < inputsToRemove.length; i++) {
         inputsToRemove[i].style = "background-image: none";
     }
 
-    var buttonsToRemove = document.body.getElementsByTagName("button");
-    for (var i = 0; i < buttonsToRemove.length; i++) {
+    let buttonsToRemove = document.body.getElementsByTagName("button");
+    for (let i = 0; i < buttonsToRemove.length; i++) {
         if (!isButtonOfExtension(buttonsToRemove[i]))
-            buttonsToRemove[i].style = "background-image: none";
+            buttonsToRemove[i].style = "border:0; border-style:solid;";
     }
 }
 
+//TODO: Rivedere in base alla nuova gestione (valutare se eventualmente rimuovere)
 function downloadFile() {
     function onlyUnique(value, index, self) {
         return self.indexOf(value) === index;
@@ -69,6 +70,7 @@ function downloadFile() {
     );
 }
 
+//TODO: rivedere in base alla nuova gestione (valutare se eventualmente rimuovere)
 function downloadUserProfile() {
     chrome.storage.sync.get(["profileInfo"], function (result) {
         var profileInfo = JSON.parse(result.profileInfo)
@@ -85,6 +87,7 @@ function downloadUserProfile() {
     })
 }
 
+//TODO: rivedere in base alla nuova gestione (valutare se eventualmente rimuovere)
 function downloadSignaledIssues() {
     chrome.storage.sync.get(["signaledIssues"], function (result) {
         var blob = new Blob([result.signaledIssues], {
@@ -211,80 +214,62 @@ function drawBorderOnAll() {
 }
 
 function drawBorderOnInteracted() {
-
-    chrome.storage.sync.get(["pageActions", "currentURL", "profileInfo"], function (result) {
-        var profileInfo = JSON.parse(result.profileInfo)
-        function filterUser(event) {
-            return event.username === profileInfo.username
-        }
-
-        function filterURL(event) {
-            return event.url === result.currentURL
-        }
-        var retrievedObj = JSON.parse(result.pageActions);
-        var pageActions = retrievedObj.filter(filterUser)[0]
-        var pageActionsUser = pageActions.pages.filter(filterURL)[0]
-        var links = document.body.getElementsByTagName("a");
-        var inputs = document.body.getElementsByTagName("input");
-        var buttons = document.body.getElementsByTagName("button");
-        var idsOfLinkObjects = pageActionsUser.idsOfLinkObjects
-        for (var j = 0; j < links.length; j++) {
-            if (idsOfLinkObjects.indexOf(j - 1) >= 0) {
-                links[j - 1].style = "border:3px; border-style:solid; border-color:#FF0000; padding: 1em;";
+    chrome.storage.sync.get(["currentURL", "profileInfo"], function (result) {
+        let profileInfo = JSON.parse(result.profileInfo)
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            body: "/pages/actions/" + profileInfo.username,
+            method: "get",
+            content: { url: result.currentURL }
+        }, (response) => {
+            let pageActions = response.data
+            let links = document.body.getElementsByTagName("a");
+            let inputs = document.body.getElementsByTagName("input");
+            let buttons = document.body.getElementsByTagName("button");
+            for (action of pageActions) {
+                switch (action.objectType) {
+                    case "button":
+                        buttons[action.objectId].style = "border:3px; border-style:solid; border-color:#0000FF; padding: 1em;";
+                        break;
+                    case "input":
+                        inputs[action.objectId].style = "border:3px; border-style:solid; border-color:#00FF00; padding: 1em;";
+                        break;
+                    case "link":
+                        links[action.objectId].style = "border:3px; border-style:solid; border-color:#FF0000; padding: 1em;";
+                        break
+                }
             }
-        }
-        var idsOfInputObjects = pageActionsUser.idsOfInputObjects;
-        for (var j = 0; j < inputs.length; j++) {
-            if (idsOfInputObjects.indexOf(j - 1) >= 0) {
-                inputs[j - 1].style = "border:3px; border-style:solid; border-color:#00FF00; padding: 1em;";
-            }
-        }
-        var idsOfButtonObjects = pageActionsUser.idsOfButtonObjects;
-        for (var j = 0; j < buttons.length; j++) {
-            if (idsOfButtonObjects.indexOf(j) >= 0 && !isButtonOfExtension(buttons[j])) {
-                buttons[j].style = "border:3px; border-style:solid; border-color:#0000FF; padding: 1em;";
-            }
-        }
+        })
     });
 }
 
 function drawBackground() {
     chrome.storage.sync.get(["signaledIssues", "currentURL", "profileInfo"], function (result) {
-        var profileInfo = JSON.parse(result.profileInfo)
-        function filterUser(event) {
-            return event.username === profileInfo.username
-        }
-
-        function filterURL(event) {
-            return event.url === result.currentURL
-        }
-        var signaledIssues = JSON.parse(result.signaledIssues)
-        var issues = signaledIssues.filter(filterUser)[0].pages.filter(filterURL)[0]
-        var links = document.body.getElementsByTagName("a")
-        var inputs = document.body.getElementsByTagName("input")
-        var buttons = document.body.getElementsByTagName("button")
-
-        var signaledLinks = issues.signaledLinks
-        for (var j = 0; j < links.length; j++) {
-            if (signaledLinks.indexOf(j) >= 0) {
-                links[j].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
+        let profileInfo = JSON.parse(result.profileInfo)
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            method: "get",
+            body: "/pages/issues/" + profileInfo.username,
+            content: { url: result.currentURL }
+        }, (response) => {
+            let pageIssues = response.data
+            let links = document.body.getElementsByTagName("a");
+            let inputs = document.body.getElementsByTagName("input");
+            let buttons = document.body.getElementsByTagName("button");
+            for (issue of pageIssues) {
+                switch (action.objectType) {
+                    case "button":
+                        buttons[action.objectId].style = "border:3px; border-style:solid; border-color:rgb(243 0 0); padding: 1em;";
+                        break;
+                    case "input":
+                        inputs[action.objectId].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
+                        break;
+                    case "link":
+                        links[action.objectId].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
+                        break
+                }
             }
-        }
-
-        var signaledInputs = issues.signaledInputs
-        for (var j = 0; j < inputs.length; j++) {
-            if (signaledInputs.indexOf(j) >= 0) {
-                inputs[j].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
-            }
-        }
-
-        var signaledButtons = issues.signaledButtons
-        for (var j = 0; j < buttons.length; j++) {
-            if (signaledButtons.indexOf(j) >= 0 && !isButtonOfExtension(buttons[j])) {
-                buttons[j].style = "border:3px; border-style:solid; border-color:rgb(243 0 0); padding: 1em;";
-                //buttons[j].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
-            }
-        }
+        })
     })
 }
 
@@ -305,121 +290,138 @@ function drawBorders() {
     })
 }
 
-function unlockAchievement(achievement, array) {
+function unlockAchievement(achievement, array, username) {
     function filterText(event) {
         return event.text === achievement.text
     }
     if (array.filter(filterText).length === 0) {
-        var obj = {
-            text: achievement.text,
-            path: "." + achievement.obj.path
-        }
-        array.push(obj)
-        chrome.runtime.sendMessage({ obj: achievement.obj, mess: "notification" })
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            method: "post",
+            body: "/users/" + username + "/achievements",
+            content: { text: achievement.text }
+        }, () => { chrome.runtime.sendMessage({ obj: achievement.obj, mess: "notification" }) })
     }
 }
 
-function countAchievements(achievements, avatars) {
+function countAchievements(achievements, avatars, username) {
     if (achievements.length === 3) {
-        unlockAvatar("Heart Avatar", avatars, "./img/heart_avatar.png", "../img/heart_avatar.png")
+        unlockAvatar("Heart Avatar", avatars, "./img/heart_avatar.png", username)
     }
 }
 
-function unlockAvatar(avatar, array, path, url) {
+function unlockAvatar(avatar, array, path, username) {
     function filterName(event) {
         return event.name === avatar
     }
     if (array.filter(filterName).length === 0) {
-        var unlocked = {
-            name: avatar,
-            url: url
-        }
-        var notification = {
-            title: "New Avatar Unlocked!",
-            message: "Unlocked " + avatar,
-            path: path
-        }
-        array.push(unlocked)
-        chrome.runtime.sendMessage({ obj: notification, mess: "notification" })
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            method: "post",
+            body: "/users/" + username + "/avatars",
+            content: { name: avatar }
+        }, () => {
+            let notification = {
+                title: "New Avatar Unlocked!",
+                message: "Unlocked " + avatar,
+                path: path
+            }
+            chrome.runtime.sendMessage({ obj: notification, mess: "notification" })
+        })
+
     }
 }
 
 function pageCoverageAchievements(progress, widgetProgress) {
     chrome.storage.sync.get(["profileInfo"], function (result) {
         var profileInfo = JSON.parse(result.profileInfo)
-        if (progress >= 25) {
-            var ach = {
-                text: "Obtained 25% page coverage!",
-                obj: {
-                    title: "New Achievement!",
-                    message: "Obtained 25% page coverage!",
-                    path: "./img/achievement_bronze.png"
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            method: "get",
+            body: "/users/" + profileInfo.username + "/achievements"
+        }, (response) => {
+            let achievements = response.data
+            chrome.runtime.sendMessage({
+                mess: "fetch",
+                method: "get",
+                body: "/users/" + profileInfo.username + "/avatars"
+            }, (response2) => {
+                let avatars = response2.data
+                if (progress >= 25) {
+                    let ach = {
+                        text: "Obtained 25% page coverage!",
+                        obj: {
+                            title: "New Achievement!",
+                            message: "Obtained 25% page coverage!",
+                            path: "./img/achievement_bronze.png"
+                        }
+                    }
+                    unlockAchievement(ach, achievements, profileInfo.username)
+                    countAchievements(achievements, avatars, profileInfo.username)
                 }
-            }
-            unlockAchievement(ach, profileInfo.achievements)
-            countAchievements(profileInfo.achievements, profileInfo.availableAvatars)
-        }
-        if (progress >= 50) {
-            var ach = {
-                text: "Obtained 50% page coverage!",
-                obj: {
-                    title: "New Achievement!",
-                    message: "Obtained 50% page coverage!",
-                    path: "./img/achievement_silver.png"
+                if (progress >= 50) {
+                    var ach = {
+                        text: "Obtained 50% page coverage!",
+                        obj: {
+                            title: "New Achievement!",
+                            message: "Obtained 50% page coverage!",
+                            path: "./img/achievement_silver.png"
+                        }
+                    }
+                    unlockAchievement(ach, achievements, profileInfo.username)
+                    countAchievements(achievements, avatars, profileInfo.username)
                 }
-            }
-            unlockAchievement(ach, profileInfo.achievements)
-            countAchievements(profileInfo.achievements, profileInfo.availableAvatars)
-        }
-        if (progress === 100) {
-            var ach = {
-                text: "Obtained 100% page coverage!",
-                obj: {
-                    title: "New Achievement!",
-                    message: "Obtained 100% page coverage!",
-                    path: "./img/achievement_gold.png"
+                if (progress === 100) {
+                    var ach = {
+                        text: "Obtained 100% page coverage!",
+                        obj: {
+                            title: "New Achievement!",
+                            message: "Obtained 100% page coverage!",
+                            path: "./img/achievement_gold.png"
+                        }
+                    }
+                    unlockAchievement(ach, achievements, profileInfo.username)
+                    countAchievements(achievements, avatars, profileInfo.username)
                 }
-            }
-            unlockAchievement(ach, profileInfo.achievements)
-            countAchievements(profileInfo.achievements, profileInfo.availableAvatars)
-        }
-        if (widgetProgress >= 25) {
-            var ach = {
-                text: "Obtained 25% coverage for a type of widgets!",
-                obj: {
-                    title: "New Achievement!",
-                    message: "Obtained 25% coverage for a type of widgets!",
-                    path: "./img/achievement_bronze.png"
+                if (widgetProgress >= 25) {
+                    var ach = {
+                        text: "Obtained 25% coverage for a type of widgets!",
+                        obj: {
+                            title: "New Achievement!",
+                            message: "Obtained 25% coverage for a type of widgets!",
+                            path: "./img/achievement_bronze.png"
+                        }
+                    }
+                    unlockAchievement(ach, achievements, profileInfo.username)
+                    countAchievements(achievements, avatars, profileInfo.username)
                 }
-            }
-            unlockAchievement(ach, profileInfo.achievements)
-            countAchievements(profileInfo.achievements, profileInfo.availableAvatars)
-        }
-        if (widgetProgress >= 50) {
-            var ach = {
-                text: "Obtained 50% coverage for a type of widgets!",
-                obj: {
-                    title: "New Achievement!",
-                    message: "Obtained 50% coverage for a type of widgets!",
-                    path: "./img/achievement_silver.png"
+                if (widgetProgress >= 50) {
+                    var ach = {
+                        text: "Obtained 50% coverage for a type of widgets!",
+                        obj: {
+                            title: "New Achievement!",
+                            message: "Obtained 50% coverage for a type of widgets!",
+                            path: "./img/achievement_silver.png"
+                        }
+                    }
+                    unlockAchievement(ach, achievements, profileInfo.username)
+                    countAchievements(achievements, avatars, profileInfo.username)
                 }
-            }
-            unlockAchievement(ach, profileInfo.achievements)
-            countAchievements(profileInfo.achievements, profileInfo.availableAvatars)
-        }
-        if (widgetProgress === 100) {
-            var ach = {
-                text: "Obtained 100% coverage for a type of widgets!",
-                obj: {
-                    title: "New Achievement!",
-                    message: "Obtained 100% coverage for a type of widgets!",
-                    path: "./img/achievement_gold.png"
+                if (widgetProgress === 100) {
+                    var ach = {
+                        text: "Obtained 100% coverage for a type of widgets!",
+                        obj: {
+                            title: "New Achievement!",
+                            message: "Obtained 100% coverage for a type of widgets!",
+                            path: "./img/achievement_gold.png"
+                        }
+                    }
+                    unlockAchievement(ach, achievements, profileInfo.username)
+                    unlockAvatar("Star Avatar", avatars, "./img/star_avatar.png", profileInfo.username)
+                    countAchievements(achievements, avatars, profileInfo.username)
                 }
-            }
-            unlockAchievement(ach, profileInfo.achievements)
-            unlockAvatar("Star Avatar", profileInfo.availableAvatars, "./img/star_avatar.png", "../img/star_avatar.png")
-            countAchievements(profileInfo.achievements, profileInfo.availableAvatars)
-        }
-        chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) })
+            })
+
+        })
     })
 }
