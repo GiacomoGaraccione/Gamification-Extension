@@ -141,8 +141,8 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                                 }, () => {
                                                     let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
                                                     let interactedLinks = pageActions.filter(filterLink).length + 1
-                                                    let interactedInputs = pageActions.filter(filterInput).length + 1
-                                                    let interactedButtons = pageActions.filter(filterButton).length + 1
+                                                    let interactedInputs = pageActions.filter(filterInput).length
+                                                    let interactedButtons = pageActions.filter(filterButton).length
                                                     let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
                                                     innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
                                                     innerDiv.textContent = "Progress: " + progress + "%";
@@ -261,9 +261,9 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                                     content: { url: currentURL, username: profileInfo.username, objectId: j - 1, objectType: "input" }
                                                 }, () => {
                                                     let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                                                    let interactedLinks = pageActions.filter(filterLink).length + 1
+                                                    let interactedLinks = pageActions.filter(filterLink).length
                                                     let interactedInputs = pageActions.filter(filterInput).length + 1
-                                                    let interactedButtons = pageActions.filter(filterButton).length + 1
+                                                    let interactedButtons = pageActions.filter(filterButton).length
                                                     let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
                                                     innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
                                                     innerDiv.textContent = "Progress: " + progress + "%";
@@ -379,8 +379,8 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                                         content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "button" }
                                                     }, () => {
                                                         let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                                                        let interactedLinks = pageActions.filter(filterLink).length + 1
-                                                        let interactedInputs = pageActions.filter(filterInput).length + 1
+                                                        let interactedLinks = pageActions.filter(filterLink).length
+                                                        let interactedInputs = pageActions.filter(filterInput).length
                                                         let interactedButtons = pageActions.filter(filterButton).length + 1
                                                         let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
                                                         innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;

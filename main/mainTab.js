@@ -1,9 +1,6 @@
-let recordFileButton = document.getElementById("recordFileButton");
-let profileFileButton = document.getElementById("profileFileButton");
 let profileButton = document.getElementById("profileButton")
 let pageURL = document.getElementById("pageURL");
 let pageURLButton = document.getElementById("pageURLButton");
-let resetButton = document.getElementById("resetButton");
 let confirmProfileButton = document.getElementById("confirmProfileButton")
 let usernameField = document.getElementById("usernameField")
 let logoutButton = document.getElementById("logoutButton")
@@ -13,9 +10,6 @@ let secondWrapper = document.getElementById("secondWrapper")
 let thirdWrapper = document.getElementById("thirdWrapper")
 let fourthWrapper = document.getElementById("fourthWrapper")
 let newProfileDiv = document.getElementById("newProfileDiv")
-let uploadProfileDiv = document.getElementById("uploadProfileDiv")
-let uploadSessionDiv = document.getElementById("uploadSessionDiv")
-let resetSessionDiv = document.getElementById("resetSessionDiv")
 let urlDiv = document.getElementById("urlDiv")
 let logoutDiv = document.getElementById("logoutDiv")
 let viewProfileDiv = document.getElementById("viewProfileDiv")
@@ -33,7 +27,8 @@ let highestNewVisitedPages = document.getElementById("highestNewVisitedPages")
 let highestNewWidgets = document.getElementById("highestNewWidgets")
 let highestCoverage = document.getElementById("highestCoverage")
 let printLeaderboard = document.getElementById("printLeaderboard")
-let importLeaderboard = document.getElementById("importLeaderboard")
+let loginDiv = document.getElementById("loginDiv")
+let loginButton = document.getElementById("loginButton")
 
 let url = "";
 let username = ""
@@ -69,20 +64,16 @@ function render(flag) {
     secondWrapper.style.display = "none"
     firstWrapper.style.display = "flex"
     newProfileDiv.style.display = "none"
-    uploadProfileDiv.style.display = "none"
-    uploadSessionDiv.style.display = "flex"
-    resetSessionDiv.style.display = "flex"
     urlDiv.style.display = "flex"
     logoutDiv.style.display = "flex"
     viewProfileDiv.style.display = "flex"
+    loginDiv.style.display = "none"
   } else if (flag === "create") {
     newProfileDiv.style.display = "flex"
-    uploadProfileDiv.style.display = "flex"
-    uploadSessionDiv.style.display = "none"
-    resetSessionDiv.style.display = "none"
     urlDiv.style.display = "none"
     logoutDiv.style.display = "none"
     viewProfileDiv.style.display = "none"
+    loginDiv.style.display = "flex"
   }
 }
 
@@ -93,31 +84,38 @@ function highlightDefaultAvatar(selected, second, third, color) {
 }
 
 function drawTable(container, mode, data) {
-  /*let copy = data
-  if (mode === "VP") {
-    copy.sort((a, b) => b.highestNewVisitedPages - a.highestNewVisitedPages)
-  } else if (mode === "W") {
-    copy.sort((a, b) => b.highestNewWidgets - a.highestNewWidgets)
-  } else if (mode === "C") {
-    copy.sort((a, b) => b.highestCoverage - a.highestCoverage)
-  }*/
   if (container.childNodes.length === 3) {
     let tableVP = document.createElement("table")
+    tableVP.style = "overflow-y:scroll; height:400px; display:block"
     let tableVPHead = document.createElement("thead")
     let cell1 = document.createElement("th")
     let cell2 = document.createElement("th")
+    let cellAv = document.createElement("th")
+    cell1.style = "border-bottom: 1px solid #ddd; background-color: #04AA6D; color: white;"
+    cell2.style = "border-bottom: 1px solid #ddd; background-color: #04AA6D; color: white;"
+    cellAv.style = "border-bottom: 1px solid #ddd; background-color: #04AA6D; color: white;"
     tableVP.appendChild(tableVPHead)
     tableVPHead.appendChild(cell1)
     tableVPHead.appendChild(cell2)
+    tableVPHead.appendChild(cellAv)
     cell1.appendChild(document.createTextNode("Username"))
     cell2.appendChild(document.createTextNode("Score"))
+    cellAv.appendChild(document.createTextNode("Avatar"))
     for (let i = 0; i < data.length; i++) {
       let row = tableVP.insertRow()
       let cell3 = row.insertCell()
       let cell4 = row.insertCell()
+      let cell5 = row.insertCell()
+      cell3.style = "height: 200px; width: 200px; border-bottom: 1px solid #ddd; text-align: center"
+      cell4.style = "height: 200px; width: 200px; border-bottom: 1px solid #ddd; text-align: center"
+      cell5.style = "height: 200px; width: 200px; border-bottom: 1px solid #ddd;"
+      let img = document.createElement("img")
+      img.src = data[i].selectedAvatar
+      img.style = "width: 100%; height: 100%"
       cell3.appendChild(document.createTextNode(data[i].username))
       let text = mode === "VP" ? data[i].highestNewVisitedPages : mode === "W" ? data[i].highestNewWidgets : data[i].highestCoverage
       cell4.appendChild(document.createTextNode(text))
+      cell5.appendChild(img)
     }
     container.appendChild(tableVP)
   }
@@ -149,40 +147,12 @@ function drawLeaderboards() {
 
 
 chrome.storage.sync.get(["profileInfo"], function (result) {
-  var profileInfo = result.profileInfo
+  let profileInfo = result.profileInfo
   if (profileInfo !== undefined && profileInfo !== "[]") {
     var profileInfoObj = JSON.parse(profileInfo)
     title.textContent = "Main Page - Welcome " + profileInfoObj.username + "!"
     render("home")
   }
-
-  profileFileButton.addEventListener("click", function () {
-    let input = profileFileButton.parentElement.getElementsByTagName("input");
-    input[0].addEventListener("change", function () {
-      let fr = new FileReader();
-
-      fr.onload = function () {
-        chrome.storage.sync.set({ profileInfo: fr.result });
-        var profileInfo = JSON.parse(fr.result)
-        title.textContent = "Main Page - Welcome " + profileInfo.username + "!"
-        render("home")
-      };
-      fr.readAsText(this.files[0]);
-    });
-    $($(this).parent().find("input")).click();
-  })
-  recordFileButton.addEventListener("click", function () {
-    var input = recordFileButton.parentElement.getElementsByTagName("input");
-    input[0].addEventListener("change", function () {
-      var fr = new FileReader();
-
-      fr.onload = function () {
-        chrome.storage.sync.set({ pageActions: fr.result });
-      };
-      fr.readAsText(this.files[0]);
-    });
-    $($(this).parent().find("input")).click();
-  });
 
   pageURLButton.addEventListener("click", async () => {
     let url = document.getElementById("pageURL").value;
@@ -208,70 +178,64 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
     //chiudere tab con main page?
   });
 
-  resetButton.addEventListener("click", function () {
-    chrome.storage.sync.get(["profileInfo"], function (result) {
-      var profileInfo = JSON.parse(result.profileInfo)
-      profileInfo.achievements = []
-      profileInfo.availableAvatars = profileInfo.availableAvatars.slice(0, 3)
-      //console.log(profileInfo)
-      chrome.storage.sync.set({
-        pageActions: JSON.stringify([]),
-        profileInfo: JSON.stringify(profileInfo),
-        signaledIssues: JSON.stringify([]),
-        previousSession: JSON.stringify([]),
-        widgetCrops: JSON.stringify([])
-      });
-
+  loginButton.addEventListener("click", (event) => {
+    let username = document.getElementById("usernameLogin").value
+    let password = document.getElementById("passwordLogin").value
+    chrome.runtime.sendMessage({
+      mess: "fetch",
+      method: "get",
+      body: "/login",
+      content: { username: username, password: password }
+    }, (response) => {
+      let ret = response.data
+      if (ret.statusText) {
+        alert("Wrong credentials!")
+      } else {
+        chrome.storage.sync.set({ profileInfo: JSON.stringify(ret) });
+        title.textContent = "Main Page - Welcome " + ret.username + "!"
+        render("home")
+      }
     })
-  });
+
+  })
 
   profileButton.addEventListener("click", function () {
     firstWrapper.style.display = "none"
     secondWrapper.style.display = "flex"
   })
 
-  //LOGIN
   confirmProfileButton.addEventListener("click", function () {
     chrome.storage.sync.get(["registeredUsers"], function (result) {
       function filterUsers(event) {
         return event.username === username
       }
-      let registeredUsers = result.registeredUsers === undefined ? [] : JSON.parse(result.registeredUsers)
-      let userObj = {
-        username: username,
-        highestNewVisitedPages: 0,
-        highestNewWidgets: 0,
-        highestCoverage: 0
-      }
-      let filteredUsers = registeredUsers.filter(filterUsers)
-      if (filteredUsers.length > 0) {
-        alert("Error: this username is already taken")
-      } else if (username === "" || selectedAvatar === "") {
-        alert("Error: choose a username and an avatar")
-      } else {
-        registeredUsers.push(userObj)
-        let profileInfo = {
-          username: username,
-          selectedAvatar: selectedAvatar,
-          availableAvatars: [{ name: "Green Avatar", url: "../img/default_green.png" }, { name: "Red Avatar", url: "../img/default_red.png" }, { name: "Blue Avatar", url: "../img/default_blue.png" }],
-          achievements: []
+      let password = document.getElementById("passwordField").value
+      chrome.runtime.sendMessage({
+        mess: "fetch",
+        method: "get",
+        body: "/users",
+        content: {}
+      }, (response) => {
+        let users = response.data.filter(filterUsers)
+        if (users.length > 0) {
+          alert("Error: this username is already taken")
+        } else if (username === "" || selectedAvatar === "") {
+          alert("Error: choose a username and an avatar")
+        } else {
+          chrome.runtime.sendMessage({
+            mess: "fetch",
+            body: "/users",
+            method: "post",
+            content: { username: username, password: password, selectedAvatar: selectedAvatar }
+          }, () => {
+            let profileInfo = { username: username, selectedAvatar: selectedAvatar }
+            chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) })
+            title.textContent = "Main Page - Welcome " + username + "!"
+            render("home")
+          })
         }
-        var blob = new Blob([JSON.stringify(profileInfo)], {
-          type: "text/plain;charset=UTF-8",
-        });
-        var url = window.URL.createObjectURL(blob);
-        var obj = {
-          url: url,
-          filename: "gamification-extension-profile-" + username + ".txt",
-        };
-        chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo), registeredUsers: JSON.stringify(registeredUsers) })
-        chrome.runtime.sendMessage({ obj: obj, mess: "download" });
-        title.textContent = "Main Page - Welcome " + username + "!"
-        render("home")
-      }
+      })
     })
-
-
   })
 
   function displayConfirmButton() {
@@ -352,7 +316,12 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
                   let pos = child.src.indexOf("/img")
                   let src = ".." + child.src.slice(pos)
                   profileInfo.selectedAvatar = src
-                  chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) })
+                  chrome.runtime.sendMessage({
+                    mess: "fetch",
+                    method: "patch",
+                    body: "/users/" + profileInfo.username,
+                    content: { selectedAvatar: src }
+                  }, () => { chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) }) })
                 }
               }
               div.addEventListener("click", function (event) {
@@ -423,6 +392,7 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
     fourthWrapper.style.display = "none"
   })
 
+  //TODO: rivedere in base alla nuova organizzazione dei dati
   printLeaderboard.addEventListener("click", function () {
     chrome.storage.sync.get(["registeredUsers"], function (result) {
       let blob = new Blob([result.registeredUsers], {
@@ -437,19 +407,5 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
     })
   })
 
-  importLeaderboard.addEventListener("click", function () {
-    let input = importLeaderboard.parentElement.getElementsByTagName("input");
-    input[0].addEventListener("change", function () {
-      let fr = new FileReader();
-
-      fr.onload = function () {
-        chrome.storage.sync.set({ registeredUsers: fr.result }, function () {
-          drawLeaderboards()
-        });
-      };
-      fr.readAsText(this.files[0]);
-    });
-    $($(this).parent().find("input")).click();
-  })
 })
 

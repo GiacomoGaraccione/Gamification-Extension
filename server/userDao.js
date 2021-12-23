@@ -2,11 +2,14 @@
 
 const db = require("./db.js")
 const utilities = require("./utilities.js")
+const bcrypt = require("bcrypt")
 
 exports.addUser = function (user) {
     return new Promise((resolve, reject) => {
-        const sql = "INSERT INTO Users(username, selectedAvatar) VALUES(?, ?)"
-        db.run(sql, [user.username, user.selectedAvatar], (err, row) => {
+        const salt = bcrypt.genSaltSync(10);
+        const hash = bcrypt.hashSync(user.password, salt);
+        const sql = "INSERT INTO Users(username, selectedAvatar, password, salt) VALUES(?, ?, ?, ?)"
+        db.run(sql, [user.username, user.selectedAvatar, hash, salt], (err, row) => {
             if (err) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                 reject(utilities.errorObjs.dbError)
@@ -34,6 +37,20 @@ exports.addUser = function (user) {
     })
 }
 
+exports.getUsers = function () {
+    return new Promise((resolve, reject) => {
+        const sql = "SELECT username FROM Users"
+        db.all(sql, [], (err, rows) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                resolve(rows)
+            }
+        })
+    })
+}
+
 exports.getUser = function (username) {
     return new Promise((resolve, reject) => {
         const sql = "SELECT * FROM Users WHERE username = ?"
@@ -47,6 +64,20 @@ exports.getUser = function (username) {
                 } else {
                     resolve(undefined)
                 }
+            }
+        })
+    })
+}
+
+exports.updateUser = function (user) {
+    return new Promise((resolve, reject) => {
+        const sql = "UPDATE Users SET selectedAvatar = ? WHERE username = ?"
+        db.run(sql, [user.selectedAvatar, user.username], (err, row) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                resolve()
             }
         })
     })
@@ -124,7 +155,7 @@ exports.getUserRecords = function (username) {
 
 exports.getRecords = function () {
     return new Promise((resolve, reject) => {
-        const sql = "SELECT * FROM Records"
+        const sql = "SELECT * FROM Records, Users WHERE Users.username = Records.username"
         db.all(sql, (err, rows) => {
             if (err) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
@@ -176,6 +207,25 @@ exports.addAchievement = function (username, text) {
                         resolve()
                     }
                 })
+            }
+        })
+    })
+}
+
+exports.checkPassword = function (username, password) {
+    return new Promise((resolve, reject) => {
+        const sql = "SELECT * FROM Users WHERE username = ?"
+        db.get(sql, [username], (err, row) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                const hash = bcrypt.hashSync(password, row.salt)
+                if (hash !== row.password) {
+                    reject(utilities.errorObjs.credentialsError)
+                } else {
+                    resolve({ username: row.username, selectedAvatar: row.selectedAvatar })
+                }
             }
         })
     })

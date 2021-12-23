@@ -10,34 +10,22 @@
             <h1 style="text-align: center;" id="title">Main Page</h1>
         </header>
         <div class="wrapper" id="firstWrapper">
-            <div class="files">
+            <div class="blocks">
                 <div class="file" id="newProfileDiv">
                     <div>
-                        <input type="file" class="fileInput">
                         <button class="btn select-file" id="profileButton">Create a new profile</button>
                     </div> 
                  </div>
-                <div class="file" id="uploadProfileDiv">
-                   <div>
-                       <h2 style="text-align: center;">Upload your profile information</h2> 
-                       <input type="file">
-                       <button class="btn select-file" id="profileFileButton">Select file</button>
-                   </div> 
-                </div>
-                <div class="file" style="display: none;" id="uploadSessionDiv">
+                
+                <div class="file" id="loginDiv">
                     <div>
-                        <h2 style="text-align: center;">Upload the record of a past session</h2> 
-                        <input type="file">
-                        <button class="btn select-file" id="recordFileButton">Select file</button>
-                    </div> 
-                 </div>
-                 <div class="file" style="display: none;" id="resetSessionDiv">
-                     <div>
-                         <h2 style="text-align: center;">DEBUG - Reset Past Session Information</h2>
-                         <button class="btn select-file" id="resetButton">Reset</button>
-                     </div>
-                 </div>
-                 <div class="file" style="display:none" id="viewProfileDiv">
+                        <h2 style="text-align: center;">Write your credentials here</h2>
+                        <input type="text" id="usernameLogin" placeholder="username">
+                        <input type="password" id="passwordLogin" placeholder="password">
+                        <button class="btn select-file" id="loginButton">Login</button>
+                    </div>
+                </div>
+                <div class="file" style="display:none" id="viewProfileDiv">
                     <div>
                         <button class="btn select-file" id="viewProfileButton">View Profile</button>
                     </div>                
@@ -49,7 +37,7 @@
                 </div>
             </div>
             <div class="blocks">
-                <div style="display: none;" id="urlDiv">
+                <div style="display: none; align-items: center;" id="urlDiv">
                     <h2 style="text-align: center;">Paste URL of Page to Test</h2>
                     <input type="url" id="pageURL">
                     <button class="btn select-file" id="pageURLButton">Go to Page</button>
@@ -64,8 +52,9 @@
         <div class="wrapper" id="secondWrapper" style="display: none;">
             <div class="blocks">
                 <div class="file">
-                    <h2 style="text-align: center;">Write your username here</h2>
+                    <h2 style="text-align: center;">Write your credentials here</h2>
                     <input type="text" id="usernameField">
+                    <input type="password" id="passwordField">
                 </div>
             </div>
             <div class="blocks">
@@ -104,21 +93,17 @@
                 <h1 style="text-align: center;">Leaderboard</h1>
             </div>
             <div class="blocks" id="highestNewVisitedPages">
-                <h2 style="text-align: center;">Most New Pages Viewed In a Session</h2>
+                <h2 style="text-align: center; color:#FFD700">Most New Pages Viewed In a Session</h2>
             </div>
             <div class="blocks" id="highestNewWidgets">
-                <h2 style="text-align: center;">Most New Widgets Clicked In a Session</h2>
+                <h2 style="text-align: center; color:#FFD700">Most New Widgets Clicked In a Session</h2>
             </div>
             <div class="blocks" id="highestCoverage">
-                <h2 style="text-align: center;">Highest Page Coverage Reached</h2>
+                <h2 style="text-align: center; color:#FFD700">Highest Page Coverage Reached</h2>
             </div>
             <div class="files">         
                 <div class="file">
                     <button class="btn select-file" id="printLeaderboard">Download Leaderboard</button>
-                </div>
-                <div class="file">
-                    <input type="file">
-                    <button class="btn select-file" id="importLeaderboard">DEBUG - Upload Leaderboard</button>
                 </div>
                 <div class="file">
                     <button class="btn select-file" id="returnButton">Go Back</button>

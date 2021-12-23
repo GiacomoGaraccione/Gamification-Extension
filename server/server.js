@@ -19,6 +19,19 @@ app.listen(PORT, () => {
 
 //------------------------ User APIs ---------------------------------
 
+app.post("/api/login", [
+    body("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/),
+    body("password", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
+], (req, res) => {
+    if (utilities.resolveExpressValidator(validationResult(req), res)) {
+        userDao.checkPassword(req.body.username, req.body.password)
+            .then((ret) => res.json(ret))
+            .catch((err) => {
+                utilities.resolveErrors(err, res)
+            })
+    }
+})
+
 /**
  * POST API - Creation of a new user
  * Request Parameters: none
@@ -29,7 +42,8 @@ app.listen(PORT, () => {
  */
 app.post("/api/users", [
     body("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/),
-    body("selectedAvatar", "Parameter isn't a valid path").notEmpty().isIn(["../img/default_green.png", "../img/default_red.png", "../img/default_blue.png"])
+    body("selectedAvatar", "Parameter isn't a valid path").notEmpty().isIn(["../img/default_green.png", "../img/default_red.png", "../img/default_blue.png"]),
+    body("password", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
 ], (req, res) => {
     if (utilities.resolveExpressValidator(validationResult(req), res)) {
         const user = req.body
@@ -39,6 +53,14 @@ app.post("/api/users", [
                 utilities.resolveErrors(err, res)
             })
     }
+})
+
+app.get("/api/users", (req, res) => {
+    userDao.getUsers()
+        .then((users) => res.json(users))
+        .catch((err) => {
+            utilities.resolveErrors(err, res)
+        })
 })
 
 /**
@@ -59,6 +81,20 @@ app.get("/api/users/:username", [
         userDao.getUser(username)
             .then((user) => res.json(user))
             .catch((err) => utilities.resolveErrors(err, res))
+    }
+})
+
+app.patch("/api/users/:username", [
+    param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/),
+    body("selectedAvatar", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
+], (req, res) => {
+    if (utilities.resolveExpressValidator(validationResult(req), res)) {
+        const user = { username: req.params.username, selectedAvatar: req.body.selectedAvatar }
+        userDao.updateUser(user)
+            .then(() => res.status(200).json(utilities.successObj))
+            .catch((err) => {
+                utilities.resolveErrors(err, res)
+            })
     }
 })
 
