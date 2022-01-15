@@ -10,7 +10,9 @@
         {
             "matches": ["*://*/*"],
             "js": [
-                "scripts/utilityFunctions.js"
+                "scripts/utilityFunctions.js",
+                "lib/jszip.js",
+                "lib/FileSaver.js"
             ]
         }
     ],
@@ -31,7 +33,7 @@
         "<all_urls>",
         "desktopCapture"
     ],
-    "version": "0.5",
+    "version": "0.6",
     "web_accessible_resources": [{
         "resources": ["img/*"], 
         "matches": ["<all_urls>"]

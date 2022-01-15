@@ -12,8 +12,8 @@ exports.addPage = function (page) {
                 reject(utilities.errorObjs.dbError)
             } else {
                 if (!rowCh) {
-                    const sql = "INSERT INTO PageInfo(url, totalLinkObjects, totalInputObjects, totalButtonObjects) VALUES(?, ?, ?, ?)"
-                    db.run(sql, [page.url, page.totalLinkObjects, page.totalInputObjects, page.totalButtonObjects], (err, row) => {
+                    const sql = "INSERT INTO PageInfo(url, totalLinkObjects, totalInputObjects, totalButtonObjects, totalSelectObjects) VALUES(?, ?, ?, ?, ?)"
+                    db.run(sql, [page.url, page.totalLinkObjects, page.totalInputObjects, page.totalButtonObjects, page.totalSelectObjects], (err, row) => {
                         if (err) {
                             utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                             reject(utilities.errorObjs.dbError)
@@ -22,8 +22,8 @@ exports.addPage = function (page) {
                         }
                     })
                 } else {
-                    const sql = "UPDATE PageInfo SET totalLinkObjects = ?, totalInputObjects = ?, totalButtonObjects = ? WHERE url = ?"
-                    db.run(sql, [page.totalLinkObjects, page.totalInputObjects, page.totalButtonObjects, page.url], (err, row) => {
+                    const sql = "UPDATE PageInfo SET totalLinkObjects = ?, totalInputObjects = ?, totalButtonObjects = ?, totalSelectObjects = ? WHERE url = ?"
+                    db.run(sql, [page.totalLinkObjects, page.totalInputObjects, page.totalButtonObjects, page.totalSelectObjects, page.url], (err, row) => {
                         if (err) {
                             utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                             reject(utilities.errorObjs.dbError)
@@ -123,15 +123,15 @@ exports.getPageIssues = function (username) {
 
 exports.addPageRecord = function (pageRecord) {
     return new Promise((resolve, reject) => {
-        const sqlCh = "SELECT * FROM PageRecords WHERE url = ?"
-        db.get(sqlCh, [pageRecord.url], (errCh, rowCh) => {
+        const sqlCh = "SELECT * FROM PageRecords WHERE url = ? AND username = ?"
+        db.get(sqlCh, [pageRecord.url, pageRecord.username], (errCh, rowCh) => {
             if (errCh) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + errCh.errno + " - code: " + errCh.code
                 reject(utilities.errorObjs.dbError)
             } else {
                 if (!rowCh) {
-                    const sql = "INSERT INTO PageRecords(username, url, highestWidgets, coverage, linksCoverage, inputsCoverage, buttonsCoverage, highestLinks, highestInputs, highestButtons) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-                    db.run(sql, [pageRecord.username, pageRecord.url, pageRecord.highestWidgets, pageRecord.coverage, pageRecord.linksCoverage, pageRecord.inputsCoverage, pageRecord.buttonsCoverage, pageRecord.highestLinks, pageRecord.highestInputs, pageRecord.highestButtons], (err, row) => {
+                    const sql = "INSERT INTO PageRecords(username, url, highestWidgets, coverage, linksCoverage, inputsCoverage, buttonsCoverage, selectsCoverage, highestLinks, highestInputs, highestButtons, highestSelects) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                    db.run(sql, [pageRecord.username, pageRecord.url, pageRecord.highestWidgets, pageRecord.coverage, pageRecord.linksCoverage, pageRecord.inputsCoverage, pageRecord.buttonsCoverage, pageRecord.selectsCoverage, pageRecord.highestLinks, pageRecord.highestInputs, pageRecord.highestButtons, pageRecord.highestSelects], (err, row) => {
                         if (err) {
                             utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                             reject(utilities.errorObjs.dbError)
@@ -146,11 +146,13 @@ exports.addPageRecord = function (pageRecord) {
                     let linksCoverage = pageRecord.linksCoverage > rowCh.linksCoverage ? pageRecord.linksCoverage : rowCh.linksCoverage
                     let inputsCoverage = pageRecord.inputsCoverage > rowCh.inputsCoverage ? pageRecord.inputsCoverage : rowCh.inputsCoverage
                     let buttonsCoverage = pageRecord.buttonsCoverage > rowCh.buttonsCoverage ? pageRecord.buttonsCoverage : rowCh.buttonsCoverage
+                    let selectsCoverage = pageRecord.selectsCoverage > rowCh.selectsCoverage ? pageRecord.selectsCoverage : rowCh.selectsCoverage
                     let highestLinks = pageRecord.highestLinks > rowCh.highestLinks ? pageRecord.highestLinks : rowCh.highestLinks
                     let highestInputs = pageRecord.highestInputs > rowCh.highestInputs ? pageRecord.highestInputs : rowCh.highestInputs
                     let highestButtons = pageRecord.highestButtons > rowCh.highestButtons ? pageRecord.highestButtons : rowCh.highestButtons
-                    const sql = "UPDATE PageRecords SET highestWidgets = ?, coverage = ?, linksCoverage = ?, inputsCoverage = ?, buttonsCoverage = ?, highestLinks = ?, highestInputs = ?, highestButtons = ? WHERE url = ? AND username = ?"
-                    db.run(sql, [highestWidgets, coverage, linksCoverage, inputsCoverage, buttonsCoverage, highestLinks, highestInputs, highestButtons, pageRecord.url, pageRecord.username], (err, row) => {
+                    let highestSelects = pageRecord.highestSelects > rowCh.highestSelects ? pageRecord.highestSelects : rowCh.highestSelects
+                    const sql = "UPDATE PageRecords SET highestWidgets = ?, coverage = ?, linksCoverage = ?, inputsCoverage = ?, buttonsCoverage = ?, selectsCoverage = ?, highestLinks = ?, highestInputs = ?, highestButtons = ?, highestSelects = ? WHERE url = ? AND username = ?"
+                    db.run(sql, [highestWidgets, coverage, linksCoverage, inputsCoverage, buttonsCoverage, selectsCoverage, highestLinks, highestInputs, highestButtons, highestSelects, pageRecord.url, pageRecord.username], (err, row) => {
                         if (err) {
                             utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                             reject(utilities.errorObjs.dbError)
@@ -163,9 +165,11 @@ exports.addPageRecord = function (pageRecord) {
                                 linksCoverage: linksCoverage,
                                 inputsCoverage: inputsCoverage,
                                 buttonsCoverage: buttonsCoverage,
+                                selectsCoverage: selectsCoverage,
                                 highestLinks: highestLinks,
                                 highestInputs: highestInputs,
-                                highestButtons: highestButtons
+                                highestButtons: highestButtons,
+                                highestSelects: highestSelects
                             }
                             resolve(ret)
                         }
@@ -185,6 +189,56 @@ exports.getPageRecords = function (username) {
                 reject(utilities.errorObjs.dbError)
             } else {
                 resolve(rows)
+            }
+        })
+    })
+}
+
+exports.addWidgetCrop = function (widgetCrop, username) {
+    return new Promise((resolve, reject) => {
+        const sql = "INSERT INTO WidgetCrops(username, imageUrl, widgetType, widgetId, textContent, selectIndex) VALUES(?, ?, ?, ?, ?, ?)"
+        db.run(sql, [username, widgetCrop.imageUrl, widgetCrop.widgetType, widgetCrop.widgetId, widgetCrop.textContent, widgetCrop.selectIndex], (err, row) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                resolve()
+            }
+        })
+    })
+}
+
+exports.getWidgetCrops = function (username) {
+    return new Promise((resolve, reject) => {
+        const sql = "SELECT * FROM WidgetCrops WHERE username = ?"
+        db.all(sql, [username], (err, rows) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                const sqlDel = "DELETE FROM WidgetCrops WHERE username = ?"
+                db.run(sqlDel, [username], (errDel, rowDel) => {
+                    if (errDel) {
+                        utilities.errorObjs.dbError.errorMessage = "errno: " + errDel.errno + " - code: " + errDel.code
+                        reject(utilities.errorObjs.dbError)
+                    } else {
+                        resolve(rows)
+                    }
+                })
+            }
+        })
+    })
+}
+
+exports.updateWidgetCrop = function (username, widgetCrop) {
+    return new Promise((resolve, reject) => {
+        const sql = "UPDATE WidgetCrops SET lastInput = true WHERE username = ? AND widgetType = ? AND widgetId = ?"
+        db.run(sql, [username, "input", widgetCrop.widgetId], (err, row) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                resolve()
             }
         })
     })

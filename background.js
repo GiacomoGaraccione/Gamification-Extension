@@ -38,7 +38,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       ], tab, (streamId) => {
         if (streamId && streamId.length) {
           setTimeout(() => {
-            chrome.tabs.sendMessage(tab.id, { name: "stream", streamId: streamId, coords: request.obj })
+            chrome.tabs.sendMessage(tab.id, { name: "stream", streamId: streamId, coords: request.obj.coords, widgetType: request.obj.widgetType, widgetId: request.obj.widgetId, textContent: request.obj.textContent, selectIndex: request.obj.selectIndex })
           }, 200)
         }
       })
@@ -63,7 +63,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           url: request.content.url,
           totalLinkObjects: request.content.totalLinkObjects,
           totalInputObjects: request.content.totalInputObjects,
-          totalButtonObjects: request.content.totalButtonObjects
+          totalButtonObjects: request.content.totalButtonObjects,
+          totalSelectObjects: request.content.totalSelectObjects
         })
       }).then(function () {
         sendResponse({ data: request.content })
@@ -87,6 +88,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           function filterURL(event) {
             return event.url === request.content.url
           }
+          console.log(data.filter(filterURL))
           sendResponse({ data: data.filter(filterURL) })
         })
       })
@@ -148,9 +150,11 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         linksCoverage: 0,
         inputsCoverage: 0,
         buttonsCoverage: 0,
+        selectsCoverage: 0,
         highestLinks: 0,
         highestInputs: 0,
-        highestButtons: 0
+        highestButtons: 0,
+        highestSelects: 0
       }
       fetch(apiCall, {
         method: "post",
@@ -181,9 +185,11 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             linksCoverage: request.content.linksCoverage ? request.content.linksCoverage : record.linksCoverage,
             inputsCoverage: request.content.inputsCoverage ? request.content.inputsCoverage : record.inputsCoverage,
             buttonsCoverage: request.content.buttonsCoverage ? request.content.buttonsCoverage : record.buttonsCoverage,
+            selectsCoverage: request.content.selectsCoverage ? request.content.selectsCoverage : record.selectsCoverage,
             highestLinks: request.content.highestLinks ? request.content.highestLinks : record.highestLinks,
             highestInputs: request.content.highestInputs ? request.content.highestInputs : record.highestInputs,
-            highestButtons: request.content.highestButtons ? request.content.highestButtons : record.highestButtons
+            highestButtons: request.content.highestButtons ? request.content.highestButtons : record.highestButtons,
+            highestSelects: request.content.highestSelects ? request.content.highestSelects : record.highestSelects
           }
           fetch(apiCall.slice(0, pos - 1), {
             method: "post",
@@ -331,6 +337,43 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           "Content-type": "application/json"
         },
         body: JSON.stringify({ username: request.content.username, password: request.content.password, selectedAvatar: request.content.selectedAvatar })
+      }).then((res) => {
+        if (res.ok) {
+          sendResponse({ data: "OK" })
+        } else {
+          sendResponse({ data: "ERROR" })
+        }
+      })
+    } else if (request.body.indexOf("/pages/crops") >= 0 && request.method === "post") {
+      console.log(request)
+      fetch(apiCall, {
+        method: "post",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify({ imageUrl: request.content.imageUrl, widgetType: request.content.widgetType, widgetId: request.content.widgetId, textContent: request.content.textContent, selectIndex: request.content.selectIndex })
+      }).then((res) => {
+        if (res.ok) {
+          sendResponse({ data: "OK" })
+        } else {
+          sendResponse({ data: "ERROR" })
+        }
+      })
+    } else if (request.body.indexOf("/pages/crops") >= 0 && request.method === "get") {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          sendResponse({ data: data })
+        })
+      })
+    } else if (request.body.indexOf("/pages/crops") >= 0 && request.method === "patch") {
+      fetch(apiCall, {
+        method: "PATCH",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify({ widgetId: request.content.widgetId })
       }).then((res) => {
         if (res.ok) {
           sendResponse({ data: "OK" })

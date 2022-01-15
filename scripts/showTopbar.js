@@ -1,5 +1,5 @@
 chrome.storage.sync.get(["currentURL", "profileInfo"], function (result) {
-    var profileInfo = JSON.parse(result.profileInfo)
+    let profileInfo = JSON.parse(result.profileInfo)
 
     function filterLink(event) {
         return event.objectType === "link"
@@ -9,6 +9,9 @@ chrome.storage.sync.get(["currentURL", "profileInfo"], function (result) {
     }
     function filterButton(event) {
         return event.objectType === "button"
+    }
+    function filterSelect(event) {
+        return event.objectType === "select"
     }
 
     chrome.runtime.sendMessage({
@@ -28,11 +31,13 @@ chrome.storage.sync.get(["currentURL", "profileInfo"], function (result) {
             let totalLinkObjects = pageInfo.totalLinkObjects;
             let totalInputObjects = pageInfo.totalInputObjects;
             let totalButtonObjects = pageInfo.totalButtonObjects;
-            let denom = (totalLinkObjects + totalInputObjects + totalButtonObjects) !== 0
+            let totalSelectObjects = pageInfo.totalSelectObjects
+            let denom = (totalLinkObjects + totalInputObjects + totalButtonObjects + totalSelectObjects) !== 0
             let interactedLinks = pageActions.filter(filterLink).length;
             let interactedInputs = pageActions.filter(filterInput).length;
             let interactedButtons = pageActions.filter(filterButton).length;
-            let progress = denom ? ((interactedLinks + interactedInputs + interactedButtons) * 100) / (totalLinkObjects + totalInputObjects + totalButtonObjects) : -1;
+            let interactedSelects = pageActions.filter(filterSelect).length
+            let progress = denom ? ((interactedLinks + interactedInputs + interactedButtons + interactedSelects) * 100) / (totalLinkObjects + totalInputObjects + totalButtonObjects + totalSelectObjects) : -1;
 
             let topnav = document.createElement("div");
             topnav.id = "gamificationExtensionTopnav";
@@ -50,7 +55,7 @@ chrome.storage.sync.get(["currentURL", "profileInfo"], function (result) {
                     progress = 0;
                 }
                 innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
-                innerDiv.textContent = denom ? "Progress: " + progress + "%" : "There are no widgets in this page";
+                innerDiv.textContent = denom ? "Progress: " + progress.toFixed(2) + "%" : "There are no widgets in this page";
                 outerDiv.appendChild(innerDiv);
             }
         })

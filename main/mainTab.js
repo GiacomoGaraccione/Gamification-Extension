@@ -26,7 +26,6 @@ let returnButton = document.getElementById("returnButton")
 let highestNewVisitedPages = document.getElementById("highestNewVisitedPages")
 let highestNewWidgets = document.getElementById("highestNewWidgets")
 let highestCoverage = document.getElementById("highestCoverage")
-let printLeaderboard = document.getElementById("printLeaderboard")
 let loginDiv = document.getElementById("loginDiv")
 let loginButton = document.getElementById("loginButton")
 
@@ -113,7 +112,7 @@ function drawTable(container, mode, data) {
       img.src = data[i].selectedAvatar
       img.style = "width: 100%; height: 100%"
       cell3.appendChild(document.createTextNode(data[i].username))
-      let text = mode === "VP" ? data[i].highestNewVisitedPages : mode === "W" ? data[i].highestNewWidgets : data[i].highestCoverage
+      let text = mode === "VP" ? data[i].highestNewVisitedPages : mode === "W" ? data[i].highestNewWidgets : data[i].highestCoverage.toFixed(2)
       cell4.appendChild(document.createTextNode(text))
       cell5.appendChild(img)
     }
@@ -149,7 +148,7 @@ function drawLeaderboards() {
 chrome.storage.sync.get(["profileInfo"], function (result) {
   let profileInfo = result.profileInfo
   if (profileInfo !== undefined && profileInfo !== "[]") {
-    var profileInfoObj = JSON.parse(profileInfo)
+    let profileInfoObj = JSON.parse(profileInfo)
     title.textContent = "Main Page - Welcome " + profileInfoObj.username + "!"
     render("home")
   }
@@ -165,7 +164,8 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
       pageStats: JSON.stringify([]),
       newPages: [],
       pageSession: JSON.stringify([]),
-      widgetCrops: JSON.stringify([])
+      widgetCrops: JSON.stringify([]),
+      baseURL: url
     });
     if (tab === undefined) {
       chrome.runtime.sendMessage({
@@ -175,7 +175,6 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
     } else {
       chrome.tabs.update(tab.id, { highlighted: true });
     }
-    //chiudere tab con main page?
   });
 
   loginButton.addEventListener("click", (event) => {
@@ -353,7 +352,6 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
               h3.style = "text-align: center"
               achievementsContainer.appendChild(h3)
             } else {
-              console.log(achievements)
               achievements.sort(compareAchievements)
               achievements.map((a) => {
                 let div = document.createElement("div")
@@ -390,21 +388,6 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
   returnButton.addEventListener("click", function () {
     firstWrapper.style.display = "flex"
     fourthWrapper.style.display = "none"
-  })
-
-  //TODO: rivedere in base alla nuova organizzazione dei dati
-  printLeaderboard.addEventListener("click", function () {
-    chrome.storage.sync.get(["registeredUsers"], function (result) {
-      let blob = new Blob([result.registeredUsers], {
-        type: "text/plain;charset=UTF-8",
-      });
-      let url = window.URL.createObjectURL(blob);
-      let obj = {
-        url: url,
-        filename: "gamification-extension-leaderboard.txt",
-      };
-      chrome.runtime.sendMessage({ obj: obj, mess: "download" });
-    })
   })
 
 })

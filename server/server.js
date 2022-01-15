@@ -297,7 +297,8 @@ app.post("/api/pages", [
     body("url", "Parameter doesn't respect specifications").notEmpty().isURL(),
     body("totalLinkObjects", "Parameter doesn't respect specifications").notEmpty().isNumeric(),
     body("totalInputObjects", "Parameter doesn't respect specifications").notEmpty().isNumeric(),
-    body("totalButtonObjects", "Parameter doesn't respect specifications").notEmpty().isNumeric()
+    body("totalButtonObjects", "Parameter doesn't respect specifications").notEmpty().isNumeric(),
+    body("totalSelectObjects", "Parameter doesn't respect specifications").notEmpty().isNumeric()
 ], (req, res) => {
     if (utilities.resolveExpressValidator(validationResult(req), res)) {
         const page = req.body
@@ -348,7 +349,7 @@ app.post("/api/pages/actions", [
     body("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/),
     body("url", "Parameter doesn't respect specifications").notEmpty().isURL(),
     body("objectId", "Parameter doesn't respect specifications").notEmpty().isNumeric(),
-    body("objectType", "Parameter doesn't respect specifications").notEmpty().isIn(["link", "input", "button"])
+    body("objectType", "Parameter doesn't respect specifications").notEmpty().isIn(["link", "input", "button", "select"])
 ], (req, res) => {
     if (utilities.resolveExpressValidator(validationResult(req), res)) {
         const pageAction = req.body
@@ -451,5 +452,44 @@ app.get("/api/pages/records/:username", [
         pageDao.getPageRecords(username)
             .then((records) => res.json(records))
             .catch((err) => utilities.resolveErrors(err, res))
+    }
+})
+
+app.post("/api/pages/crops/:username", [
+    param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
+], (req, res) => {
+    if (utilities.resolveExpressValidator(validationResult(req), res)) {
+        const widgetCrop = req.body
+        const username = req.params.username
+        pageDao.addWidgetCrop(widgetCrop, username)
+            .then(() => res.status(200).json(utilities.successObj))
+            .catch((err) => {
+                utilities.resolveErrors(err, res)
+            })
+    }
+})
+
+app.get("/api/pages/crops/:username", [
+    param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
+], (req, res) => {
+    if (utilities.resolveExpressValidator(validationResult(req), res)) {
+        const username = req.params.username
+        pageDao.getWidgetCrops(username)
+            .then((crops) => { res.json(crops) })
+            .catch((err) => utilities.resolveErrors(err, res))
+    }
+})
+
+app.patch("/api/pages/crops/:username", [
+    param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
+], (req, res) => {
+    if (utilities.resolveExpressValidator(validationResult(req), res)) {
+        const username = req.params.username
+        const widgetCrop = req.body
+        pageDao.updateWidgetCrop(username, widgetCrop)
+            .then(() => res.status(200).json(utilities.successObj))
+            .catch((err) => {
+                utilities.resolveErrors(err, res)
+            })
     }
 })
