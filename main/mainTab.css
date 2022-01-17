@@ -74,11 +74,11 @@
   height: 209px;
   min-width: 236px;
   min-height: 209px;
-  outline: 8px solid white;
+  outline: 4px solid #e7e7e7;
 
   border: 2px solid #262b2f35;
 
-  background: #ffffff;
+  background: transparent;
   box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.15);
   border-radius: 2px;
 
@@ -104,10 +104,10 @@
   width: 171px;
   height: 41px;
 
-  background: #ffe03d30;
+  background: #416262;
   border-radius: 2px;
 
-  color: #262b2f70;
+  color: white;
   font-family: "Teko";
   font-weight: 300;
   font-size: 16px;

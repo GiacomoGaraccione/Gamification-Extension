@@ -13,8 +13,12 @@ if (found === null) {
     document.body.appendChild(sideDiv);
     sideDiv.id = "gamificationExtensionSidenav";
     sideDiv.style = "height: 100%; width: 0; position: fixed; z-index: 1; top: 0; right: 0; background-color: rgb(211 245 230); overflow-x: hidden; padding-top: 10px; transition: 0.5s; overflow-y: scroll";
+    let closeButtonDiv = document.createElement("div")
+    closeButtonDiv.id = "gamificationExtensionCloseButtonDiv"
+    closeButtonDiv.style = "display: flex; justify-content: center"
+    sideDiv.appendChild(closeButtonDiv)
     let closeButton = document.createElement("button");
-    sideDiv.appendChild(closeButton);
+    closeButtonDiv.appendChild(closeButton);
     closeButton.id = "gamificationExtensionSidenavCloseButton";
     closeButton.textContent = "Close Menu";
     closeButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
@@ -22,13 +26,13 @@ if (found === null) {
         document.getElementById("gamificationExtensionSidenav").style.width = "0";
     };
     let endButton = document.createElement("button");
-    sideDiv.appendChild(endButton);
+    closeButtonDiv.appendChild(endButton);
     endButton.id = "gamificationExtensionEndSessionButton";
     endButton.textContent = "End Session";
     endButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
     endButton.onclick = function () {
         //chiusura della sidenav
-        /*document.getElementById("gamificationExtensionSidenav").style.width = "0";
+        document.getElementById("gamificationExtensionSidenav").style.width = "0";
         document.getElementById("gamificationExtensionSidenav").remove()
         document.getElementById("gamificationExtensionSidenavButton").remove()
 
@@ -42,7 +46,7 @@ if (found === null) {
         let topnav = document.getElementById("gamificationExtensionTopnav");
         if (topnav != null) {
             document.body.removeChild(topnav);
-        }*/
+        }
 
         //mostrare modal di riepilogo
         chrome.storage.sync.get(
@@ -137,7 +141,7 @@ if (found === null) {
                                 "\nLinks clicked in this session: " + totalLinks + "\nLinks clicked for the first time: " + newLinks +
                                 "\nForms interacted with in this session: " + totalInputs + "\nForms interacted with for the first time: " + newInputs +
                                 "\nButtons clicked in this session: " + totalButtons + "\nButtons clicked for the first time: " + newButtons +
-                                "\nDropdown menus interacted with in this session: " + totalSelects + "\nDropdown menus interacted with for the first time" + newSelects;
+                                "\nDropdown menus interacted with in this session: " + totalSelects + "\nDropdown menus interacted with for the first time: " + newSelects;
                             innerModal.appendChild(modalContent);
                             modalSpan.onclick = function () { modalContainer.style.display = "none"; };
                             window.onclick = function (event) {
@@ -145,9 +149,8 @@ if (found === null) {
                                     modalContainer.style.display = "none";
                                 }
                             };
-                            //document.body.appendChild(modalContainer);
+                            document.body.appendChild(modalContainer);
 
-                            //chrome.storage.sync.set({ previousSession: result.pageSession })
                             chrome.runtime.sendMessage({
                                 mess: "fetch",
                                 body: "/pages/crops/" + profileInfo.username,
@@ -278,12 +281,14 @@ if (found === null) {
                 })
             }
         );
-        //chrome.storage.sync.set({ startingURL: "", pageStats: JSON.stringify([]) });
+        chrome.storage.sync.set({ startingURL: "", pageStats: JSON.stringify([]) });
     };
     let buttonsDiv = document.createElement("div")
     sideDiv.appendChild(buttonsDiv)
     let toggleClickedElementsButton = document.createElement("button");
     buttonsDiv.appendChild(toggleClickedElementsButton);
+    buttonsDiv.id = "gamificationExtensionButtonsDiv"
+    buttonsDiv.style = "display: flex; justify-content: center"
     toggleClickedElementsButton.id = "gamificationExtensionToggleClickedElementsButton";
     toggleClickedElementsButton.textContent = "Show Interacted Elements";
     toggleClickedElementsButton.style = " background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;"
@@ -591,21 +596,25 @@ if (found === null) {
     }
     );
     chrome.storage.sync.get(["interactionMode"], function (result) {
+        let interactionModeDiv = document.createElement("div")
+        interactionModeDiv.id = "gamificationExtensionInteractionModeDiv"
+        interactionModeDiv.style = "display: flex; flex-direction: column; align-items: center;"
+        sideDiv.appendChild(interactionModeDiv)
         let interactionMode = result.interactionMode
         let currentModeText = document.createElement("h3")
         let currentText = interactionMode === "interact" ? "Current Mode: Page Interaction" : interactionMode === "signal" ? "Current Mode: Signal Issues" : "Current Mode: Replay Session"
         currentModeText.textContent = currentText
         currentModeText.style = "text-align: center; color: #2215E2"
-        sideDiv.appendChild(currentModeText)
+        interactionModeDiv.appendChild(currentModeText)
         let enterSignalModeButton = document.createElement("button")
         enterSignalModeButton.id = "GamificationExtensionSignalModeButton"
-        sideDiv.appendChild(enterSignalModeButton)
+        interactionModeDiv.appendChild(enterSignalModeButton)
         enterSignalModeButton.textContent = "Signal Issues"
         enterSignalModeButton.style = " background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;"
         enterSignalModeButton.style.display = interactionMode !== "signal" ? "flex" : "none"
         let enterInteractModeButton = document.createElement("button")
         enterInteractModeButton.id = "GamificationExtensionInteractModeButton"
-        sideDiv.appendChild(enterInteractModeButton)
+        interactionModeDiv.appendChild(enterInteractModeButton)
         enterInteractModeButton.textContent = "Interact with Page"
         enterInteractModeButton.style = " background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;"
         enterInteractModeButton.style.display = interactionMode !== "interact" ? "flex" : "none"
@@ -614,9 +623,10 @@ if (found === null) {
             enterSignalModeButton.style.display = "none"
             enterInteractModeButton.style.display = "flex"
             currentModeText.textContent = "Current Mode: Signal Issues"
-            document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "none"
-            document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "none"
-            document.getElementById("gamificationExtensionToggleAllElementsButton").style.display = "none"
+            document.getElementById("gamificationExtensionButtonsDiv").style.display = "none"
+            //document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "none"
+            //document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "none"
+            //document.getElementById("gamificationExtensionToggleAllElementsButton").style.display = "none"
             removeBorders()
             drawBackground()
         }
@@ -625,16 +635,18 @@ if (found === null) {
             enterSignalModeButton.style.display = "flex"
             enterInteractModeButton.style.display = "none"
             currentModeText.textContent = "Current Mode: Page Interaction"
-            document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "flex"
-            document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "flex"
-            document.getElementById("gamificationExtensionToggleAllElementsButton").style.display = "flex"
+            document.getElementById("gamificationExtensionButtonsDiv").style.display = "flex"
+            //document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "flex"
+            //document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "flex"
+            //document.getElementById("gamificationExtensionToggleAllElementsButton").style.display = "flex"
             removeBackground()
             drawBorders()
         }
         if (interactionMode === "signal") {
-            document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "none"
-            document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "none"
-            document.getElementById("gamificationExtensionToggleAllElementsButton").style.display = "none"
+            document.getElementById("gamificationExtensionButtonsDiv").style.display = "none"
+            //document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "none"
+            //document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "none"
+            //document.getElementById("gamificationExtensionToggleAllElementsButton").style.display = "none"
         }
     })
 }

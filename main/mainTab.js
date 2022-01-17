@@ -90,9 +90,9 @@ function drawTable(container, mode, data) {
     let cell1 = document.createElement("th")
     let cell2 = document.createElement("th")
     let cellAv = document.createElement("th")
-    cell1.style = "border-bottom: 1px solid #ddd; background-color: #04AA6D; color: white;"
-    cell2.style = "border-bottom: 1px solid #ddd; background-color: #04AA6D; color: white;"
-    cellAv.style = "border-bottom: 1px solid #ddd; background-color: #04AA6D; color: white;"
+    cell1.style = "border-bottom: 1px solid #ddd; background-color: #416262; color: white;"
+    cell2.style = "border-bottom: 1px solid #ddd; background-color: #416262; color: white;"
+    cellAv.style = "border-bottom: 1px solid #ddd; background-color: #416262; color: white;"
     tableVP.appendChild(tableVPHead)
     tableVPHead.appendChild(cell1)
     tableVPHead.appendChild(cell2)
@@ -349,7 +349,7 @@ chrome.storage.sync.get(["profileInfo"], function (result) {
             if (achievements.length === 0) {
               let h3 = document.createElement("h3")
               h3.textContent = "You have obtained no achievements!"
-              h3.style = "text-align: center"
+              h3.style = "text-align: center; color: #2215E2"
               achievementsContainer.appendChild(h3)
             } else {
               achievements.sort(compareAchievements)
