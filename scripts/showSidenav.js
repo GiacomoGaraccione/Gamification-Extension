@@ -162,7 +162,6 @@ if (found === null) {
                                     let zip = new JSZip()
                                     let folder = zip.folder("script.sikuli")
                                     for (let i = 0; i < ret.length; i++) {
-                                        //aggiungere check if(imageUrl !== "submit")
                                         let byteString = atob(ret[i].imageUrl.split(',')[1])
                                         let mimeString = ret[i].imageUrl.split(',')[0].split(':')[1].split(';')[0]
                                         let ab = new ArrayBuffer(byteString.length);
@@ -185,6 +184,12 @@ if (found === null) {
                                         text += "       max=-1\n"
                                         text += "       break\n"
                                         if (ret[i].widgetType === "input") {
+                                            for (let j = 0; j < i; j++) {
+                                                if (ret[j].widgetType === "input" && i > 0 && ret[i].widgetId === ret[j].widgetId) {
+                                                    text += `type(Pattern("img${i + 1}.png").similar(0.55), "a", KeyModifier.CTRL)\n`
+                                                    text += `type(Pattern("img${i + 1}.png").similar(0.55), Key.BACKSPACE)\n`
+                                                }
+                                            }
                                             text += `type(Pattern("img${i + 1}.png").similar(0.55), "${ret[i].textContent}"`
                                             if (ret[i].lastInput) {
                                                 text += ` + Key.ENTER)\n`
@@ -227,6 +232,15 @@ if (found === null) {
                                         plugins: []
                                     }
                                     let commands = []
+                                    let openCommand = {
+                                        id: `idCommand0`,
+                                        comment: "",
+                                        command: "open",
+                                        target: baseURL,
+                                        targets: [baseURL],
+                                        value: ""
+                                    }
+                                    commands.push(openCommand)
                                     for (let i = 0; i < ret.length; i++) {
                                         let els = ret[i].widgetType === "link" ? document.getElementsByTagName("a") : document.getElementsByTagName(ret[i].widgetType)
                                         let buttons = []
@@ -262,6 +276,13 @@ if (found === null) {
                                             commandObj.target = `xpath=${xp}`
                                         }
                                         commandObj.targets.push([`xpath=${xp}`, "xpath:idRelative"])
+
+                                        let sel = selector(element)
+                                        if (commandObj.target === "") {
+                                            commandObj.target = `css=${sel}`
+                                        }
+                                        commandObj.targets.push([`css=${sel}`, "css:finder"])
+
                                         commands.push(commandObj)
                                     }
                                     seleniumFile.tests[0].commands = commands

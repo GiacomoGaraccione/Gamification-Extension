@@ -232,14 +232,36 @@ exports.getWidgetCrops = function (username) {
 
 exports.updateWidgetCrop = function (username, widgetCrop) {
     return new Promise((resolve, reject) => {
-        const sql = "UPDATE WidgetCrops SET lastInput = true WHERE username = ? AND widgetType = ? AND widgetId = ?"
-        db.run(sql, [username, "input", widgetCrop.widgetId], (err, row) => {
-            if (err) {
-                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
-                reject(utilities.errorObjs.dbError)
-            } else {
-                resolve()
-            }
-        })
+        if (widgetCrop.lastInput) {
+            const sqlMax = "SELECT MAX(id) FROM WidgetCrops WHERE username = ? AND widgetType = ? AND lastInput IS NULL"
+            db.get(sqlMax, [username, "input"], (errMax, rowMax) => {
+                if (errMax) {
+                    utilities.errorObjs.dbError.errorMessage = "errno: " + errMax.errno + " - code: " + errMax.code
+                    reject(utilities.errorObjs.dbError)
+                } else {
+                    let maxId = rowMax["MAX(id)"]
+                    const sql = "UPDATE WidgetCrops SET lastInput = true WHERE username = ? AND widgetType = ? AND widgetId = ? AND id = ?"
+                    db.run(sql, [username, "input", widgetCrop.widgetId, maxId], (err, row) => {
+                        if (err) {
+                            utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                            reject(utilities.errorObjs.dbError)
+                        } else {
+                            resolve()
+                        }
+                    })
+                    resolve()
+                }
+            })
+        } else {
+            const sql = "UPDATE WidgetCrops SET textContent = ? WHERE username = ? AND widgetType = ? AND widgetId = ? AND textContent IS NULL"
+            db.run(sql, [widgetCrop.textContent, username, "input", widgetCrop.widgetId], (err, row) => {
+                if (err) {
+                    utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                    reject(utilities.errorObjs.dbError)
+                } else {
+                    resolve()
+                }
+            })
+        }
     })
 }

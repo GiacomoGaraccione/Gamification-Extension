@@ -7,7 +7,7 @@ function createCanvas(canvasWidth, canvasHeight) {
     return canvas;
 }
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.name === "stream" && request.streamId) {
         let track, canvas
         navigator.mediaDevices.getUserMedia({
@@ -53,7 +53,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
                         body: "/pages/crops/" + profileInfo.username,
                         content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex },
                         method: "post"
-                    }, () => { console.log("SEEEEEEEEEEEEEE") })
+                    })
                 };
                 croppedImage.src = url; // screenshot (full image)
             })

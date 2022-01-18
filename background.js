@@ -88,7 +88,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           function filterURL(event) {
             return event.url === request.content.url
           }
-          console.log(data.filter(filterURL))
           sendResponse({ data: data.filter(filterURL) })
         })
       })
@@ -345,7 +344,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         }
       })
     } else if (request.body.indexOf("/pages/crops") >= 0 && request.method === "post") {
-      console.log(request)
       fetch(apiCall, {
         method: "post",
         headers: {
@@ -373,7 +371,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         headers: {
           "Content-type": "application/json"
         },
-        body: JSON.stringify({ widgetId: request.content.widgetId })
+        body: JSON.stringify({ widgetId: request.content.widgetId, textContent: request.content.textContent, lastInput: request.content.lastInput, submit: request.content.submit })
       }).then((res) => {
         if (res.ok) {
           sendResponse({ data: "OK" })

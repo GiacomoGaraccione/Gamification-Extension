@@ -78,6 +78,7 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
             content: { url: currentURL, username: profileInfo.username },
             firstTime: true
         }, (response2) => {
+
             for (let i = 0; i < linkObjects.length; i++) {
                 linkObjects[i].addEventListener("click", (event) => {
                     event.preventDefault()
@@ -90,7 +91,7 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                         }
                         if (els[j].href === goTo) {
                             found = true
-                            chrome.storage.sync.get(["pageStats", "interactionMode", "pageSession", "previousSession", "sessionPosition"], (result) => {
+                            chrome.storage.sync.get(["pageStats", "interactionMode"], (result) => {
                                 if (result.interactionMode === "interact") {
                                     //Ottenimento coordinate dell'oggetto cliccato, usate per fare il resize dello screenshot
                                     let coords = { x: els[j].getBoundingClientRect().x, y: els[j].getBoundingClientRect().y, height: els[j].getBoundingClientRect().height, width: els[j].getBoundingClientRect().width }
@@ -103,75 +104,74 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                         alert("Select Scheda Chrome to have the crop taken correctly")
                                         els[j].attributeStyleMap.clear()
                                         //Funzione che si occupa di fare lo screenshot e poi andare alla pagina indicata dal link
-                                        chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "link", widgetId: j, textContent: null, selectIndex: null }, mess: "capture" }, () => {
-                                            /*setTimeout(function () {
-                                                window.location = goTo;
-                                            }, 3000);*/
-                                            let pageStatsObj = JSON.parse(result.pageStats);
-                                            let psObj = pageStatsObj.filter(filterURL)[0]
-                                            let intLinkIds = psObj.interactedLinks
-                                            let intLinkPos = intLinkIds.indexOf(j);
-                                            if (intLinkPos < 0) {
-                                                intLinkIds.push(j);
-                                                psObj.interactedLinks = intLinkIds;
+                                        chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "link", widgetId: j, textContent: null, selectIndex: null }, mess: "capture" })
+                                        let pageStatsObj = JSON.parse(result.pageStats);
+                                        let psObj = pageStatsObj.filter(filterURL)[0]
+                                        let intLinkIds = psObj.interactedLinks
+                                        let intLinkPos = intLinkIds.indexOf(j);
+                                        if (intLinkPos < 0) {
+                                            intLinkIds.push(j);
+                                            psObj.interactedLinks = intLinkIds;
+                                        }
+                                        let pageActions = response3.data
+                                        let newLink = pageActions.filter(filterID).length === 0
+                                        if (newLink) {
+                                            let newlinkIds = psObj.newLinks;
+                                            let newLinkPos = newlinkIds.indexOf(j);
+                                            if (newLinkPos < 0) {
+                                                newlinkIds.push(j);
+                                                psObj.newLinks = newlinkIds;
                                             }
-                                            let pageActions = response3.data
-                                            let newLink = pageActions.filter(filterID).length === 0
+                                        }
+                                        chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
+                                            setTimeout(() => {
+                                                chrome.storage.sync.get(["overlayMode"], (result) => {
+                                                    if (result.overlayMode === "interacted") {
+                                                        drawBorderOnInteracted()
+                                                    } else if (result.overlayMode === "all") {
+                                                        drawBorderOnAll()
+                                                    }
+                                                })
+                                            }, 3000);
                                             if (newLink) {
-                                                let newlinkIds = psObj.newLinks;
-                                                let newLinkPos = newlinkIds.indexOf(j);
-                                                if (newLinkPos < 0) {
-                                                    newlinkIds.push(j);
-                                                    psObj.newLinks = newlinkIds;
-                                                }
-                                            }
-                                            let pageSession = JSON.parse(result.pageSession)
-                                            //salvataggio delle informazioni sull'oggetto interagito per il replay della sessione
-                                            let pageSessionObj = { url: currentURL, id: j, type: "link" }
-                                            pageSession.push(pageSessionObj)
-                                            chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj), pageSession: JSON.stringify(pageSession) }, () => {
-                                                if (overlayMode === "interacted") {
-                                                    drawBorderOnInteracted()
-                                                } else if (overlayMode === "all") {
-                                                    drawBorderOnAll()
-                                                }
-                                                if (newLink) {
+                                                chrome.runtime.sendMessage({
+                                                    mess: "fetch",
+                                                    body: "/pages/actions",
+                                                    method: "post",
+                                                    content: { url: currentURL, username: profileInfo.username, objectId: j - 1, objectType: "link" }
+                                                }, () => {
+                                                    let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
+                                                    let interactedLinks = pageActions.filter(filterLink).length + 1
+                                                    let interactedInputs = pageActions.filter(filterInput).length
+                                                    let interactedButtons = pageActions.filter(filterButton).length
+                                                    let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
+                                                    innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
+                                                    innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
+                                                    let sidenavProgress = document.getElementById("gamificationExtensionLinksProgress")
+                                                    let widgetProgress = interactedLinks * 100 / pageInfo.totalLinkObjects
+                                                    if (widgetProgress > 100) {
+                                                        widgetProgress = 100
+                                                    }
+                                                    sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
+                                                    sidenavProgress.textContent = "Links Progress: " + widgetProgress.toFixed(2) + "%"
+                                                    let table = document.getElementById("gamificationExtensionPageStatsTable")
+                                                    let linksRow = table.rows[1]
+                                                    let pageStat = pageStatsObj.filter(filterURL)[0]
+                                                    linksRow.cells[1].innerHTML = pageStat.interactedLinks.length
+                                                    linksRow.cells[2].innerHTML = pageStat.newLinks.length
+                                                    linksRow.cells[3].innerHTML = pageActions.filter(filterLink).length + 1
+                                                    pageCoverageAchievements(progress, widgetProgress)
                                                     chrome.runtime.sendMessage({
                                                         mess: "fetch",
-                                                        body: "/pages/actions",
+                                                        body: "/pages/records/" + profileInfo.username,
                                                         method: "post",
-                                                        content: { url: currentURL, username: profileInfo.username, objectId: j - 1, objectType: "link" }
-                                                    }, () => {
-                                                        let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                                                        let interactedLinks = pageActions.filter(filterLink).length + 1
-                                                        let interactedInputs = pageActions.filter(filterInput).length
-                                                        let interactedButtons = pageActions.filter(filterButton).length
-                                                        let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
-                                                        innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
-                                                        innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
-                                                        let sidenavProgress = document.getElementById("gamificationExtensionLinksProgress")
-                                                        let widgetProgress = interactedLinks * 100 / pageInfo.totalLinkObjects
-                                                        sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
-                                                        sidenavProgress.textContent = "Links Progress: " + widgetProgress.toFixed(2) + "%"
-                                                        let table = document.getElementById("gamificationExtensionPageStatsTable")
-                                                        let linksRow = table.rows[1]
-                                                        let pageStat = pageStatsObj.filter(filterURL)[0]
-                                                        linksRow.cells[1].innerHTML = pageStat.interactedLinks.length
-                                                        linksRow.cells[2].innerHTML = pageStat.newLinks.length
-                                                        linksRow.cells[3].innerHTML = pageActions.filter(filterLink).length + 1
-                                                        pageCoverageAchievements(progress, widgetProgress)
-                                                        chrome.runtime.sendMessage({
-                                                            mess: "fetch",
-                                                            body: "/pages/records/" + profileInfo.username,
-                                                            method: "post",
-                                                            content: { username: profileInfo.username, url: currentURL, coverage: progress, linksCoverage: widgetProgress },
-                                                            firstTime: false
-                                                        })
+                                                        content: { username: profileInfo.username, url: currentURL, coverage: progress, linksCoverage: widgetProgress },
+                                                        firstTime: false
                                                     })
+                                                })
 
-                                                }
-                                            });
-                                        })
+                                            }
+                                        });
                                         /*setTimeout(function () {
                                             window.location = goTo;
                                         }, 3000);*/
@@ -212,11 +212,24 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                         }
                         if (els[j].id === event.target.id) {
                             found = true
-                            chrome.storage.sync.get(["pageStats", "interactionMode", "pageSession", "previousSession", "sessionPosition"], (result) => {
+                            chrome.storage.sync.get(["pageStats", "interactionMode"], (result) => {
                                 if (result.interactionMode === "interact") {
+                                    if (els[j].value !== "") {
+                                        let allInputs = document.body.getElementsByTagName("input")
+                                        for (let k = 0; k < allInputs.length; k++) {
+                                            if (els[j].id === allInputs[k].id) {
+                                                chrome.runtime.sendMessage({
+                                                    mess: "fetch",
+                                                    body: "/pages/crops/" + profileInfo.username,
+                                                    method: "patch",
+                                                    content: { textContent: els[j].value, widgetId: k, submit: false }
+                                                })
+                                            }
+                                        }
+                                    }
                                     let coords = { x: els[j].parentElement.getBoundingClientRect().x, y: els[j].parentElement.getBoundingClientRect().y, height: els[j].parentElement.getBoundingClientRect().height, width: els[j].parentElement.getBoundingClientRect().width }
-                                    /*alert("Select Scheda Chrome to have the crop taken correctly")
-                                    chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "input", widgetId: j }, mess: "capture" })*/
+                                    alert("Select Scheda Chrome to have the crop taken correctly")
+                                    chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "input", widgetId: j, textContent: null, selectIndex: null }, mess: "capture" })
                                     chrome.runtime.sendMessage({
                                         mess: "fetch",
                                         body: "/pages/actions/" + profileInfo.username,
@@ -241,17 +254,16 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                                 psObj.newInputs = newInputIds;
                                             }
                                         }
-                                        let pageSession = JSON.parse(result.pageSession)
-                                        //salvataggio delle informazioni sull'oggetto interagito per il replay della sessione
-                                        let pageSessionObj = { url: currentURL, id: j, type: "input" }
-                                        pageSession.push(pageSessionObj)
-                                        pageCoverageAchievements(100, 100)
-                                        chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj), pageSession: JSON.stringify(pageSession) }, () => {
-                                            if (overlayMode === "interacted") {
-                                                drawBorderOnInteracted()
-                                            } else if (overlayMode === "all") {
-                                                drawBorderOnAll()
-                                            }
+                                        chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
+                                            setTimeout(() => {
+                                                chrome.storage.sync.get(["overlayMode"], (result) => {
+                                                    if (result.overlayMode === "interacted") {
+                                                        drawBorderOnInteracted()
+                                                    } else if (result.overlayMode === "all") {
+                                                        drawBorderOnAll()
+                                                    }
+                                                })
+                                            }, 3000);
                                             if (newInput) {
                                                 chrome.runtime.sendMessage({
                                                     mess: "fetch",
@@ -268,6 +280,9 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                                     innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
                                                     let sidenavProgress = document.getElementById("gamificationExtensionInputsProgress")
                                                     let widgetProgress = interactedInputs * 100 / pageInfo.totalInputObjects
+                                                    if (widgetProgress > 100) {
+                                                        widgetProgress = 100
+                                                    }
                                                     sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
                                                     sidenavProgress.textContent = "Forms Progress: " + widgetProgress.toFixed(2) + "%"
                                                     let table = document.getElementById("gamificationExtensionPageStatsTable")
@@ -323,81 +338,83 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                             }
                             if (els[j].id === event.target.id) {
                                 found = true
-                                chrome.storage.sync.get(["pageStats", "interactionMode", "pageSession", "previousSession", "sessionPosition"], (result) => {
+                                chrome.storage.sync.get(["pageStats", "interactionMode"], (result) => {
                                     if (result.interactionMode === "interact") {
                                         els[j].attributeStyleMap.clear()
                                         let coords = { x: els[j].getBoundingClientRect().x, y: els[j].getBoundingClientRect().y, height: els[j].getBoundingClientRect().height, width: els[j].getBoundingClientRect().width }
                                         alert("Select Scheda Chrome to have the crop taken correctly")
-                                        chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "button", widgetId: j, textContent: null, selectIndex: null }, mess: "capture" }, () => {
-                                            chrome.runtime.sendMessage({
-                                                mess: "fetch",
-                                                body: "/pages/actions/" + profileInfo.username,
-                                                method: "get",
-                                                content: { url: currentURL }
-                                            }, (response3) => {
-                                                let pageStatsObj = JSON.parse(result.pageStats);
-                                                let psObj = pageStatsObj.filter(filterURL)[0]
-                                                let intButtonIds = psObj.interactedButtons
-                                                let intButtonPos = intButtonIds.indexOf(j);
-                                                if (intButtonPos < 0) {
-                                                    intButtonIds.push(j);
-                                                    psObj.interactedButtons = intButtonIds;
+                                        chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "button", widgetId: j, textContent: null, selectIndex: null }, mess: "capture" })
+                                        chrome.runtime.sendMessage({
+                                            mess: "fetch",
+                                            body: "/pages/actions/" + profileInfo.username,
+                                            method: "get",
+                                            content: { url: currentURL }
+                                        }, (response3) => {
+                                            let pageStatsObj = JSON.parse(result.pageStats);
+                                            let psObj = pageStatsObj.filter(filterURL)[0]
+                                            let intButtonIds = psObj.interactedButtons
+                                            let intButtonPos = intButtonIds.indexOf(j);
+                                            if (intButtonPos < 0) {
+                                                intButtonIds.push(j);
+                                                psObj.interactedButtons = intButtonIds;
+                                            }
+                                            let pageActions = response3.data
+                                            let newButton = pageActions.filter(filterID).length === 0
+                                            if (newButton) {
+                                                let newButtonIds = psObj.newButtons;
+                                                let newButtonPos = newButtonIds.indexOf(j);
+                                                if (newButtonPos < 0) {
+                                                    newButtonIds.push(j);
+                                                    psObj.newButtons = newButtonIds;
                                                 }
-                                                let pageActions = response3.data
-                                                let newButton = pageActions.filter(filterID).length === 0
+                                            }
+                                            chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
+                                                setTimeout(() => {
+                                                    chrome.storage.sync.get(["overlayMode"], (result) => {
+                                                        if (result.overlayMode === "interacted") {
+                                                            drawBorderOnInteracted()
+                                                        } else if (result.overlayMode === "all") {
+                                                            drawBorderOnAll()
+                                                        }
+                                                    })
+                                                }, 3000);
                                                 if (newButton) {
-                                                    let newButtonIds = psObj.newButtons;
-                                                    let newButtonPos = newButtonIds.indexOf(j);
-                                                    if (newButtonPos < 0) {
-                                                        newButtonIds.push(j);
-                                                        psObj.newButtons = newButtonIds;
-                                                    }
-                                                }
-                                                let pageSession = JSON.parse(result.pageSession)
-                                                //salvataggio delle informazioni sull'oggetto interagito per il replay della sessione
-                                                let pageSessionObj = { url: currentURL, id: j, type: "button" }
-                                                pageSession.push(pageSessionObj)
-                                                chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj), pageSession: JSON.stringify(pageSession) }, () => {
-                                                    if (overlayMode === "interacted") {
-                                                        drawBorderOnInteracted()
-                                                    } else if (overlayMode === "all") {
-                                                        drawBorderOnAll()
-                                                    }
-                                                    if (newButton) {
+                                                    chrome.runtime.sendMessage({
+                                                        mess: "fetch",
+                                                        body: "/pages/actions",
+                                                        method: "post",
+                                                        content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "button" }
+                                                    }, () => {
+                                                        let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
+                                                        let interactedLinks = pageActions.filter(filterLink).length
+                                                        let interactedInputs = pageActions.filter(filterInput).length
+                                                        let interactedButtons = pageActions.filter(filterButton).length + 1
+                                                        let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
+                                                        innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
+                                                        innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
+                                                        let sidenavProgress = document.getElementById("gamificationExtensionButtonsProgress")
+                                                        let widgetProgress = interactedButtons * 100 / pageInfo.totalButtonObjects
+                                                        if (widgetProgress > 100) {
+                                                            widgetProgress = 100
+                                                        }
+                                                        sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
+                                                        sidenavProgress.textContent = "Buttons Progress: " + widgetProgress.toFixed(2) + "%"
+                                                        let table = document.getElementById("gamificationExtensionPageStatsTable")
+                                                        let buttonsRow = table.rows[3]
+                                                        let pageStat = pageStatsObj.filter(filterURL)[0]
+                                                        buttonsRow.cells[1].innerHTML = pageStat.interactedButtons.length
+                                                        buttonsRow.cells[2].innerHTML = pageStat.newButtons.length
+                                                        buttonsRow.cells[3].innerHTML = pageActions.filter(filterButton).length + 1
+                                                        pageCoverageAchievements(progress, widgetProgress)
                                                         chrome.runtime.sendMessage({
                                                             mess: "fetch",
-                                                            body: "/pages/actions",
+                                                            body: "/pages/records/" + profileInfo.username,
                                                             method: "post",
-                                                            content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "button" }
-                                                        }, () => {
-                                                            let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                                                            let interactedLinks = pageActions.filter(filterLink).length
-                                                            let interactedInputs = pageActions.filter(filterInput).length
-                                                            let interactedButtons = pageActions.filter(filterButton).length + 1
-                                                            let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
-                                                            innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
-                                                            innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
-                                                            let sidenavProgress = document.getElementById("gamificationExtensionButtonsProgress")
-                                                            let widgetProgress = interactedButtons * 100 / pageInfo.totalButtonObjects
-                                                            sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
-                                                            sidenavProgress.textContent = "Buttons Progress: " + widgetProgress.toFixed(2) + "%"
-                                                            let table = document.getElementById("gamificationExtensionPageStatsTable")
-                                                            let buttonsRow = table.rows[3]
-                                                            let pageStat = pageStatsObj.filter(filterURL)[0]
-                                                            buttonsRow.cells[1].innerHTML = pageStat.interactedButtons.length
-                                                            buttonsRow.cells[2].innerHTML = pageStat.newButtons.length
-                                                            buttonsRow.cells[3].innerHTML = pageActions.filter(filterButton).length + 1
-                                                            pageCoverageAchievements(progress, widgetProgress)
-                                                            chrome.runtime.sendMessage({
-                                                                mess: "fetch",
-                                                                body: "/pages/records/" + profileInfo.username,
-                                                                method: "post",
-                                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, buttonsCoverage: widgetProgress },
-                                                                firstTime: false
-                                                            })
+                                                            content: { username: profileInfo.username, url: currentURL, coverage: progress, buttonsCoverage: widgetProgress },
+                                                            firstTime: false
                                                         })
-                                                    }
-                                                })
+                                                    })
+                                                }
                                             })
                                         })
                                     } else if (result.interactionMode === "signal") {
@@ -435,12 +452,12 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                         }
                         if (event.target.id === els[j].id) {
                             found = true
-                            chrome.storage.sync.get(["pageStats", "interactionMode", "pageSession", "previousSession", "sessionPosition"], (result) => {
+                            chrome.storage.sync.get(["pageStats", "interactionMode"], (result) => {
                                 if (result.interactionMode === "interact") {
                                     els[j].attributeStyleMap.clear()
                                     let coords = { x: els[j].getBoundingClientRect().x, y: els[j].getBoundingClientRect().y, height: els[j].getBoundingClientRect().height, width: els[j].getBoundingClientRect().width }
-                                    /*alert("Select Scheda Chrome to have the crop taken correctly")
-                                    chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "select", widgetId: j, textContent: null, selectIndex: els[j].options[els[j].selectedIndex].text }, mess: "capture" })*/
+                                    alert("Select Scheda Chrome to have the crop taken correctly")
+                                    chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "select", widgetId: j, textContent: null, selectIndex: els[j].options[els[j].selectedIndex].text }, mess: "capture" })
                                     chrome.runtime.sendMessage({
                                         mess: "fetch",
                                         body: "/pages/actions/" + profileInfo.username,
@@ -465,17 +482,15 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                                 psObj.newSelects = newSelectIds;
                                             }
                                         }
-                                        let pageSession = JSON.parse(result.pageSession)
-                                        //salvataggio delle informazioni sull'oggetto interagito per il replay della sessione
-                                        let pageSessionObj = { url: currentURL, id: j, type: "select" }
-                                        pageSession.push(pageSessionObj)
-                                        chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj), pageSession: JSON.stringify(pageSession) }, () => {
+                                        chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
                                             setTimeout(() => {
-                                                if (overlayMode === "interacted") {
-                                                    drawBorderOnInteracted()
-                                                } else if (overlayMode === "all") {
-                                                    drawBorderOnAll()
-                                                }
+                                                chrome.storage.sync.get(["overlayMode"], (result) => {
+                                                    if (result.overlayMode === "interacted") {
+                                                        drawBorderOnInteracted()
+                                                    } else if (result.overlayMode === "all") {
+                                                        drawBorderOnAll()
+                                                    }
+                                                })
                                             }, 3000);
                                             if (newSelect) {
                                                 chrome.runtime.sendMessage({
@@ -494,6 +509,9 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                                     innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
                                                     let sidenavProgress = document.getElementById("gamificationExtensionSelectsProgress")
                                                     let widgetProgress = interactedSelects * 100 / pageInfo.totalSelectObjects
+                                                    if (widgetProgress > 100) {
+                                                        widgetProgress = 100
+                                                    }
                                                     sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
                                                     sidenavProgress.textContent = "Dropdown Menus Progress: " + widgetProgress.toFixed(2) + "%"
                                                     let table = document.getElementById("gamificationExtensionPageStatsTable")
@@ -524,23 +542,23 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
 
             for (let i = 0; i < formObjects.length; i++) {
                 formObjects[i].addEventListener("submit", (event) => {
-                    event.preventDefault()
+                    event.preventDefault() //da levare
                     chrome.storage.sync.get(["profileInfo"], (result) => {
                         let profileInfo = JSON.parse(result.profileInfo)
-                        //iterare tutti i figli del form con tipo input
-                        //per ognuno farne il crop e passare il value
                         let inputs = formObjects[i].getElementsByTagName("input")
                         let allInputs = document.body.getElementsByTagName("input")
                         let j
                         for (j = 0; j < inputs.length; j++) {
                             if (inputs[j].type !== "hidden") {
-                                inputs[j].style = "border:0; border-style:solid;"
-                                let coords = inputs[j].getBoundingClientRect()
-                                alert("Select Scheda Chrome to have the crop taken correctly")
                                 let textContent = inputs[j].value
                                 for (let k = 0; k < allInputs.length; k++) {
                                     if (inputs[j].id === allInputs[k].id) {
-                                        chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "input", widgetId: k, textContent: textContent, selectIndex: null }, mess: "capture" })
+                                        chrome.runtime.sendMessage({
+                                            mess: "fetch",
+                                            body: "/pages/crops/" + profileInfo.username,
+                                            method: "patch",
+                                            content: { textContent: textContent, widgetId: k, submit: true }
+                                        })
                                     }
                                 }
                             }
@@ -559,13 +577,10 @@ chrome.storage.sync.get(["currentURL", "pageActions", "pageStats", "overlayMode"
                                         mess: "fetch",
                                         body: "/pages/crops/" + profileInfo.username,
                                         method: "patch",
-                                        content: { widgetId: k }
+                                        content: { widgetId: k, lastInput: true, submit: true }
                                     })
                                 }
                             }
-                        } else {
-                            //form submitted tramite button => bisogna trovare il button per submittare, screenarlo così che sikuli possa cliccarlo
-                            console.log("BBBBBBBB")
                         }
                     })
                 })

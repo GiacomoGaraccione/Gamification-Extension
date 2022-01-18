@@ -313,3 +313,23 @@ function xpath(el) {
     let sames = [].filter.call(el.parentNode.children, function (x) { return x.tagName == el.tagName })
     return xpath(el.parentNode) + '/' + el.tagName.toLowerCase() + (sames.length > 1 ? '[' + ([].indexOf.call(sames, el) + 1) + ']' : '')
 }
+
+function selector(el) {
+    let names = []
+    while (el.parentNode) {
+        if (el.id) {
+            names.unshift('#' + el.id);
+            break;
+        } else {
+            if (el === el.ownerDocument.documentElement) {
+                names.unshift(el.tagName)
+            } else {
+                let c, e
+                for (c = 1, e = el; e.previousElementSibling; e = e.previousElementSibling, c++);
+                names.unshift(el.tagName + ":nth-child(" + c + ")")
+            }
+            el = el.parentNode
+        }
+    }
+    return names.join(" > ")
+}
