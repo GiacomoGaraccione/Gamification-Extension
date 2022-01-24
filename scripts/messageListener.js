@@ -30,7 +30,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             context.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height)
             return canvas.toDataURL();
         }).then((url) => {
-            chrome.storage.sync.get(["currentURL", "widgetCrops", "profileInfo"], function (result) {
+            chrome.storage.sync.get(["currentURL", "profileInfo"], function (result) {
                 let profileInfo = JSON.parse(result.profileInfo)
                 let canvas = createCanvas(request.coords.width, request.coords.height);
                 let context = canvas.getContext('2d');
@@ -53,7 +53,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         body: "/pages/crops/" + profileInfo.username,
                         content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex },
                         method: "post"
-                    })
+                    }, () => console.log("AAAAAA"))
                 };
                 croppedImage.src = url; // screenshot (full image)
             })

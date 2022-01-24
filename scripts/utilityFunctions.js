@@ -2,6 +2,20 @@ function onlyUnique(value, index, self) {
     return self.indexOf(value) === index;
 }
 
+function filterLink(event) {
+    return event.objectType === "link"
+}
+function filterInput(event) {
+    return event.objectType === "input"
+}
+function filterButton(event) {
+    return event.objectType === "button"
+}
+
+function filterSelect(event) {
+    return event.objectType === "select"
+}
+
 function removeBorders() {
     let linksToRemove = document.body.getElementsByTagName("a");
     for (let i = 0; i < linksToRemove.length; i++) {
@@ -30,22 +44,46 @@ function removeBackground() {
     let linksToRemove = document.body.getElementsByTagName("a")
     for (let i = 0; i < linksToRemove.length; i++) {
         linksToRemove[i].style = "background-image: none"
+        let nodes = linksToRemove[i].childNodes
+        for (let k = 0; k < nodes.length; k++) {
+            if (nodes[k].id && nodes[k].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
+                linksToRemove[i].removeChild(nodes[k])
+            }
+        }
     }
 
     let inputsToRemove = document.body.getElementsByTagName("input");
     for (let i = 0; i < inputsToRemove.length; i++) {
         inputsToRemove[i].style = "background-image: none";
+        let nodes = inputsToRemove[i].childNodes
+        for (let k = 0; k < nodes.length; k++) {
+            if (nodes[k].id && nodes[k].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
+                inputsToRemove[i].removeChild(nodes[k])
+            }
+        }
     }
 
     let buttonsToRemove = document.body.getElementsByTagName("button");
     for (let i = 0; i < buttonsToRemove.length; i++) {
         if (!isButtonOfExtension(buttonsToRemove[i]))
             buttonsToRemove[i].style = "border:0; border-style:solid;";
+        let nodes = buttonsToRemove[i].childNodes
+        for (let k = 0; k < nodes.length; k++) {
+            if (nodes[k].id && nodes[k].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
+                buttonsToRemove[i].removeChild(nodes[k])
+            }
+        }
     }
 
     let selectsToRemove = document.body.getElementsByTagName("select")
     for (let i = 0; i < selectsToRemove.length; i++) {
         selectsToRemove[i].style = "background-image: none"
+        let nodes = selectsToRemove[i].childNodes
+        for (let k = 0; k < nodes.length; k++) {
+            if (nodes[k].id && nodes[k].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
+                selectsToRemove[i].removeChild(nodes[k])
+            }
+        }
     }
 }
 
@@ -60,7 +98,8 @@ function isButtonOfExtension(button) {
         button.id === "gamificationExtensionToggleAllElementsButton" ||
         button.id === "GamificationExtensionSignalModeButton" ||
         button.id === "GamificationExtensionInteractModeButton" ||
-        button.id === "GamificationExtensionSessionModeButton"
+        button.id === "GamificationExtensionSessionModeButton" ||
+        button.id === "gamificationExtensionIssueModalButton"
     );
 }
 
@@ -136,19 +175,92 @@ function drawBackground() {
             let inputs = document.body.getElementsByTagName("input");
             let buttons = document.body.getElementsByTagName("button");
             let selects = document.body.getElementsByTagName("select")
-            for (issue of pageIssues) {
-                switch (action.objectType) {
+            for (let i = 0; i < pageIssues.length; i++) {
+                let issue = pageIssues[i]
+                let tooltip = document.createElement("span")
+                tooltip.textContent = issue.issueText
+                tooltip.id = "gamificationExtensionTooltipIssue" + i
+                tooltip.style = "visibility: hidden; width: 120px; background-color: rgb(211 245 230);; color: #2215E2; text-align: center; padding: 5px 0; border-radius: 6px; z-index: 1; display: none"
+                switch (issue.objectType) {
                     case "button":
-                        buttons[action.objectId].style = "border:3px; border-style:solid; border-color:rgb(243 0 0); padding: 1em;";
+                        buttons[issue.objectId].style = "border:3px; border-style:solid; border-color:rgb(243 0 0); padding: 1em;";
+                        let buttonChildren = buttons[issue.objectId].childNodes
+                        let foundB = false
+                        for (let j = 0; j < buttonChildren.length && !foundB; j++) {
+                            if (buttonChildren[j].id && buttonChildren[j].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
+                                foundB = true
+                            }
+                        }
+                        if (!foundB) {
+                            buttons[issue.objectId].appendChild(tooltip)
+                            buttons[issue.objectId].addEventListener("mouseover", () => {
+                                tooltip.style.display = "inline"
+                                tooltip.style.visibility = "visible"
+                            })
+                            buttons[issue.objectId].addEventListener("mouseout", () => {
+                                tooltip.style.display = "none"
+                            })
+                        }
                         break;
                     case "input":
-                        inputs[action.objectId].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
+                        inputs[issue.objectId].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
+                        let inputChildren = inputs[issue.objectId].childNodes
+                        let foundI = false
+                        for (let j = 0; j < inputChildren.length && !foundI; j++) {
+                            if (inputChildren[j].id && inputChildren[j].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
+                                foundI = true
+                            }
+                        }
+                        if (!foundI) {
+                            inputs[issue.objectId].appendChild(tooltip)
+                            inputs[issue.objectId].addEventListener("mouseover", () => {
+                                tooltip.style.display = "inline"
+                                tooltip.style.visibility = "visible"
+                            })
+                            inputs[issue.objectId].addEventListener("mouseout", () => {
+                                tooltip.style.display = "none"
+                            })
+                        }
                         break;
                     case "link":
-                        links[action.objectId].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
+                        links[issue.objectId].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
+                        let linkChildren = links[issue.objectId].childNodes
+                        let foundL = false
+                        for (let j = 0; j < linkChildren.length && !foundL; j++) {
+                            if (linkChildren[j].id && linkChildren[j].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
+                                foundL = true
+                            }
+                        }
+                        if (!foundL) {
+                            links[issue.objectId].appendChild(tooltip)
+                            links[issue.objectId].addEventListener("mouseover", () => {
+                                tooltip.style.display = "inline"
+                                tooltip.style.visibility = "visible"
+                            })
+                            links[issue.objectId].addEventListener("mouseout", () => {
+                                tooltip.style.display = "none"
+                            })
+                        }
                         break
                     case "select":
-                        selects[action.objectId].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
+                        selects[issue.objectId].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
+                        let selectChildren = selects[issue.objectId].childNodes
+                        let foundS = false
+                        for (let j = 0; j < selectChildren.length && !foundS; j++) {
+                            if (selectChildren[j].id && selectChildren[j].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
+                                foundS = true
+                            }
+                        }
+                        if (!foundS) {
+                            selects[issue.objectId].appendChild(tooltip)
+                            selects[issue.objectId].addEventListener("mouseover", () => {
+                                tooltip.style.display = "inline"
+                                tooltip.style.visibility = "visible"
+                            })
+                            selects[issue.objectId].addEventListener("mouseout", () => {
+                                tooltip.style.display = "none"
+                            })
+                        }
                         break
                 }
             }
@@ -157,7 +269,7 @@ function drawBackground() {
 }
 
 function drawBorders() {
-    chrome.storage.sync.get(["overlayMode", "interactionMode"], function (result) {
+    chrome.storage.sync.get(["overlayMode", "interactionMode"], (result) => {
         if (result.interactionMode === "interact") {
             if (result.overlayMode === "interacted") {
                 drawBorderOnInteracted()
@@ -212,8 +324,54 @@ function unlockAvatar(avatar, array, path, username) {
     }
 }
 
+function createAchievement(text, title, message, path) {
+    return { text: text, obj: { title: title, message: message, path: path } }
+}
+
+function pageAchievements() {
+    filterCoverage = (event) => {
+        return event.coverage >= 50
+    }
+
+    chrome.storage.sync.get(["profileInfo"], (result) => {
+        let profileInfo = JSON.parse(result.profileInfo)
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            method: "get",
+            body: "/pages/records/" + profileInfo.username
+        }, (response) => {
+            let pages = response.data
+            chrome.runtime.sendMessage({
+                mess: "fetch",
+                method: "get",
+                body: "/users/" + profileInfo.username + "/achievements"
+            }, (response2) => {
+                let achievements = response2.data
+                chrome.runtime.sendMessage({
+                    mess: "fetch",
+                    method: "get",
+                    body: "/users/" + profileInfo.username + "/avatars"
+                }, (response3) => {
+                    let avatars = response3.data
+                    if (pages.length >= 5) {
+                        let ach = createAchievement("Visited 5 different pages!", "New Achievement!", "Visited 5 different pages!", "./img/achievement_bronze.png")
+                        unlockAchievement(ach, achievements, profileInfo.username)
+                        countAchievements(achievements, avatars, profileInfo.username)
+                    }
+                    //achievement sul numero di pagine con una certa coverage
+                    if (pages.filter(filterCoverage).length >= 5) {
+                        let ach = createAchievement("Obtained 50% coverage on 5 pages!", "New Achievement!", "Obtained 50% coverage on 5 pages!", "./img/achievement_silver.png")
+                        unlockAchievement(ach, achievements, profileInfo.username)
+                        countAchievements(achievements, avatars, profileInfo.username)
+                    }
+                })
+            })
+        })
+    })
+}
+
 function pageCoverageAchievements(progress, widgetProgress) {
-    chrome.storage.sync.get(["profileInfo"], function (result) {
+    chrome.storage.sync.get(["profileInfo"], (result) => {
         let profileInfo = JSON.parse(result.profileInfo)
         chrome.runtime.sendMessage({
             mess: "fetch",
@@ -228,74 +386,32 @@ function pageCoverageAchievements(progress, widgetProgress) {
             }, (response2) => {
                 let avatars = response2.data
                 if (progress >= 25) {
-                    let ach = {
-                        text: "Obtained 25% page coverage!",
-                        obj: {
-                            title: "New Achievement!",
-                            message: "Obtained 25% page coverage!",
-                            path: "./img/achievement_bronze.png"
-                        }
-                    }
+                    let ach = createAchievement("Obtained 25% page coverage!", "New Achievement!", "Obtained 25% page coverage!", "./img/achievement_bronze.png")
                     unlockAchievement(ach, achievements, profileInfo.username)
                     countAchievements(achievements, avatars, profileInfo.username)
                 }
                 if (progress >= 50) {
-                    let ach = {
-                        text: "Obtained 50% page coverage!",
-                        obj: {
-                            title: "New Achievement!",
-                            message: "Obtained 50% page coverage!",
-                            path: "./img/achievement_silver.png"
-                        }
-                    }
+                    let ach = createAchievement("Obtained 50% page coverage!", "New Achievement!", "Obtained 50% page coverage!", "./img/achievement_silver.png")
                     unlockAchievement(ach, achievements, profileInfo.username)
                     countAchievements(achievements, avatars, profileInfo.username)
                 }
                 if (progress === 100) {
-                    let ach = {
-                        text: "Obtained 100% page coverage!",
-                        obj: {
-                            title: "New Achievement!",
-                            message: "Obtained 100% page coverage!",
-                            path: "./img/achievement_gold.png"
-                        }
-                    }
+                    let ach = createAchievement("Obtained 100% page coverage!", "New Achievement!", "Obtained 100% page coverage!", "./img/achievement_gold.png")
                     unlockAchievement(ach, achievements, profileInfo.username)
                     countAchievements(achievements, avatars, profileInfo.username)
                 }
                 if (widgetProgress >= 25) {
-                    let ach = {
-                        text: "Obtained 25% coverage for a type of widgets!",
-                        obj: {
-                            title: "New Achievement!",
-                            message: "Obtained 25% coverage for a type of widgets!",
-                            path: "./img/achievement_bronze.png"
-                        }
-                    }
+                    let ach = createAchievement("Obtained 25% coverage for a type of widgets!", "New Achievement!", "Obtained 25% coverage for a type of widgets!", "./img/achievement_bronze.png")
                     unlockAchievement(ach, achievements, profileInfo.username)
                     countAchievements(achievements, avatars, profileInfo.username)
                 }
                 if (widgetProgress >= 50) {
-                    let ach = {
-                        text: "Obtained 50% coverage for a type of widgets!",
-                        obj: {
-                            title: "New Achievement!",
-                            message: "Obtained 50% coverage for a type of widgets!",
-                            path: "./img/achievement_silver.png"
-                        }
-                    }
+                    let ach = createAchievement("Obtained 50% coverage for a type of widgets!", "New Achievement!", "Obtained 50% coverage for a type of widgets!", "./img/achievement_silver.png")
                     unlockAchievement(ach, achievements, profileInfo.username)
                     countAchievements(achievements, avatars, profileInfo.username)
                 }
                 if (widgetProgress === 100) {
-                    let ach = {
-                        text: "Obtained 100% coverage for a type of widgets!",
-                        obj: {
-                            title: "New Achievement!",
-                            message: "Obtained 100% coverage for a type of widgets!",
-                            path: "./img/achievement_gold.png"
-                        }
-                    }
+                    let ach = createAchievement("Obtained 100% coverage for a type of widgets!", "New Achievement!", "Obtained 100% coverage for a type of widgets!", "./img/achievement_gold.png")
                     unlockAchievement(ach, achievements, profileInfo.username)
                     unlockAvatar("Star Avatar", avatars, "./img/star_avatar.png", profileInfo.username)
                     countAchievements(achievements, avatars, profileInfo.username)

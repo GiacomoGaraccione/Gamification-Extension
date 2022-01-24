@@ -95,8 +95,8 @@ exports.getPageActions = function (username) {
 
 exports.addPageIssue = function (pageAction) {
     return new Promise((resolve, reject) => {
-        const sql = "INSERT INTO PageIssues(username, url, objectId, objectType) VALUES(?, ?, ?, ?)"
-        db.run(sql, [pageAction.username, pageAction.url, pageAction.objectId, pageAction.objectType], (err, row) => {
+        const sql = "INSERT INTO PageIssues(username, url, objectId, objectType, issueText) VALUES(?, ?, ?, ?, ?)"
+        db.run(sql, [pageAction.username, pageAction.url, pageAction.objectId, pageAction.objectType, pageAction.issueText], (err, row) => {
             if (err) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                 reject(utilities.errorObjs.dbError)
@@ -116,6 +116,20 @@ exports.getPageIssues = function (username) {
                 reject(utilities.errorObjs.dbError)
             } else {
                 resolve(rows)
+            }
+        })
+    })
+}
+
+exports.solvePageIssue = function (username, pageIssue) {
+    return new Promise((resolve, reject) => {
+        const sql = "DELETE FROM PageIssues WHERE username = ? AND url = ? AND objectId = ? AND objectType = ?"
+        db.run(sql, [username, pageIssue.url, pageIssue.objectId, pageIssue.objectType], (err, row) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                resolve()
             }
         })
     })
@@ -196,6 +210,9 @@ exports.getPageRecords = function (username) {
 
 exports.addWidgetCrop = function (widgetCrop, username) {
     return new Promise((resolve, reject) => {
+        if (widgetCrop.widgetType === "select") {
+
+        }
         const sql = "INSERT INTO WidgetCrops(username, imageUrl, widgetType, widgetId, textContent, selectIndex) VALUES(?, ?, ?, ?, ?, ?)"
         db.run(sql, [username, widgetCrop.imageUrl, widgetCrop.widgetType, widgetCrop.widgetId, widgetCrop.textContent, widgetCrop.selectIndex], (err, row) => {
             if (err) {
@@ -210,19 +227,27 @@ exports.addWidgetCrop = function (widgetCrop, username) {
 
 exports.getWidgetCrops = function (username) {
     return new Promise((resolve, reject) => {
-        const sql = "SELECT * FROM WidgetCrops WHERE username = ?"
-        db.all(sql, [username], (err, rows) => {
-            if (err) {
-                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+        const sqlClear = "DELETE FROM WidgetCrops WHERE username = ? AND widgetType = ? AND selectIndex IS NULL"
+        db.run(sqlClear, [username, "select"], (errClear, rowClear) => {
+            if (errClear) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + errClear.errno + " - code: " + errClear.code
                 reject(utilities.errorObjs.dbError)
             } else {
-                const sqlDel = "DELETE FROM WidgetCrops WHERE username = ?"
-                db.run(sqlDel, [username], (errDel, rowDel) => {
-                    if (errDel) {
-                        utilities.errorObjs.dbError.errorMessage = "errno: " + errDel.errno + " - code: " + errDel.code
+                const sql = "SELECT * FROM WidgetCrops WHERE username = ?"
+                db.all(sql, [username], (err, rows) => {
+                    if (err) {
+                        utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                         reject(utilities.errorObjs.dbError)
                     } else {
-                        resolve(rows)
+                        const sqlDel = "DELETE FROM WidgetCrops WHERE username = ?"
+                        db.run(sqlDel, [username], (errDel, rowDel) => {
+                            if (errDel) {
+                                utilities.errorObjs.dbError.errorMessage = "errno: " + errDel.errno + " - code: " + errDel.code
+                                reject(utilities.errorObjs.dbError)
+                            } else {
+                                resolve(rows)
+                            }
+                        })
                     }
                 })
             }
@@ -252,7 +277,7 @@ exports.updateWidgetCrop = function (username, widgetCrop) {
                     resolve()
                 }
             })
-        } else {
+        } else if (!widgetCrop.selectIndex) {
             const sql = "UPDATE WidgetCrops SET textContent = ? WHERE username = ? AND widgetType = ? AND widgetId = ? AND textContent IS NULL"
             db.run(sql, [widgetCrop.textContent, username, "input", widgetCrop.widgetId], (err, row) => {
                 if (err) {
@@ -260,6 +285,24 @@ exports.updateWidgetCrop = function (username, widgetCrop) {
                     reject(utilities.errorObjs.dbError)
                 } else {
                     resolve()
+                }
+            })
+        } else {
+            const sql = "UPDATE WidgetCrops SET selectIndex = ? WHERE id = (SELECT id FROM WidgetCrops WHERE widgetType = ? AND widgetId = ? AND username = ? AND selectIndex IS NULL)"
+            db.run(sql, [widgetCrop.selectIndex, "select", widgetCrop.widgetId, username], (err, row) => {
+                if (err) {
+                    utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                    reject(utilities.errorObjs.dbError)
+                } else {
+                    const sqlDel = "DELETE FROM WidgetCrops WHERE widgetType = ? AND widgetId = ? AND username = ? AND selectIndex IS NULL"
+                    db.run(sqlDel, ["select", widgetCrop.widgetId, username], (errDel, rowDel) => {
+                        if (errDel) {
+                            utilities.errorObjs.dbError.errorMessage = "errno: " + errDel.errno + " - code: " + errDel.code
+                            reject(utilities.errorObjs.dbError)
+                        } else {
+                            resolve()
+                        }
+                    })
                 }
             })
         }

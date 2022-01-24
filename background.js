@@ -31,24 +31,11 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         active: true,
         currentWindow: true
       })
-      chrome.desktopCapture.chooseDesktopMedia([
-        "screen",
-        "window",
-        "tab"
-      ], tab, (streamId) => {
-        if (streamId && streamId.length) {
-          setTimeout(() => {
-            chrome.tabs.sendMessage(tab.id, { name: "stream", streamId: streamId, coords: request.obj.coords, widgetType: request.obj.widgetType, widgetId: request.obj.widgetId, textContent: request.obj.textContent, selectIndex: request.obj.selectIndex })
-          }, 200)
-        }
+      chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" }, (dataUrl) => {
+        sendResponse({ dataUrl: dataUrl, coords: request.obj.coords, widgetType: request.obj.widgetType, widgetId: request.obj.widgetId, textContent: request.obj.textContent, selectIndex: request.obj.selectIndex, name: "crop" })
       })
     }
     capture()
-  } else if (request.mess === "img") {
-    chrome.downloads.download({
-      filename: "screenshot.png",
-      url: request.url
-    })
   } else if (request.mess === "fetch") {
     const apiCall = apiUrl + request.body
     //called when a page is visited
@@ -131,8 +118,23 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           url: request.content.url,
           username: request.content.username,
           objectId: request.content.objectId,
-          objectType: request.content.objectType
+          objectType: request.content.objectType,
+          issueText: request.content.issueText
         })
+      }).then((res) => {
+        if (res.ok) {
+          sendResponse({ data: "OK" })
+        } else {
+          sendResponse({ data: "ERROR" })
+        }
+      })
+    } else if (request.body.indexOf("/pages/issues") >= 0 && request.method === "delete") {
+      fetch(apiCall, {
+        method: "delete",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify(request.content)
       }).then((res) => {
         if (res.ok) {
           sendResponse({ data: "OK" })
@@ -371,7 +373,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         headers: {
           "Content-type": "application/json"
         },
-        body: JSON.stringify({ widgetId: request.content.widgetId, textContent: request.content.textContent, lastInput: request.content.lastInput, submit: request.content.submit })
+        body: JSON.stringify({ widgetId: request.content.widgetId, textContent: request.content.textContent, lastInput: request.content.lastInput, submit: request.content.submit, selectIndex: request.content.selectIndex })
       }).then((res) => {
         if (res.ok) {
           sendResponse({ data: "OK" })

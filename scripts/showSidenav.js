@@ -109,7 +109,7 @@ if (found === null) {
                             modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
                             let innerModal = document.createElement("div");
                             innerModal.id = "gamificationExtensionInnerModal";
-                            innerModal.style = "background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; ";
+                            innerModal.style = "background-color: rgb(211 245 230); margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; ";
                             modalContainer.appendChild(innerModal);
                             let modalSpan = document.createElement("span");
                             modalSpan.id = "gamificationExtensionModalSpan";
@@ -143,8 +143,8 @@ if (found === null) {
                                 "\nButtons clicked in this session: " + totalButtons + "\nButtons clicked for the first time: " + newButtons +
                                 "\nDropdown menus interacted with in this session: " + totalSelects + "\nDropdown menus interacted with for the first time: " + newSelects;
                             innerModal.appendChild(modalContent);
-                            modalSpan.onclick = function () { modalContainer.style.display = "none"; };
-                            window.onclick = function (event) {
+                            modalSpan.onclick = () => { modalContainer.style.display = "none"; };
+                            window.onclick = (event) => {
                                 if (event.target === modalContainer) {
                                     modalContainer.style.display = "none";
                                 }
@@ -259,29 +259,20 @@ if (found === null) {
                                             command: ret[i].textContent ? "type" : ret[i].selectIndex ? "select" : "click",
                                             target: "",
                                             targets: [],
-                                            value: ret[i].textContent ? ret[i].textContent : ret[i].selectIndex ? `index=${ret[i].selectIndex}` : ""
+                                            value: ret[i].textContent ? ret[i].textContent : ret[i].selectIndex ? `label=${ret[i].selectIndex}` : ""
                                         }
+                                        let sel = selector(element)
+                                        commandObj.target = `css=${sel}`
+                                        commandObj.targets.push([`css=${sel}`, "css:finder"])
+
                                         if (element.id) {
-                                            commandObj.target = `id=${element.id}`
                                             commandObj.targets.push([`id=${element.id}`, "id"])
                                         }
-                                        if (element.textContent.trim() !== "") {
-                                            if (commandObj.target === "") {
-                                                commandObj.target = `linkText=${element.textContent.trim()}`
-                                            }
+                                        if (element.textContent.trim() !== "" && ret[i].widgetType === "link") {
                                             commandObj.targets.push([`linkText=${element.textContent.trim()}`, "linkText"])
                                         }
                                         let xp = xpath(element)
-                                        if (commandObj.target === "") {
-                                            commandObj.target = `xpath=${xp}`
-                                        }
                                         commandObj.targets.push([`xpath=${xp}`, "xpath:idRelative"])
-
-                                        let sel = selector(element)
-                                        if (commandObj.target === "") {
-                                            commandObj.target = `css=${sel}`
-                                        }
-                                        commandObj.targets.push([`css=${sel}`, "css:finder"])
 
                                         commands.push(commandObj)
                                     }
@@ -341,18 +332,6 @@ if (found === null) {
 
         function filterURL(event) {
             return event.url === result.currentURL;
-        }
-        function filterLink(event) {
-            return event.objectType === "link"
-        }
-        function filterInput(event) {
-            return event.objectType === "input"
-        }
-        function filterButton(event) {
-            return event.objectType === "button"
-        }
-        function filterSelect(event) {
-            return event.objectType === "select"
         }
         chrome.runtime.sendMessage({
             mess: "fetch",

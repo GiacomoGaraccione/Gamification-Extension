@@ -11,6 +11,7 @@
             "matches": ["*://*/*"],
             "js": [
                 "scripts/utilityFunctions.js",
+                "scripts/eventListeners.js",
                 "lib/jszip.js",
                 "lib/FileSaver.js"
             ]

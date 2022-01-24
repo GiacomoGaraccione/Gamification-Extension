@@ -1,4 +1,4 @@
-chrome.storage.sync.get(["overlayMode", "interactionMode"], function (result) {
+chrome.storage.sync.get(["overlayMode", "interactionMode"], (result) => {
     if (result.interactionMode === "interact") {
         if (result.overlayMode === "interacted") {
             drawBorderOnInteracted()

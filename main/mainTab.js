@@ -310,13 +310,13 @@ chrome.storage.sync.get(["profileInfo", "startingURL"], function (result) {
               div.appendChild(img)
               selectableAvatars.appendChild(div)
               if (profileInfo.selectedAvatar === avatars[i].url) {
-                div.style = `border:3px; border-style:solid; border-color:#FFD700; padding: 1em;`
+                div.style = `border:3px; border-style:solid; border-color:#2215E2; padding: 1em;`
               }
               div.id = i + 1
               avatarDivs.push(div)
               function changeSelectedAvatar(divClicked, otherDivs) {
                 if (divClicked !== undefined) {
-                  divClicked.style = `border:3px; border-style:solid; border-color:#FFD700; padding: 1em;`
+                  divClicked.style = `border:3px; border-style:solid; border-color:#2215E2; padding: 1em;`
                   otherDivs.map((d) => d.style = "border:0; border-style:solid;")
                   let child = divClicked.childNodes[1]
                   let pos = child.src.indexOf("/img")

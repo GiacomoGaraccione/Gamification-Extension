@@ -412,7 +412,7 @@ app.post("/api/pages/issues", [
  * Request Body Content: none
  * Response Body Content: an array of objects, each one containing id and type of a signaled widget
  *      Example output:
- *          [{"username":"Giacomo","url":"https://elite.polito.it/teaching/current-courses/513-02jskov-hci","objectId":32,"objectType":"link"}]
+ *          [{"username":"Giacomo","url":"https://elite.polito.it/teaching/current-courses/513-02jskov-hci","objectId":32,"objectType":"link", "issueText":"Wrong link text"}]
  */
 app.get("/api/pages/issues/:username", [
     param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
@@ -422,6 +422,18 @@ app.get("/api/pages/issues/:username", [
         pageDao.getPageIssues(username)
             .then((issues) => res.json(issues))
             .catch((err) => utilities.resolveErrors(err, res))
+    }
+})
+
+app.delete("/api/pages/issues/:username", /*[],*/(req, res) => {
+    if (utilities.resolveExpressValidator(validationResult(req), res)) {
+        const username = req.params.username
+        const pageIssue = req.body
+        pageDao.solvePageIssue(username, pageIssue)
+            .then(() => res.status(200).json(utilities.successObj))
+            .catch((err) => {
+                utilities.resolveErrors(err, res)
+            })
     }
 })
 
