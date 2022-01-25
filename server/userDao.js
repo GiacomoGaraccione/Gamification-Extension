@@ -230,3 +230,17 @@ exports.checkPassword = function (username, password) {
         })
     })
 }
+
+exports.getUserIssues = function (username) {
+    return new Promise((resolve, reject) => {
+        const sql = "SELECT * FROM PageIssues WHERE username = ?"
+        db.all(sql, [username], (err, rows) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                resolve(rows)
+            }
+        })
+    })
+}

@@ -105,6 +105,7 @@ if (found === null) {
                             body: "/users/" + profileInfo.username + "/records",
                             content: { username: profileInfo.username, highestNewVisitedPages: highestNewVisitedPages, highestNewWidgets: highestNewWidgets, highestCoverage: highestCoverage }
                         }, () => {
+                            leaderboardAvatars()
                             modalContainer.id = "gamificationExtensionModalContainer";
                             modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
                             let innerModal = document.createElement("div");
@@ -118,6 +119,7 @@ if (found === null) {
                             innerModal.appendChild(modalSpan);
                             let modalContent = document.createElement("p");
                             modalContent.id = "gamificationExtensionModalContent";
+                            modalContent.style = "text-align: center; font-size: large; color: #2215E2"
 
                             let totalLinks = 0
                             let totalInputs = 0
@@ -157,6 +159,9 @@ if (found === null) {
                                 method: "get"
                             }, (response3) => {
                                 let ret = response3.data
+                                if (countWidgets(ret) >= 3) {
+                                    countActionsAvatar()
+                                }
                                 chrome.storage.sync.get(["baseURL"], (result) => {
                                     let baseURL = result.baseURL
                                     let zip = new JSZip()

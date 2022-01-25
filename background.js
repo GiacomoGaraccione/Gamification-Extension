@@ -297,20 +297,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           sendResponse({ data: data })
         })
       })
-    } else if (request.body.indexOf("/users") >= 0 && request.content.selectedAvatar && request.method === "patch") {
-      fetch(apiCall, {
-        method: "PATCH",
-        headers: {
-          "Content-type": "application/json"
-        },
-        body: JSON.stringify({ selectedAvatar: request.content.selectedAvatar })
-      }).then((res) => {
-        if (res.ok) {
-          sendResponse({ data: "OK" })
-        } else {
-          sendResponse({ data: "ERROR" })
-        }
-      })
     } else if (request.body === "/login") {
       fetch(apiCall, {
         method: "post",
@@ -374,6 +360,28 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           "Content-type": "application/json"
         },
         body: JSON.stringify({ widgetId: request.content.widgetId, textContent: request.content.textContent, lastInput: request.content.lastInput, submit: request.content.submit, selectIndex: request.content.selectIndex })
+      }).then((res) => {
+        if (res.ok) {
+          sendResponse({ data: "OK" })
+        } else {
+          sendResponse({ data: "ERROR" })
+        }
+      })
+    } else if (request.body.indexOf("/users/") >= 0 && request.body.indexOf("/issues") >= 0 && request.method === "get") {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          sendResponse({ data: data })
+        })
+      })
+    } else if (request.body.indexOf("/users") >= 0 && request.content.selectedAvatar && request.method === "patch") {
+      fetch(apiCall, {
+        method: "PATCH",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify({ selectedAvatar: request.content.selectedAvatar })
       }).then((res) => {
         if (res.ok) {
           sendResponse({ data: "OK" })

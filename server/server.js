@@ -282,6 +282,15 @@ app.post("/api/users/:username/achievements", [
     }
 })
 
+app.get("/api/users/:username/issues", (req, res) => {
+    if (utilities.resolveExpressValidator(validationResult(req), res)) {
+        const username = req.params.username
+        userDao.getUserIssues(username)
+            .then((issues) => res.json(issues))
+            .catch((err) => utilities.resolveErrors(err, res))
+    }
+})
+
 
 //------------------------ Page APIs ---------------------------------
 

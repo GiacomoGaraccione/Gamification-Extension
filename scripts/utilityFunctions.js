@@ -11,7 +11,6 @@ function filterInput(event) {
 function filterButton(event) {
     return event.objectType === "button"
 }
-
 function filterSelect(event) {
     return event.objectType === "select"
 }
@@ -418,6 +417,152 @@ function pageCoverageAchievements(progress, widgetProgress) {
                 }
             })
 
+        })
+    })
+}
+
+function countWidgets(widgetCrops) {
+    links = (event) => {
+        return event.widgetType === "link"
+    }
+    inputs = (event) => {
+        return event.widgetType === "input"
+    }
+    buttons = (event) => {
+        return event.widgetType === "button"
+    }
+    selects = (event) => {
+        return event.widgetType === "select"
+    }
+    let linkInt = widgetCrops.filter(links).length > 0 ? 1 : 0
+    let inputInt = widgetCrops.filter(inputs).length > 0 ? 1 : 0
+    let buttonInt = widgetCrops.filter(buttons).length > 0 ? 1 : 0
+    let selectInt = widgetCrops.filter(selects).length > 0 ? 1 : 0
+    return linkInt + inputInt + buttonInt + selectInt
+}
+
+function countActionsAvatar() {
+    chrome.storage.sync.get(["profileInfo"], (result) => {
+        let profileInfo = JSON.parse(result.profileInfo)
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            method: "get",
+            body: "/users/" + profileInfo.username + "/avatars"
+        }, (response) => {
+            chrome.runtime.sendMessage({
+                mess: "fetch",
+                method: "get",
+                body: "/users/" + profileInfo.username + "/achievements"
+            }, (response2) => {
+                let ach = createAchievement("Found 3 or more different types of widgets in a session!", "New Achievement!", "Found 3 or more different types of widgets in a session!", "./img/achievement_bronze.png")
+                unlockAchievement(ach, response2.data, profileInfo.username)
+                unlockAvatar("Crowned Avatar", response.data, "./img/crown_avatar.png", profileInfo.username)
+                countAchievements(response2.data, response.data, profileInfo.username)
+            })
+        })
+    })
+}
+
+function countIssuesAchievement() {
+    chrome.storage.sync.get(["profileInfo", "currentURL"], (result) => {
+        let profileInfo = JSON.parse(result.profileInfo)
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            method: "get",
+            body: "/users/" + profileInfo.username + "/issues"
+        }, (response) => {
+            if (response.data.length >= 5) {
+                chrome.runtime.sendMessage({
+                    mess: "fetch",
+                    method: "get",
+                    body: "/users/" + profileInfo.username + "/achievements"
+                }, (response2) => {
+                    chrome.runtime.sendMessage({
+                        mess: "fetch",
+                        method: "get",
+                        body: "/users/" + profileInfo.username + "/avatars"
+                    }, (response3) => {
+                        let ach = createAchievement("Signaled five different issues!", "New Achievement!", "Signaled five different issues!", "./img/achievement_bronze.png")
+                        unlockAchievement(ach, response2.data, profileInfo.username)
+                        countAchievements(response2.data, response3.data, profileInfo.username)
+                    })
+                })
+            }
+
+        })
+    })
+}
+
+function solveIssueAchievement() {
+    chrome.storage.sync.get(["profileInfo"], (result) => {
+        let profileInfo = JSON.parse(result.profileInfo)
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            method: "get",
+            body: "/users/" + profileInfo.username + "/achievements"
+        }, (response) => {
+            chrome.runtime.sendMessage({
+                mess: "fetch",
+                method: "get",
+                body: "/users/" + profileInfo.username + "/avatars"
+            }, (response2) => {
+                let ach = createAchievement("Marked an issue as solved!", "New Achievement", "Marked an issue as solved!", "./img/achievement_silver.png")
+                unlockAchievement(ach, response.data, profileInfo.username)
+                unlockAvatar("Wizard Avatar", response2.data, "./img/wizard_avatar.png", profileInfo.username)
+                countAchievements(response.data, response2.data, profileInfo.username)
+            })
+
+        })
+    })
+}
+
+function checkPosition(leaderboard, username, avatars) {
+    if (leaderboard[0].username === username) {
+        unlockAvatar("Golden Avatar", avatars, "./img/medal_avatar_gold.png", username)
+        return true
+    } else if (leaderboard[1].username === username) {
+        unlockAvatar("Silver Avatar", avatars, "./img/medal_avatar_silver.png", username)
+        return true
+    } else if (leaderboard[2].username === username) {
+        unlockAvatar("Bronze Avatar", avatars, "./img/medal_avatar_bronze.png", username)
+        return true
+    }
+    return false
+}
+
+function leaderboardAvatars() {
+    chrome.storage.sync.get(["profileInfo"], (result) => {
+        let profileInfo = JSON.parse(result.profileInfo)
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            method: "get",
+            body: "/users/" + profileInfo.username + "/avatars"
+        }, (response) => {
+            chrome.runtime.sendMessage({
+                mess: "fetch",
+                method: "get",
+                body: "/users/records/pages"
+            }, (response2) => {
+                if (!checkPosition(response2.data, profileInfo.username, response.data)) {
+                    chrome.runtime.sendMessage({
+                        mess: "fetch",
+                        method: "get",
+                        body: "/users/records/widgets"
+                    }, (response3) => {
+                        if (!checkPosition(response3.data, profileInfo.username, response.data)) {
+                            chrome.runtime.sendMessage({
+                                mess: "fetch",
+                                method: "get",
+                                body: "/users/records/coverage"
+                            }, (response4) => {
+                                checkPosition(response4.data, profileInfo.username, response.data)
+                            })
+                        }
+
+                    })
+                }
+
+            })
         })
     })
 }

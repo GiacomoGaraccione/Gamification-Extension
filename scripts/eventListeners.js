@@ -157,6 +157,7 @@ linkClickListener = (event, i, pageInfo) => {
                             content: { url: currentURL, username: profileInfo.username, objectId: i, objectType: "link", issueText: modalForm.value }
                         }, () => {
                             drawBackground()
+                            countIssuesAchievement()
                             modalContainer.style.display = "none";
                             document.body.removeChild(modalContainer)
                         })
@@ -197,6 +198,7 @@ linkClickListener = (event, i, pageInfo) => {
                         }, () => {
                             removeBackground()
                             drawBackground()
+                            solveIssueAchievement()
                             modalContainer.style.display = "none";
                             document.body.removeChild(modalContainer)
                             let linkObjects = document.getElementsByTagName("a")
@@ -382,6 +384,7 @@ inputClickListener = (event, pageInfo) => {
                                     content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "input", issueText: modalForm.value }
                                 }, () => {
                                     drawBackground()
+                                    countIssuesAchievement()
                                     modalContainer.style.display = "none";
                                     document.body.removeChild(modalContainer)
                                 })
@@ -422,6 +425,7 @@ inputClickListener = (event, pageInfo) => {
                                 }, () => {
                                     removeBackground()
                                     drawBackground()
+                                    solveIssueAchievement()
                                     modalContainer.style.display = "none";
                                     document.body.removeChild(modalContainer)
                                     let inputs = document.body.getElementsByTagName("input");
@@ -596,6 +600,7 @@ buttonClickListener = (event, pageInfo) => {
                                     content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "button", issueText: modalForm.value }
                                 }, () => {
                                     drawBackground()
+                                    countIssuesAchievement()
                                     modalContainer.style.display = "none";
                                     document.body.removeChild(modalContainer)
                                 })
@@ -636,6 +641,7 @@ buttonClickListener = (event, pageInfo) => {
                                 }, () => {
                                     removeBackground()
                                     drawBackground()
+                                    solveIssueAchievement()
                                     modalContainer.style.display = "none";
                                     document.body.removeChild(modalContainer)
                                     let buttonObjects = document.getElementsByTagName("button")
@@ -812,6 +818,7 @@ selectClickListener = (event, pageInfo) => {
                                     content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "select", issueText: modalForm.value }
                                 }, () => {
                                     drawBackground()
+                                    countIssuesAchievement()
                                     modalContainer.style.display = "none";
                                     document.body.removeChild(modalContainer)
                                 })
@@ -852,6 +859,7 @@ selectClickListener = (event, pageInfo) => {
                                 }, () => {
                                     removeBackground()
                                     drawBackground()
+                                    solveIssueAchievement()
                                     modalContainer.style.display = "none";
                                     document.body.removeChild(modalContainer)
                                     let selectObjects = document.body.getElementsByTagName("select")
