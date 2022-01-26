@@ -145,10 +145,14 @@ if (found === null) {
                                 "\nButtons clicked in this session: " + totalButtons + "\nButtons clicked for the first time: " + newButtons +
                                 "\nDropdown menus interacted with in this session: " + totalSelects + "\nDropdown menus interacted with for the first time: " + newSelects;
                             innerModal.appendChild(modalContent);
-                            modalSpan.onclick = () => { modalContainer.style.display = "none"; };
+                            modalSpan.onclick = () => {
+                                modalContainer.style.display = "none";
+                                location.reload()
+                            };
                             window.onclick = (event) => {
                                 if (event.target === modalContainer) {
                                     modalContainer.style.display = "none";
+                                    location.reload()
                                 }
                             };
                             document.body.appendChild(modalContainer);
@@ -257,29 +261,37 @@ if (found === null) {
                                             }
                                             els = buttons
                                         }
-                                        let element = els[ret[i].widgetId]
                                         let commandObj = {
                                             id: `idCommand${i + 1}`,
                                             comment: "",
-                                            command: ret[i].textContent ? "type" : ret[i].selectIndex ? "select" : "click",
+                                            command: ret[i].textContent && ret[i].widgetType !== "link" ? "type" : ret[i].selectIndex ? "select" : "click",
                                             target: "",
                                             targets: [],
-                                            value: ret[i].textContent ? ret[i].textContent : ret[i].selectIndex ? `label=${ret[i].selectIndex}` : ""
+                                            value: ret[i].textContent && ret[i].widgetType !== "link" ? ret[i].textContent : ret[i].selectIndex ? `label=${ret[i].selectIndex}` : ""
                                         }
-                                        let sel = selector(element)
-                                        commandObj.target = `css=${sel}`
-                                        commandObj.targets.push([`css=${sel}`, "css:finder"])
+                                        commandObj.target = `css=${ret[i].selector}`
+                                        commandObj.targets.push([`css=${ret[i].selector}`, "css:finder"])
 
-                                        if (element.id) {
-                                            commandObj.targets.push([`id=${element.id}`, "id"])
+                                        if (ret[i].elementId) {
+                                            commandObj.targets.push([`id=${ret[i].elementId}`, "id"])
                                         }
-                                        if (element.textContent.trim() !== "" && ret[i].widgetType === "link") {
-                                            commandObj.targets.push([`linkText=${element.textContent.trim()}`, "linkText"])
+                                        if (ret[i].widgetType === "link") {
+                                            commandObj.targets.push([`linkText=${ret[i].textContent}`, "linkText"])
                                         }
-                                        let xp = xpath(element)
-                                        commandObj.targets.push([`xpath=${xp}`, "xpath:idRelative"])
+                                        commandObj.targets.push([`xpath=${ret[i].xpath}`, "xpath:idRelative"])
 
                                         commands.push(commandObj)
+                                        if (ret[i].lastInput) {
+                                            let sendCommand = {
+                                                id: `idCommandSendKeys`,
+                                                comment: "",
+                                                command: "sendKeys",
+                                                target: `css=${ret[i].selector}`,
+                                                targets: [`css=${ret[i].selector}`, "css:finder"],
+                                                value: "${KEY_ENTER}"
+                                            }
+                                            commands.push(sendCommand)
+                                        }
                                     }
                                     seleniumFile.tests[0].commands = commands
                                     let blob = new Blob([JSON.stringify(seleniumFile)], {

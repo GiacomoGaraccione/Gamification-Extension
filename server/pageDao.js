@@ -213,8 +213,8 @@ exports.addWidgetCrop = function (widgetCrop, username) {
         if (widgetCrop.widgetType === "select") {
 
         }
-        const sql = "INSERT INTO WidgetCrops(username, imageUrl, widgetType, widgetId, textContent, selectIndex) VALUES(?, ?, ?, ?, ?, ?)"
-        db.run(sql, [username, widgetCrop.imageUrl, widgetCrop.widgetType, widgetCrop.widgetId, widgetCrop.textContent, widgetCrop.selectIndex], (err, row) => {
+        const sql = "INSERT INTO WidgetCrops(username, imageUrl, widgetType, widgetId, textContent, selectIndex, selector, xpath, elementId) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        db.run(sql, [username, widgetCrop.imageUrl, widgetCrop.widgetType, widgetCrop.widgetId, widgetCrop.textContent, widgetCrop.selectIndex, widgetCrop.selector, widgetCrop.xpath, widgetCrop.elementId], (err, row) => {
             if (err) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                 reject(utilities.errorObjs.dbError)

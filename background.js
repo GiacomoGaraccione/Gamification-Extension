@@ -337,7 +337,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         headers: {
           "Content-type": "application/json"
         },
-        body: JSON.stringify({ imageUrl: request.content.imageUrl, widgetType: request.content.widgetType, widgetId: request.content.widgetId, textContent: request.content.textContent, selectIndex: request.content.selectIndex })
+        body: JSON.stringify({ imageUrl: request.content.imageUrl, widgetType: request.content.widgetType, widgetId: request.content.widgetId, textContent: request.content.textContent, selectIndex: request.content.selectIndex, selector: request.content.selector, xpath: request.content.xpath, id: request.content.id })
       }).then((res) => {
         if (res.ok) {
           sendResponse({ data: "OK" })
@@ -483,8 +483,7 @@ function callScripts(tab) {
       "scripts/showSidenav.js",
       "scripts/countInteractableElements.js",
       "scripts/showTopbar.js",
-      "scripts/drawOverlays.js",
-      "scripts/messageListener.js"]
+      "scripts/drawOverlays.js"]
   });
 }
 

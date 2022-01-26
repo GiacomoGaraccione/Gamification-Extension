@@ -13,9 +13,9 @@ linkClickListener = (event, i, pageInfo) => {
         }
         if (result.interactionMode === "interact") {
             //Ottenimento coordinate dell'oggetto cliccato, usate per fare il resize dello screenshot
-            //els[i].attributeStyleMap.clear()
+            els[i].attributeStyleMap.clear()
             let coords = { x: els[i].getBoundingClientRect().x, y: els[i].getBoundingClientRect().y, height: els[i].getBoundingClientRect().height, width: els[i].getBoundingClientRect().width }
-            chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "link", widgetId: i, textContent: null, selectIndex: null }, mess: "capture" }, (request) => {
+            chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "link", widgetId: i, textContent: els[i].textContent.trim(), selectIndex: null }, mess: "capture" }, (request) => {
                 let canvas = document.createElement("canvas")
                 document.body.appendChild(canvas)
                 let image = new Image()
@@ -27,9 +27,10 @@ linkClickListener = (event, i, pageInfo) => {
                     chrome.runtime.sendMessage({
                         mess: "fetch",
                         body: "/pages/crops/" + profileInfo.username,
-                        content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex },
+                        content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex, selector: selector(els[i]), xpath: xpath(els[i]), elementId: els[i].id },
                         method: "post"
                     }, () => {
+                        console.log(canvas.toDataURL())
                         chrome.runtime.sendMessage({
                             mess: "fetch",
                             body: "/pages/actions/" + profileInfo.username,
@@ -103,15 +104,13 @@ linkClickListener = (event, i, pageInfo) => {
 
                                 }
                             });
-                            /*setTimeout(function () {
-                                window.location = goTo;
-                            }, 3000);*/
                         })
                     })
-
+                    window.location = goTo;
                 }
                 image.src = request.dataUrl
             })
+
         } else if (result.interactionMode === "signal") {
             event.preventDefault()
             chrome.runtime.sendMessage({
@@ -246,7 +245,18 @@ inputClickListener = (event, pageInfo) => {
                             }
                         }
                     }
-                    let coords = { x: els[j].getBoundingClientRect().x, y: els[j].getBoundingClientRect().y, height: els[j].getBoundingClientRect().height, width: els[j].getBoundingClientRect().width }
+                    let coords = { x: 0, y: 0, height: 0, width: 0 }
+                    if (els[j].type === "radio" || els[j].type === "checkbox") {
+                        coords.x = els[j].parentElement.getBoundingClientRect().x
+                        coords.y = els[j].parentElement.getBoundingClientRect().y
+                        coords.height = els[j].parentElement.getBoundingClientRect().height
+                        coords.width = els[j].parentElement.getBoundingClientRect().width
+                    } else {
+                        coords.x = els[j].getBoundingClientRect().x
+                        coords.y = els[j].getBoundingClientRect().y
+                        coords.height = els[j].getBoundingClientRect().height
+                        coords.width = els[j].getBoundingClientRect().width
+                    }
                     chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "input", widgetId: j, textContent: null, selectIndex: null }, mess: "capture" }, (request) => {
                         let canvas = document.createElement("canvas")
                         document.body.appendChild(canvas)
@@ -259,7 +269,7 @@ inputClickListener = (event, pageInfo) => {
                             chrome.runtime.sendMessage({
                                 mess: "fetch",
                                 body: "/pages/crops/" + profileInfo.username,
-                                content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex },
+                                content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex, selector: selector(els[j]), xpath: xpath(els[j]), elementId: els[j].id },
                                 method: "post"
                             }, () => {
                                 chrome.runtime.sendMessage({
@@ -476,7 +486,7 @@ buttonClickListener = (event, pageInfo) => {
                             chrome.runtime.sendMessage({
                                 mess: "fetch",
                                 body: "/pages/crops/" + profileInfo.username,
-                                content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex },
+                                content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex, selector: selector(els[j]), xpath: xpath(els[j]), elementId: els[j].id },
                                 method: "post"
                             }, () => {
                                 chrome.runtime.sendMessage({
@@ -692,7 +702,7 @@ selectClickListener = (event, pageInfo) => {
                             chrome.runtime.sendMessage({
                                 mess: "fetch",
                                 body: "/pages/crops/" + profileInfo.username,
-                                content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: null },
+                                content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: null, selector: selector(els[j]), xpath: xpath(els[j]), elementId: els[j].id },
                                 method: "post"
                             }, () => {
                                 chrome.runtime.sendMessage({
@@ -902,7 +912,6 @@ selectChangeListener = (event) => {
 }
 
 formSubmitListener = (event, i) => {
-    event.preventDefault() //da levare
     chrome.storage.sync.get(["profileInfo"], (result) => {
         let profileInfo = JSON.parse(result.profileInfo)
         let formObjects = document.getElementsByTagName("form")
