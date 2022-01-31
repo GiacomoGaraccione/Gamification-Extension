@@ -1,8 +1,7 @@
-let sideDiv = document.createElement("div");
-sideDiv.style.overflowY = "scroll"
-let button = document.createElement("button");
-let found = document.getElementById("gamificationExtensionSidenav");
-if (found === null) {
+if (document.getElementById("gamificationExtensionSidenav") === null) {
+    let sideDiv = document.createElement("div");
+    sideDiv.style.overflowY = "scroll"
+    let button = document.createElement("button");
     document.body.appendChild(button);
     button.id = "gamificationExtensionSidenavButton";
     button.style = "position: fixed; top: 50%; right: 0; width: 100; background-color: transparent; color: black; border: 2px solid rgb(211 245 230); border-radius: 12px; padding: 9px; font-size: 16px;";

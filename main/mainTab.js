@@ -145,7 +145,7 @@ function drawLeaderboards() {
 }
 
 
-chrome.storage.sync.get(["profileInfo", "startingURL"], function (result) {
+chrome.storage.sync.get(["profileInfo", "startingURL", "currentURL"], function (result) {
   let profileInfo = result.profileInfo
   if (profileInfo !== undefined && profileInfo !== "[]") {
     let profileInfoObj = JSON.parse(profileInfo)
@@ -154,15 +154,14 @@ chrome.storage.sync.get(["profileInfo", "startingURL"], function (result) {
   }
 
   if (result.startingURL !== "") {
-    pageURLButton.disabled = true
     pageURL.disabled = true
+    pageURL.value = result.currentURL
   }
 
   pageURLButton.addEventListener("click", async () => {
     let url = document.getElementById("pageURL").value;
     let [tab] = await chrome.tabs.query({ url: url });
     let domain = new URL(url);
-    pageURLButton.disabled = true
     pageURL.disabled = true
 
     chrome.storage.sync.set({

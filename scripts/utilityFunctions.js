@@ -594,3 +594,30 @@ function selector(el) {
     }
     return names.join(" > ")
 }
+
+function getMatchingCSSRules(element) {
+    let i, len, matching = [], sheets = document.styleSheets
+    loopRules = (rules) => {
+        let j, leng, rule
+        for (j = 0, leng = rules.length; j < leng; j++) {
+            rule = rules[i]
+            if (rule instanceof CSSMediaRule) {
+                if (window.matchMedia(rule.conditionText).matches) {
+                    loopRules(rule.cssRules)
+                }
+            } else if (rule instanceof CSSStyleRule) {
+                if (element.matches(rule.selectorText)) {
+                    matching.push(rule)
+                }
+            }
+        }
+    }
+    for (i = 0, len = sheets.length; i < len; i++) {
+        loopRules(sheets[i].cssRules)
+    }
+    let style = matching[0].cssText
+    let start = style.indexOf("rgb(")
+    let end = style.indexOf(";")
+    let color = style.slice(start, end)
+    return color
+}

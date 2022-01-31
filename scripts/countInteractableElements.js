@@ -57,22 +57,37 @@ chrome.storage.sync.get(["currentURL", "pageStats", "profileInfo"], (result) => 
             firstTime: true
         }, () => {
             for (let i = 0; i < linkObjects.length; i++) {
-                linkObjects[i].addEventListener("click", (event) => linkClickListener(event, i, pageInfo))
+                if (!linkObjects[i].getAttribute("listener")) {
+                    linkObjects[i].addEventListener("click", (event) => linkClickListener(event, i, pageInfo))
+                    linkObjects[i].setAttribute("listener", true)
+                }
             }
             for (let i = 0; i < inputObjects.length; i++) {
-                inputObjects[i].addEventListener("click", (event) => inputClickListener(event, pageInfo))
+                if (!inputObjects[i].getAttribute("listener")) {
+                    inputObjects[i].addEventListener("click", (event) => inputClickListener(event, pageInfo))
+                    inputObjects[i].setAttribute("listener", true)
+                }
             }
             for (let i = 0; i < buttonObjects.length; i++) {
                 if (!isButtonOfExtension(buttonObjects[i])) {
-                    buttonObjects[i].addEventListener("click", (event) => buttonClickListener(event, pageInfo))
+                    if (!buttonObjects[i].getAttribute("listener")) {
+                        buttonObjects[i].addEventListener("click", (event) => buttonClickListener(event, pageInfo))
+                        buttonObjects[i].setAttribute("listener", true)
+                    }
                 }
             }
             for (let i = 0; i < selectObjects.length; i++) {
-                selectObjects[i].addEventListener("click", (event) => selectClickListener(event, pageInfo))
-                selectObjects[i].addEventListener("change", (event) => selectChangeListener(event))
+                if (!selectObjects[i].getAttribute("listener")) {
+                    selectObjects[i].addEventListener("click", (event) => selectClickListener(event, pageInfo))
+                    selectObjects[i].addEventListener("change", (event) => selectChangeListener(event))
+                    selectObjects[i].setAttribute("listener", true)
+                }
             }
             for (let i = 0; i < formObjects.length; i++) {
-                formObjects[i].addEventListener("submit", (event) => formSubmitListener(event, i))
+                if (!formObjects[i].getAttribute("listener")) {
+                    formObjects[i].addEventListener("submit", (event) => formSubmitListener(event, i))
+                    formObjects[i].setAttribute("listener", true)
+                }
             }
             pageAchievements()
         })

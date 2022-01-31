@@ -476,6 +476,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   });
 });
 
+
 function callScripts(tab) {
   chrome.scripting.executeScript({
     target: { tabId: tab.id },

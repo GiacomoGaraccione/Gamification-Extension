@@ -233,7 +233,7 @@ exports.getWidgetCrops = function (username) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + errClear.errno + " - code: " + errClear.code
                 reject(utilities.errorObjs.dbError)
             } else {
-                const sql = "SELECT * FROM WidgetCrops WHERE username = ?"
+                const sql = "SELECT * FROM WidgetCrops WHERE username = ? ORDER BY id"
                 db.all(sql, [username], (err, rows) => {
                     if (err) {
                         utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
