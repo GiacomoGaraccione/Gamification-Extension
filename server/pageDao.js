@@ -107,10 +107,10 @@ exports.addPageIssue = function (pageAction) {
     })
 }
 
-exports.getPageIssues = function (username) {
+exports.getPageIssues = function () {
     return new Promise((resolve, reject) => {
-        const sql = "SELECT * FROM PageIssues WHERE username = ?"
-        db.all(sql, [username], (err, rows) => {
+        const sql = "SELECT * FROM PageIssues"
+        db.all(sql, [], (err, rows) => {
             if (err) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                 reject(utilities.errorObjs.dbError)

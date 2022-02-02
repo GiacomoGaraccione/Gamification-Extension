@@ -5,7 +5,7 @@ linkClickListener = (event, i, pageInfo) => {
     function filterID(event) {
         return event.objectId === (i) && event.objectType === "link"
     }
-    chrome.storage.sync.get(["interactionMode", "profileInfo", "currentURL", "pageStats"], (result) => {
+    chrome.storage.sync.get(["interactionMode", "profileInfo", "currentURL", "pageStats", "stack"], (result) => {
         let profileInfo = JSON.parse(result.profileInfo)
         let currentURL = result.currentURL
         function filterURL(event) {
@@ -109,6 +109,9 @@ linkClickListener = (event, i, pageInfo) => {
                             })
                         })
                         window.location = goTo
+                        let stack = result.stack
+                        stack.push(goTo)
+                        chrome.storage.sync.set({ stack: stack, clickedLink: true, lastAction: "click", previousURL: currentURL, reloadCount: 0 })
                     }
                     image.src = request.dataUrl
                 })
@@ -189,7 +192,9 @@ linkClickListener = (event, i, pageInfo) => {
                     };
                     let modalButton = document.createElement("button")
                     modalButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
-                    innerModal.appendChild(modalButton)
+                    if (issue.username === profileInfo.username) {
+                        innerModal.appendChild(modalButton)
+                    }
                     modalButton.textContent = "Mark as Solved"
                     modalButton.id = "gamificationExtensionIssueModalButton"
                     modalButton.addEventListener("click", (event) => {
@@ -427,7 +432,9 @@ inputClickListener = (event, pageInfo) => {
                             };
                             let modalButton = document.createElement("button")
                             modalButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
-                            innerModal.appendChild(modalButton)
+                            if (issue.username === profileInfo.username) {
+                                innerModal.appendChild(modalButton)
+                            }
                             modalButton.textContent = "Mark as Solved"
                             modalButton.id = "gamificationExtensionIssueModalButton"
                             modalButton.addEventListener("click", (event) => {
@@ -633,7 +640,9 @@ buttonClickListener = (event, pageInfo) => {
                             innerModal.appendChild(modalSpan);
                             let modalContent = document.createElement("p")
                             modalContent.innerText = `Current issue for this element: ${issue.issueText}`
-                            innerModal.appendChild(modalContent);
+                            if (issue.username === profileInfo.username) {
+                                innerModal.appendChild(modalButton)
+                            }
                             modalContent.style = "text-align: center; color: #2215E2; font-size: x-large"
                             modalSpan.onclick = () => { modalContainer.style.display = "none"; };
                             window.onclick = (event) => {
@@ -861,7 +870,9 @@ selectClickListener = (event, pageInfo) => {
                             };
                             let modalButton = document.createElement("button")
                             modalButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
-                            innerModal.appendChild(modalButton)
+                            if (issue.username === profileInfo.username) {
+                                innerModal.appendChild(modalButton)
+                            }
                             modalButton.textContent = "Mark as Solved"
                             modalButton.id = "gamificationExtensionIssueModalButton"
                             modalButton.addEventListener("click", (event) => {

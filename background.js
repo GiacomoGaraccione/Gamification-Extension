@@ -1,6 +1,5 @@
 let apiUrl = "http://localhost:3001/api"
 
-
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.mess === "create") {
     chrome.tabs.create({ url: chrome.runtime.getURL("main/mainTab.html") });
@@ -422,7 +421,6 @@ chrome.tabs.onHighlighted.addListener(function (tabIds, windowId) {
           }).then((res) => {
             res.json().then((data) => {
               let pagesFiltered = data.filter(filterURL)
-
               if (!newPages.includes(tab.url) && pagesFiltered.length === 0) {
                 newPages.push(tab.url);
                 chrome.storage.sync.set({ newPages: newPages });
@@ -461,7 +459,6 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
             }).then((res) => {
               res.json().then((data) => {
                 let pagesFiltered = data.filter(filterURL)
-
                 if (!newPages.includes(tab.url) && pagesFiltered.length === 0) {
                   newPages.push(tab.url);
                   chrome.storage.sync.set({ newPages: newPages });
@@ -484,7 +481,8 @@ function callScripts(tab) {
       "scripts/showSidenav.js",
       "scripts/countInteractableElements.js",
       "scripts/showTopbar.js",
-      "scripts/drawOverlays.js"]
+      "scripts/drawOverlays.js"/*,
+  "scripts/stackHandler.js"*/]
   });
 }
 

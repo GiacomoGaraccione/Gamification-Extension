@@ -171,7 +171,10 @@ chrome.storage.sync.get(["profileInfo", "startingURL", "currentURL"], function (
       newPages: [],
       pageSession: JSON.stringify([]),
       widgetCrops: JSON.stringify([]),
-      baseURL: url
+      baseURL: url,
+      stack: [url],
+      clickedLink: null,
+      lastAction: ""
     });
     if (tab === undefined) {
       chrome.runtime.sendMessage({

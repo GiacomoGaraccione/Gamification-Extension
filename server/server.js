@@ -415,20 +415,15 @@ app.post("/api/pages/issues", [
 
 /**
  * GET API - Retrieval of the count of all issues reported by a user in a page
- * Request Parameters: a string equal to the username of the user whose reported issues are requested
- *      Example input:
- *          {"username":"Giacomo"}
+ * Request Parameters: none
  * Request Body Content: none
  * Response Body Content: an array of objects, each one containing id and type of a signaled widget
  *      Example output:
  *          [{"username":"Giacomo","url":"https://elite.polito.it/teaching/current-courses/513-02jskov-hci","objectId":32,"objectType":"link", "issueText":"Wrong link text"}]
  */
-app.get("/api/pages/issues/:username", [
-    param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
-], (req, res) => {
+app.get("/api/pages/issues/:username", (req, res) => {
     if (utilities.resolveExpressValidator(validationResult(req), res)) {
-        const username = req.params.username
-        pageDao.getPageIssues(username)
+        pageDao.getPageIssues()
             .then((issues) => res.json(issues))
             .catch((err) => utilities.resolveErrors(err, res))
     }
