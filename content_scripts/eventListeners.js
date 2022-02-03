@@ -15,109 +15,120 @@ linkClickListener = (event, i, pageInfo) => {
         if (result.interactionMode === "interact") {
             //Ottenimento coordinate dell'oggetto cliccato, usate per fare il resize dello screenshot
             //els[i].attributeStyleMap.clear()
-            setTimeout(() => {
-                let coords = { x: els[i].getBoundingClientRect().x, y: els[i].getBoundingClientRect().y, height: els[i].getBoundingClientRect().height, width: els[i].getBoundingClientRect().width }
-                chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "link", widgetId: i, textContent: els[i].textContent.trim(), selectIndex: null }, mess: "capture" }, (request) => {
-                    let canvas = document.createElement("canvas")
-                    document.body.appendChild(canvas)
-                    let image = new Image()
-                    image.onload = () => {
-                        canvas.width = request.coords.width
-                        canvas.height = request.coords.height
-                        let context = canvas.getContext("2d")
-                        context.drawImage(image, request.coords.x, request.coords.y, request.coords.width, request.coords.height, 0, 0, request.coords.width, request.coords.height)
+            let coords = { x: 0, y: 0, height: 0, width: 0 }
+            if (els[i].getElementsByTagName("img").length > 0) {
+                coords.x = els[i].getElementsByTagName("img")[0].getBoundingClientRect().x,
+                    coords.y = els[i].getElementsByTagName("img")[0].getBoundingClientRect().y,
+                    coords.height = els[i].getElementsByTagName("img")[0].getBoundingClientRect().height,
+                    coords.width = els[i].getElementsByTagName("img")[0].getBoundingClientRect().width
+            } else {
+                coords.x = els[i].getBoundingClientRect().x,
+                    coords.y = els[i].getBoundingClientRect().y,
+                    coords.height = els[i].getBoundingClientRect().height,
+                    coords.width = els[i].getBoundingClientRect().width
+            }
+            chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "link", widgetId: i, textContent: els[i].textContent.trim(), selectIndex: null }, mess: "capture" }, (request) => {
+                let canvas = document.createElement("canvas")
+                document.body.appendChild(canvas)
+                let image = new Image()
+                image.onload = () => {
+                    let width = els[i].getElementsByTagName("img").length > 0 ? request.coords.width : 2 * request.coords.width
+                    let height = els[i].getElementsByTagName("img").length > 0 ? request.coords.height : 2 * request.coords.height
+                    let offX = els[i].getElementsByTagName("img").length > 0 ? 0 : (0.5 * request.coords.width)
+                    let offY = els[i].getElementsByTagName("img").length > 0 ? 0 : (0.5 * request.coords.height)
+                    canvas.width = width
+                    canvas.height = height
+                    let context = canvas.getContext("2d")
+                    context.drawImage(image, request.coords.x - offX, request.coords.y - offY, width, height, 0, 0, width, height)
+                    chrome.runtime.sendMessage({
+                        mess: "fetch",
+                        body: "/pages/crops/" + profileInfo.username,
+                        content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex, selector: selector(els[i]), xpath: xpath(els[i]), elementId: els[i].id },
+                        method: "post"
+                    }, () => {
+                        console.log(canvas.toDataURL())
                         chrome.runtime.sendMessage({
                             mess: "fetch",
-                            body: "/pages/crops/" + profileInfo.username,
-                            content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex, selector: selector(els[i]), xpath: xpath(els[i]), elementId: els[i].id },
-                            method: "post"
-                        }, () => {
-                            console.log(canvas.toDataURL())
-                            chrome.runtime.sendMessage({
-                                mess: "fetch",
-                                body: "/pages/actions/" + profileInfo.username,
-                                method: "get",
-                                content: { url: currentURL }
-                            }, (response3) => {
-                                let pageStatsObj = JSON.parse(result.pageStats);
-                                let psObj = pageStatsObj.filter(filterURL)[0]
-                                let intLinkIds = psObj.interactedLinks
-                                let intLinkPos = intLinkIds.indexOf(i);
-                                if (intLinkPos < 0) {
-                                    intLinkIds.push(i);
-                                    psObj.interactedLinks = intLinkIds;
+                            body: "/pages/actions/" + profileInfo.username,
+                            method: "get",
+                            content: { url: currentURL }
+                        }, (response3) => {
+                            let pageStatsObj = JSON.parse(result.pageStats);
+                            let psObj = pageStatsObj.filter(filterURL)[0]
+                            let intLinkIds = psObj.interactedLinks
+                            let intLinkPos = intLinkIds.indexOf(i);
+                            if (intLinkPos < 0) {
+                                intLinkIds.push(i);
+                                psObj.interactedLinks = intLinkIds;
+                            }
+                            let pageActions = response3.data
+                            let newLink = pageActions.filter(filterID).length === 0
+                            if (newLink) {
+                                let newlinkIds = psObj.newLinks;
+                                let newLinkPos = newlinkIds.indexOf(i);
+                                if (newLinkPos < 0) {
+                                    newlinkIds.push(i);
+                                    psObj.newLinks = newlinkIds;
                                 }
-                                let pageActions = response3.data
-                                let newLink = pageActions.filter(filterID).length === 0
+                            }
+                            chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
+                                setTimeout(() => {
+                                    chrome.storage.sync.get(["overlayMode"], (result) => {
+                                        if (result.overlayMode === "interacted") {
+                                            drawBorderOnInteracted()
+                                        } else if (result.overlayMode === "all") {
+                                            drawBorderOnAll()
+                                        }
+                                    })
+                                }, 3000);
                                 if (newLink) {
-                                    let newlinkIds = psObj.newLinks;
-                                    let newLinkPos = newlinkIds.indexOf(i);
-                                    if (newLinkPos < 0) {
-                                        newlinkIds.push(i);
-                                        psObj.newLinks = newlinkIds;
-                                    }
-                                }
-                                chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
-                                    setTimeout(() => {
-                                        chrome.storage.sync.get(["overlayMode"], (result) => {
-                                            if (result.overlayMode === "interacted") {
-                                                drawBorderOnInteracted()
-                                            } else if (result.overlayMode === "all") {
-                                                drawBorderOnAll()
-                                            }
-                                        })
-                                    }, 3000);
-                                    if (newLink) {
+                                    chrome.runtime.sendMessage({
+                                        mess: "fetch",
+                                        body: "/pages/actions",
+                                        method: "post",
+                                        content: { url: currentURL, username: profileInfo.username, objectId: i, objectType: "link" }
+                                    }, () => {
+                                        let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
+                                        let interactedLinks = pageActions.filter(filterLink).length + 1
+                                        let interactedInputs = pageActions.filter(filterInput).length
+                                        let interactedButtons = pageActions.filter(filterButton).length
+                                        let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
+                                        innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
+                                        innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
+                                        let sidenavProgress = document.getElementById("gamificationExtensionLinksProgress")
+                                        let widgetProgress = interactedLinks * 100 / pageInfo.totalLinkObjects
+                                        if (widgetProgress > 100) {
+                                            widgetProgress = 100
+                                        }
+                                        sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
+                                        sidenavProgress.textContent = "Links Progress: " + widgetProgress.toFixed(2) + "%"
+                                        let table = document.getElementById("gamificationExtensionPageStatsTable")
+                                        let linksRow = table.rows[1]
+                                        let pageStat = pageStatsObj.filter(filterURL)[0]
+                                        linksRow.cells[1].innerHTML = pageStat.interactedLinks.length
+                                        linksRow.cells[2].innerHTML = pageStat.newLinks.length
+                                        linksRow.cells[3].innerHTML = pageActions.filter(filterLink).length + 1
+                                        pageCoverageAchievements(progress, widgetProgress)
                                         chrome.runtime.sendMessage({
                                             mess: "fetch",
-                                            body: "/pages/actions",
+                                            body: "/pages/records/" + profileInfo.username,
                                             method: "post",
-                                            content: { url: currentURL, username: profileInfo.username, objectId: i, objectType: "link" }
-                                        }, () => {
-                                            let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                                            let interactedLinks = pageActions.filter(filterLink).length + 1
-                                            let interactedInputs = pageActions.filter(filterInput).length
-                                            let interactedButtons = pageActions.filter(filterButton).length
-                                            let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
-                                            innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
-                                            innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
-                                            let sidenavProgress = document.getElementById("gamificationExtensionLinksProgress")
-                                            let widgetProgress = interactedLinks * 100 / pageInfo.totalLinkObjects
-                                            if (widgetProgress > 100) {
-                                                widgetProgress = 100
-                                            }
-                                            sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
-                                            sidenavProgress.textContent = "Links Progress: " + widgetProgress.toFixed(2) + "%"
-                                            let table = document.getElementById("gamificationExtensionPageStatsTable")
-                                            let linksRow = table.rows[1]
-                                            let pageStat = pageStatsObj.filter(filterURL)[0]
-                                            linksRow.cells[1].innerHTML = pageStat.interactedLinks.length
-                                            linksRow.cells[2].innerHTML = pageStat.newLinks.length
-                                            linksRow.cells[3].innerHTML = pageActions.filter(filterLink).length + 1
-                                            pageCoverageAchievements(progress, widgetProgress)
-                                            chrome.runtime.sendMessage({
-                                                mess: "fetch",
-                                                body: "/pages/records/" + profileInfo.username,
-                                                method: "post",
-                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, linksCoverage: widgetProgress },
-                                                firstTime: false
-                                            })
+                                            content: { username: profileInfo.username, url: currentURL, coverage: progress, linksCoverage: widgetProgress },
+                                            firstTime: false
                                         })
+                                    })
 
-                                    }
-                                });
-                            })
+                                }
+                            });
                         })
-                        window.location = goTo
-                        let stack = result.stack
-                        stack.push(goTo)
-                        chrome.storage.sync.set({ stack: stack, clickedLink: true, lastAction: "click", previousURL: currentURL, reloadCount: 0 })
-                    }
-                    image.src = request.dataUrl
-                })
-            }, 100)
-
-
+                    })
+                    window.location = goTo
+                    let stack = result.stack
+                    stack.push(goTo)
+                    chrome.storage.sync.set({ stack: stack, clickedLink: true, lastAction: "click", previousURL: currentURL, reloadCount: 0 })
+                }
+                image.src = request.dataUrl
+            })
         } else if (result.interactionMode === "signal") {
             event.preventDefault()
             chrome.runtime.sendMessage({
