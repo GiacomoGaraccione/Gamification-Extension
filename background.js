@@ -331,6 +331,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         }
       })
     } else if (request.body.indexOf("/pages/crops") >= 0 && request.method === "post") {
+      console.log(request.content)
       fetch(apiCall, {
         method: "post",
         headers: {

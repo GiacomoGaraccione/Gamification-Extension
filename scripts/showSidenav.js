@@ -183,7 +183,8 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                     }
                                     let text = `popup("Beginning replay of past session")\n`
                                     for (let i = 0; i < ret.length; i++) {
-                                        text += "max = 10\n"
+                                        text += "max = 20\n"
+                                        text += "wait(5)"
                                         text += "while(max > 0):\n"
                                         text += `   if not exists(Pattern("img${i + 1}.png").similar(0.55), 0):\n`
                                         text += "       wheel(WHEEL_DOWN, 1)\n"
@@ -210,7 +211,7 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                                 text += `type("${ret[i].selectIndex}")\n`
                                             }
                                         }
-                                        text += "wheel(WHEEL_UP, 10-max)\n"
+                                        text += "wheel(WHEEL_UP, 20-max)\n"
                                     }
                                     text += `popup("Ending replay of past session")\n`
                                     folder.file("script.py", text)
@@ -602,7 +603,8 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                         sideDiv.appendChild(widgetsRecord)
                         let pageWidgetsRecord = document.createElement("h4")
                         pageWidgetsRecord.style.textTransform = "Inherit"
-                        pageWidgetsRecord.textContent = "Highest Number of New Widgets Found in a Session - This Page: " + pageRecords.highestWidgets
+                        let hw = pageRecords.highestWidgets ? pageRecords.highestWidgets : 0
+                        pageWidgetsRecord.textContent = "Highest Number of New Widgets Found in a Session - This Page: " + hw
                         pageWidgetsRecord.style = "text-align: center; color: #315BE2"
                         sideDiv.appendChild(pageWidgetsRecord)
                     })

@@ -1,5 +1,5 @@
 linkClickListener = (event, i, pageInfo) => {
-    event.preventDefault()
+    //event.preventDefault()
     const goTo = event.target.href
     let els = document.body.getElementsByTagName("a");
     function filterID(event) {
@@ -122,7 +122,8 @@ linkClickListener = (event, i, pageInfo) => {
                             });
                         })
                     })
-                    window.location = goTo
+                    console.log(goTo)
+                    //window.location = goTo
                     let stack = result.stack
                     stack.push(goTo)
                     chrome.storage.sync.set({ stack: stack, clickedLink: true, lastAction: "click", previousURL: currentURL, reloadCount: 0 })

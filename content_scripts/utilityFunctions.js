@@ -105,24 +105,24 @@ function isButtonOfExtension(button) {
 function drawBorderOnAll() {
     let links = document.body.getElementsByTagName("a");
     for (let i = 0; i < links.length; i++) {
-        links[i].style = "border:3px; border-style:solid; border-color:#FF0000; padding: 1em;";
+        links[i].style = "border:3px; border-style:solid; border-color:#FF0000;";
     }
 
     let inputs = document.body.getElementsByTagName("input");
     for (let i = 0; i < inputs.length; i++) {
-        inputs[i].style = "border:3px; border-style:solid; border-color:#00FF00; padding: 1em;";
+        inputs[i].style = "border:3px; border-style:solid; border-color:#00FF00;";
     }
 
     let buttons = document.body.getElementsByTagName("button");
     for (let i = 0; i < buttons.length; i++) {
         if (!isButtonOfExtension(buttons[i])) {
-            buttons[i].style = "border:3px; border-style:solid; border-color:#0000FF; padding: 1em;";
+            buttons[i].style = "border:3px; border-style:solid; border-color:#0000FF;";
         }
     }
 
     let selects = document.body.getElementsByTagName("select")
     for (let i = 0; i < selects.length; i++) {
-        selects[i].style = "border:3px solid; border-color:yellow; padding: 1em;";
+        selects[i].style = "border:3px solid; border-color:yellow;";
     }
 }
 
@@ -143,16 +143,16 @@ function drawBorderOnInteracted() {
             for (action of pageActions) {
                 switch (action.objectType) {
                     case "button":
-                        buttons[action.objectId].style = "border:3px; border-style:solid; border-color:#0000FF; padding: 1em;";
+                        buttons[action.objectId].style = "border:3px; border-style:solid; border-color:#0000FF;";
                         break;
                     case "input":
-                        inputs[action.objectId].style = "border:3px; border-style:solid; border-color:#00FF00; padding: 1em;";
+                        inputs[action.objectId].style = "border:3px; border-style:solid; border-color:#00FF00;";
                         break;
                     case "link":
-                        links[action.objectId].style = "border:3px; border-style:solid; border-color:#FF0000; padding: 1em;";
+                        links[action.objectId].style = "border:3px; border-style:solid; border-color:#FF0000;";
                         break
                     case "select":
-                        selects[action.objectId].style = "border:3px; border-style:solid; border-color:yellow; padding: 1em;";
+                        selects[action.objectId].style = "border:3px; border-style:solid; border-color:yellow;";
                         break
                 }
             }
@@ -182,7 +182,7 @@ function drawBackground() {
                 tooltip.style = "visibility: hidden; width: 120px; background-color: rgb(211 245 230);; color: #2215E2; text-align: center; padding: 5px 0; border-radius: 6px; z-index: 1; display: none"
                 switch (issue.objectType) {
                     case "button":
-                        buttons[issue.objectId].style = "border:3px; border-style:solid; border-color:rgb(243 0 0); padding: 1em;";
+                        buttons[issue.objectId].style = "border:3px; border-style:solid; border-color:rgb(243 0 0);";
                         let buttonChildren = buttons[issue.objectId].childNodes
                         let foundB = false
                         for (let j = 0; j < buttonChildren.length && !foundB; j++) {
