@@ -168,7 +168,8 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                 chrome.storage.sync.get(["baseURL"], (result) => {
                                     let baseURL = result.baseURL
                                     let zip = new JSZip()
-                                    let folder = zip.folder("script.sikuli")
+                                    let folder = zip.folder("scripts")
+                                    let inner = folder.folder("script.sikuli")
                                     for (let i = 0; i < ret.length; i++) {
                                         let byteString = atob(ret[i].imageUrl.split(',')[1])
                                         let mimeString = ret[i].imageUrl.split(',')[0].split(':')[1].split(';')[0]
@@ -178,7 +179,7 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                             ia[j] = byteString.charCodeAt(j);
                                         }
                                         let blob = new Blob([ab], { type: mimeString });
-                                        folder.file(`img${i + 1}.png`, blob)
+                                        inner.file(`img${i + 1}.png`, blob)
 
                                     }
                                     let text = `popup("Beginning replay of past session")\n`
@@ -214,10 +215,7 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                         text += "wheel(WHEEL_UP, 20-max)\n"
                                     }
                                     text += `popup("Ending replay of past session")\n`
-                                    folder.file("script.py", text)
-                                    zip.generateAsync({ type: "blob" }).then((blob) => {
-                                        saveAs(blob, "script.zip");
-                                    });
+                                    inner.file("script.py", text)
 
                                     let seleniumFile = {
                                         id: "idProject",
@@ -294,14 +292,10 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                         }
                                     }
                                     seleniumFile.tests[0].commands = commands
-                                    let blob = new Blob([JSON.stringify(seleniumFile)], {
-                                        type: "text/side",
+                                    folder.file("gamification-extension-selenium-testing-project.side", JSON.stringify(seleniumFile))
+                                    zip.generateAsync({ type: "blob" }).then((blob) => {
+                                        saveAs(blob, "scripts.zip");
                                     });
-                                    let url = window.URL.createObjectURL(blob);
-                                    let obj = {
-                                        url: url,
-                                        filename: "gamification-extension-selenium-testing-project.side",
-                                    };
                                     chrome.runtime.sendMessage({ obj: obj, mess: "download" });
                                 })
                             })

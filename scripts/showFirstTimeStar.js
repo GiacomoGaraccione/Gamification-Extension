@@ -1,8 +1,9 @@
-chrome.storage.sync.get(["currentURL"], function (result) {
+chrome.storage.sync.get(["currentURL", "profileInfo"], function (result) {
+    let profileInfo = JSON.parse(result.profileInfo)
     chrome.runtime.sendMessage({
         mess: "fetch",
         method: "get",
-        body: "/pages",
+        body: "/pages/actions/" + profileInfo.username,
         content: { url: result.currentURL }
     }, (response) => {
         let pageInfo = response.data

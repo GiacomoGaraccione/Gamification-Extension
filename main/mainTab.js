@@ -153,10 +153,13 @@ chrome.storage.sync.get(["profileInfo", "startingURL", "currentURL"], function (
     render("home")
   }
 
-  if (result.startingURL !== "") {
+  if (result.startingURL !== "" && result.startingURL !== undefined) {
     pageURL.disabled = true
     pageURL.value = result.currentURL
+    logoutButton.disabled = true
   }
+
+  document.getElementById("passwordField").addEventListener("change", () => displayConfirmButton())
 
   pageURLButton.addEventListener("click", async () => {
     let url = document.getElementById("pageURL").value;
@@ -218,36 +221,40 @@ chrome.storage.sync.get(["profileInfo", "startingURL", "currentURL"], function (
         return event.username === username
       }
       let password = document.getElementById("passwordField").value
-      chrome.runtime.sendMessage({
-        mess: "fetch",
-        method: "get",
-        body: "/users",
-        content: {}
-      }, (response) => {
-        let users = response.data.filter(filterUsers)
-        if (users.length > 0) {
-          alert("Error: this username is already taken")
-        } else if (username === "" || selectedAvatar === "") {
-          alert("Error: choose a username and an avatar")
-        } else {
-          chrome.runtime.sendMessage({
-            mess: "fetch",
-            body: "/users",
-            method: "post",
-            content: { username: username, password: password, selectedAvatar: selectedAvatar }
-          }, () => {
-            let profileInfo = { username: username, selectedAvatar: selectedAvatar }
-            chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) })
-            title.textContent = "Main Page - Welcome " + username + "!"
-            render("home")
-          })
-        }
-      })
+      if (!password) {
+        alert("Please select a password")
+      } else {
+        chrome.runtime.sendMessage({
+          mess: "fetch",
+          method: "get",
+          body: "/users",
+          content: {}
+        }, (response) => {
+          let users = response.data.filter(filterUsers)
+          if (users.length > 0) {
+            alert("Error: this username is already taken")
+          } else if (username === "" || selectedAvatar === "") {
+            alert("Error: choose a username and an avatar")
+          } else {
+            chrome.runtime.sendMessage({
+              mess: "fetch",
+              body: "/users",
+              method: "post",
+              content: { username: username, password: password, selectedAvatar: selectedAvatar }
+            }, () => {
+              let profileInfo = { username: username, selectedAvatar: selectedAvatar }
+              chrome.storage.sync.set({ profileInfo: JSON.stringify(profileInfo) })
+              title.textContent = "Main Page - Welcome " + username + "!"
+              render("home")
+            })
+          }
+        })
+      }
     })
   })
 
   function displayConfirmButton() {
-    if (username !== "" && selectedAvatar !== "") {
+    if (username !== "" && selectedAvatar !== "" && document.getElementById("passwordField").value != "") {
       confirmButtonWrapper.style.display = "flex"
     }
   }

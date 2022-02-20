@@ -1,20 +1,20 @@
 linkClickListener = (event, i, pageInfo) => {
-    //event.preventDefault()
-    const goTo = event.target.href
+    event.preventDefault()
     let els = document.body.getElementsByTagName("a");
     function filterID(event) {
         return event.objectId === (i) && event.objectType === "link"
     }
+    let goTo = event.target.href ? event.target.href : els[i].href
     chrome.storage.sync.get(["interactionMode", "profileInfo", "currentURL", "pageStats", "stack"], (result) => {
         let profileInfo = JSON.parse(result.profileInfo)
         let currentURL = result.currentURL
         function filterURL(event) {
             return event.url === currentURL
         }
-        //els[i].style.color = getMatchingCSSRules(els[i])
         if (result.interactionMode === "interact") {
             //Ottenimento coordinate dell'oggetto cliccato, usate per fare il resize dello screenshot
-            //els[i].attributeStyleMap.clear()
+
+            els[i].attributeStyleMap.clear()
             let coords = { x: 0, y: 0, height: 0, width: 0 }
             if (els[i].getElementsByTagName("img").length > 0) {
                 coords.x = els[i].getElementsByTagName("img")[0].getBoundingClientRect().x,
@@ -46,7 +46,7 @@ linkClickListener = (event, i, pageInfo) => {
                         content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex, selector: selector(els[i]), xpath: xpath(els[i]), elementId: els[i].id },
                         method: "post"
                     }, () => {
-                        console.log(canvas.toDataURL())
+                        //console.log(canvas.toDataURL())
                         chrome.runtime.sendMessage({
                             mess: "fetch",
                             body: "/pages/actions/" + profileInfo.username,
@@ -63,6 +63,7 @@ linkClickListener = (event, i, pageInfo) => {
                             }
                             let pageActions = response3.data
                             let newLink = pageActions.filter(filterID).length === 0
+                            console.log(pageActions)
                             if (newLink) {
                                 let newlinkIds = psObj.newLinks;
                                 let newLinkPos = newlinkIds.indexOf(i);
@@ -72,15 +73,13 @@ linkClickListener = (event, i, pageInfo) => {
                                 }
                             }
                             chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
-                                setTimeout(() => {
-                                    chrome.storage.sync.get(["overlayMode"], (result) => {
-                                        if (result.overlayMode === "interacted") {
-                                            drawBorderOnInteracted()
-                                        } else if (result.overlayMode === "all") {
-                                            drawBorderOnAll()
-                                        }
-                                    })
-                                }, 3000);
+                                chrome.storage.sync.get(["overlayMode"], (result) => {
+                                    if (result.overlayMode === "interacted") {
+                                        drawBorderOnInteracted()
+                                    } else if (result.overlayMode === "all") {
+                                        drawBorderOnAll()
+                                    }
+                                })
                                 if (newLink) {
                                     chrome.runtime.sendMessage({
                                         mess: "fetch",
@@ -122,14 +121,16 @@ linkClickListener = (event, i, pageInfo) => {
                             });
                         })
                     })
-                    console.log(goTo)
-                    //window.location = goTo
-                    let stack = result.stack
-                    stack.push(goTo)
-                    chrome.storage.sync.set({ stack: stack, clickedLink: true, lastAction: "click", previousURL: currentURL, reloadCount: 0 })
                 }
                 image.src = request.dataUrl
             })
+            setTimeout(() => {
+                window.location = goTo
+                let stack = result.stack
+                stack.push(goTo)
+                chrome.storage.sync.set({ stack: stack, clickedLink: true, lastAction: "click", previousURL: currentURL, reloadCount: 0 })
+            }, 500)
+
         } else if (result.interactionMode === "signal") {
             event.preventDefault()
             chrome.runtime.sendMessage({
@@ -278,6 +279,7 @@ inputClickListener = (event, pageInfo) => {
                         coords.height = els[j].getBoundingClientRect().height
                         coords.width = els[j].getBoundingClientRect().width
                     }
+                    els[j].attributeStyleMap.clear()
                     chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "input", widgetId: j, textContent: null, selectIndex: null }, mess: "capture" }, (request) => {
                         let canvas = document.createElement("canvas")
                         document.body.appendChild(canvas)
