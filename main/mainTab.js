@@ -222,7 +222,7 @@ chrome.storage.sync.get(["profileInfo", "startingURL", "currentURL"], function (
       }
       let password = document.getElementById("passwordField").value
       if (!password) {
-        alert("Please select a password")
+        alert("Please insert a password")
       } else {
         chrome.runtime.sendMessage({
           mess: "fetch",

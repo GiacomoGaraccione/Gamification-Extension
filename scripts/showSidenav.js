@@ -1,26 +1,28 @@
 if (document.getElementById("gamificationExtensionSidenav") === null) {
     let sideDiv = document.createElement("div");
     sideDiv.style.overflowY = "scroll"
-    let button = document.createElement("button");
+    let button = document.createElement("img");
     document.body.appendChild(button);
     button.id = "gamificationExtensionSidenavButton";
-    button.style = "position: fixed; top: 50%; right: 0; width: 100; background-color: transparent; color: black; border: 2px solid rgb(211 245 230); border-radius: 12px; padding: 9px; font-size: 16px;";
-    button.textContent = "Open Menu";
+    button.style = "position: fixed; top: 50%; right: 0; width: 40;";
+    //button.textContent = "Open Menu";
     button.onclick = function () {
         document.getElementById("gamificationExtensionSidenav").style.width = "50%";
     };
+    button.src = chrome.runtime.getURL("img/arrow_left.png")
     document.body.appendChild(sideDiv);
     sideDiv.id = "gamificationExtensionSidenav";
-    sideDiv.style = "height: 100%; width: 0; position: fixed; z-index: 1; top: 0; right: 0; background-color: rgb(211 245 230); overflow-x: hidden; padding-top: 10px; transition: 0.5s; overflow-y: scroll";
+    sideDiv.style = "height: 100%; width: 0; position: fixed; z-index: 1; top: 0; right: 0; background-color: rgb(211 245 230); overflow-x: hidden; transition: 0.5s; overflow-y: scroll";
     let closeButtonDiv = document.createElement("div")
     closeButtonDiv.id = "gamificationExtensionCloseButtonDiv"
-    closeButtonDiv.style = "display: flex; justify-content: center"
+    closeButtonDiv.style = "display: flex; justify-content: space-between"
     sideDiv.appendChild(closeButtonDiv)
-    let closeButton = document.createElement("button");
+    let closeButton = document.createElement("img");
     closeButtonDiv.appendChild(closeButton);
+    closeButton.src = chrome.runtime.getURL("img/cross.png")
     closeButton.id = "gamificationExtensionSidenavCloseButton";
     closeButton.textContent = "Close Menu";
-    closeButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
+    closeButton.style = "bottom: 10%; right: 50%; background-color: transparent; width: 40; height: 40";
     closeButton.onclick = function () {
         document.getElementById("gamificationExtensionSidenav").style.width = "0";
     };
