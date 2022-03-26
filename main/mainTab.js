@@ -163,6 +163,9 @@ chrome.storage.sync.get(["profileInfo", "startingURL", "currentURL"], function (
 
   pageURLButton.addEventListener("click", async () => {
     let url = document.getElementById("pageURL").value;
+    if (url[url.length - 1] !== "/") {
+      url += "/"
+    }
     let [tab] = await chrome.tabs.query({ url: url });
     let domain = new URL(url);
     pageURL.disabled = true
