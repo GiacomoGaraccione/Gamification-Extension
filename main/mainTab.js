@@ -162,34 +162,48 @@ chrome.storage.sync.get(["profileInfo", "startingURL", "currentURL"], function (
   document.getElementById("passwordField").addEventListener("change", () => displayConfirmButton())
 
   pageURLButton.addEventListener("click", async () => {
+    isValidUrl = (_string) => {
+      let url_string;
+      try {
+        url_string = new URL(_string);
+      } catch (_) {
+        return false;
+      }
+      return url_string.protocol === "http:" || url_string.protocol === "https:";
+    }
     let url = document.getElementById("pageURL").value;
-    if (url[url.length - 1] !== "/") {
-      url += "/"
-    }
-    let [tab] = await chrome.tabs.query({ url: url });
-    let domain = new URL(url);
-    pageURL.disabled = true
-
-    chrome.storage.sync.set({
-      startingURL: domain.hostname,
-      visitedPages: [],
-      pageStats: JSON.stringify([]),
-      newPages: [],
-      pageSession: JSON.stringify([]),
-      widgetCrops: JSON.stringify([]),
-      baseURL: url,
-      stack: [url],
-      clickedLink: null,
-      lastAction: ""
-    });
-    if (tab === undefined) {
-      chrome.runtime.sendMessage({
-        mess: "openNew",
-        url: url,
-      });
+    if (!isValidUrl(url)) {
+      alert("Please insert an URL with the correct format!")
     } else {
-      chrome.tabs.update(tab.id, { highlighted: true });
+      if (url[url.length - 1] !== "/") {
+        url += "/"
+      }
+      let [tab] = await chrome.tabs.query({ url: url });
+      let domain = new URL(url);
+      pageURL.disabled = true
+
+      chrome.storage.sync.set({
+        startingURL: domain.hostname,
+        visitedPages: [],
+        pageStats: JSON.stringify([]),
+        newPages: [],
+        pageSession: JSON.stringify([]),
+        widgetCrops: JSON.stringify([]),
+        baseURL: url,
+        stack: [url],
+        clickedLink: null,
+        lastAction: ""
+      });
+      if (tab === undefined) {
+        chrome.runtime.sendMessage({
+          mess: "openNew",
+          url: url,
+        });
+      } else {
+        chrome.tabs.update(tab.id, { highlighted: true });
+      }
     }
+
   });
 
   loginButton.addEventListener("click", (event) => {
