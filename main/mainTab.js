@@ -309,7 +309,7 @@ chrome.storage.sync.get(["profileInfo", "startingURL", "currentURL"], function (
             for (let i = 0; i < avatars.length; i++) {
               let div = document.createElement("div")
               div.className = "file"
-              let h2 = document.createElement("h2")
+              let h2 = document.createElement("h3")
               h2.style = "text-align: center;"
               h2.textContent = avatars[i].name
               div.appendChild(h2)

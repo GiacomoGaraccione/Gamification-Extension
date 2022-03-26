@@ -3,6 +3,12 @@
 const db = require("./db.js")
 const utilities = require("./utilities.js")
 
+/**
+ * Inserts information about a web page in the database.
+ * Updates information in case a page is already present in the database.
+ * @param page An object containing information about a page to be inserted in the database
+ * @returns Nothing
+ */
 exports.addPage = function (page) {
     return new Promise((resolve, reject) => {
         const sqlCh = "SELECT * FROM PageInfo WHERE url = ?"
@@ -37,6 +43,10 @@ exports.addPage = function (page) {
     })
 }
 
+/**
+ * Returns information on all pages present in the database.
+ * @returns An array of objects containing information about pages
+ */
 exports.getPages = function () {
     return new Promise((resolve, reject) => {
         const sql = "SELECT * FROM PageInfo"
@@ -51,6 +61,11 @@ exports.getPages = function () {
     })
 }
 
+/**
+ * Returns information about a single page.
+ * @param url A string corresponding to the URL of the page to be retrieved
+ * @returns An object containing information about the page requested
+ */
 exports.getPage = function (url) {
     return new Promise((resolve, reject) => {
         const sql = "SELECT * FROM PageInfo WHERE url = ?"
@@ -65,6 +80,11 @@ exports.getPage = function (url) {
     })
 }
 
+/**
+ * Inserts information about a new action performed on a page element
+ * @param pageAction An object containing all the information about the performed action
+ * @returns Nothing
+ */
 exports.addPageAction = function (pageAction) {
     return new Promise((resolve, reject) => {
         const sql = "INSERT INTO PageActions(username, url, objectId, objectType) VALUES(?, ?, ?, ?)"
@@ -79,6 +99,11 @@ exports.addPageAction = function (pageAction) {
     })
 }
 
+/**
+ * Returns the list of page actions made by a single user
+ * @param username A string corresponding to the username of the user that wants to know his/her page actions
+ * @returns An array containing objects that identify the various page actions made by the user
+ */
 exports.getPageActions = function (username) {
     return new Promise((resolve, reject) => {
         const sql = "SELECT * FROM PageActions WHERE username = ?"
@@ -93,6 +118,11 @@ exports.getPageActions = function (username) {
     })
 }
 
+/**
+ * Inserts information about a new issue reported on a malfunctioning page element
+ * @param pageAction An object containing all the information about the issue
+ * @returns Nothing
+ */
 exports.addPageIssue = function (pageAction) {
     return new Promise((resolve, reject) => {
         const sql = "INSERT INTO PageIssues(username, url, objectId, objectType, issueText) VALUES(?, ?, ?, ?, ?)"
@@ -107,6 +137,11 @@ exports.addPageIssue = function (pageAction) {
     })
 }
 
+/**
+ * Returns the list of issues reported by a single user
+ * @param username A string corresponding to the username of the user that wants to know his/her issues
+ * @returns An array containing objects that identify the various issues reported by the user
+ */
 exports.getPageIssues = function () {
     return new Promise((resolve, reject) => {
         const sql = "SELECT * FROM PageIssues"
@@ -121,6 +156,12 @@ exports.getPageIssues = function () {
     })
 }
 
+/**
+ * Marks a previously reported issue on an element as solved.
+ * @param username A string corresponding to the user that previously reported an issue and is now marking it as solved
+ * @param pageIssue An object used to univocally identify the issue to mark as solved
+ * @returns Nothing
+ */
 exports.solvePageIssue = function (username, pageIssue) {
     return new Promise((resolve, reject) => {
         const sql = "DELETE FROM PageIssues WHERE username = ? AND url = ? AND objectId = ? AND objectType = ?"
@@ -135,6 +176,11 @@ exports.solvePageIssue = function (username, pageIssue) {
     })
 }
 
+/**
+ * Adds, or updates if already present, information about records made by a user on a page.
+ * @param pageRecord An object containing information about all the records to be inserted in the database
+ * @returns An object containing the records inserted in the database
+ */
 exports.addPageRecord = function (pageRecord) {
     return new Promise((resolve, reject) => {
         const sqlCh = "SELECT * FROM PageRecords WHERE url = ? AND username = ?"
@@ -194,6 +240,11 @@ exports.addPageRecord = function (pageRecord) {
     })
 }
 
+/**
+ * Returns all the records made by a single user.
+ * @param username A string corresponding to the user that wants to know his/her records
+ * @returns An array containing all the records made by the user
+ */
 exports.getPageRecords = function (username) {
     return new Promise((resolve, reject) => {
         const sql = "SELECT * FROM PageRecords WHERE username = ?"
@@ -208,15 +259,17 @@ exports.getPageRecords = function (username) {
     })
 }
 
+/**
+ * Inserts information about an interacted element for use at the end of the session, to generate the automated scripts.
+ * @param widgetCrop An object containing all the information about the action
+ * @param username A string corresponding to the username of the user that performed the registered action
+ * @returns Nothing
+ */
 exports.addWidgetCrop = function (widgetCrop, username) {
     return new Promise((resolve, reject) => {
-        if (widgetCrop.widgetType === "select") {
-
-        }
         const sql = "INSERT INTO WidgetCrops(username, imageUrl, widgetType, widgetId, textContent, selectIndex, selector, xpath, elementId) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
         db.run(sql, [username, widgetCrop.imageUrl, widgetCrop.widgetType, widgetCrop.widgetId, widgetCrop.textContent, widgetCrop.selectIndex, widgetCrop.selector, widgetCrop.xpath, widgetCrop.elementId], (err, row) => {
             if (err) {
-                console.log(err)
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                 reject(utilities.errorObjs.dbError)
             } else {
@@ -226,8 +279,15 @@ exports.addWidgetCrop = function (widgetCrop, username) {
     })
 }
 
+/**
+ * Returns all crops that identify the actions made by a user during a session.
+ * @param username A string corresponding to the username of the user that is ending a testing session and wishes to retrieve his/her widget crops to generate automated scripts
+ * @returns An array containing all the crops corresponding to the actions made during a testing session
+ */
 exports.getWidgetCrops = function (username) {
     return new Promise((resolve, reject) => {
+        //The event listener for clicking on a dropdown menu is called also when selecting a value, meaning that there's the chance to have a crop corresponding to a selection with null value.
+        //All select-type element with no selection index are thus deleted from the table
         const sqlClear = "DELETE FROM WidgetCrops WHERE username = ? AND widgetType = ? AND selectIndex IS NULL"
         db.run(sqlClear, [username, "select"], (errClear, rowClear) => {
             if (errClear) {
@@ -240,6 +300,7 @@ exports.getWidgetCrops = function (username) {
                         utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                         reject(utilities.errorObjs.dbError)
                     } else {
+                        //All the crops made during the session are deleted, resetting the state for future sessions
                         const sqlDel = "DELETE FROM WidgetCrops WHERE username = ?"
                         db.run(sqlDel, [username], (errDel, rowDel) => {
                             if (errDel) {
@@ -256,9 +317,16 @@ exports.getWidgetCrops = function (username) {
     })
 }
 
+/**
+ * Updates information about a previously added widget crop (i.e. text content of a form field, selection index of a dropdown menu)
+ * @param username A string containing the username of the user that is updating a previous widget crop
+ * @param widgetCrop An object containing the new information to be added to the widget crop
+ * @returns Nothing
+ */
 exports.updateWidgetCrop = function (username, widgetCrop) {
     return new Promise((resolve, reject) => {
         if (widgetCrop.lastInput) {
+            //When a form field is the last one of its form it must be marked as last so that script can correctly use it to submit the form
             const sqlMax = "SELECT MAX(id) FROM WidgetCrops WHERE username = ? AND widgetType = ? AND lastInput IS NULL"
             db.get(sqlMax, [username, "input"], (errMax, rowMax) => {
                 if (errMax) {
@@ -279,6 +347,7 @@ exports.updateWidgetCrop = function (username, widgetCrop) {
                 }
             })
         } else if (!widgetCrop.selectIndex) {
+            //In case there's an update and there's no selection index then the crops corresponds to a form field; its text content is correctly updated
             const sql = "UPDATE WidgetCrops SET textContent = ? WHERE username = ? AND widgetType = ? AND widgetId = ? AND textContent IS NULL"
             db.run(sql, [widgetCrop.textContent, username, "input", widgetCrop.widgetId], (err, row) => {
                 if (err) {
@@ -289,6 +358,7 @@ exports.updateWidgetCrop = function (username, widgetCrop) {
                 }
             })
         } else {
+            //If none of the previous cases apply then the crop to update corresponds to a dropdown menu whose selection index has been chosen by the user
             const sql = "UPDATE WidgetCrops SET selectIndex = ? WHERE id = (SELECT id FROM WidgetCrops WHERE widgetType = ? AND widgetId = ? AND username = ? AND selectIndex IS NULL)"
             db.run(sql, [widgetCrop.selectIndex, "select", widgetCrop.widgetId, username], (err, row) => {
                 if (err) {

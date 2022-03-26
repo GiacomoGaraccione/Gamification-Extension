@@ -1,18 +1,23 @@
+/**
+ * Script that adds the extension menu to the page's HTML document
+ * The menu is added only once, avoiding multiple additions in case of tab changes
+ */
 if (document.getElementById("gamificationExtensionSidenav") === null) {
     let sideDiv = document.createElement("div");
     sideDiv.style.overflowY = "scroll"
+    //Creation of the arrow-shaped button that opens the menu
     let button = document.createElement("img");
     document.body.appendChild(button);
     button.id = "gamificationExtensionSidenavButton";
     button.style = "position: fixed; top: 50%; right: 0; width: 40;";
-    //button.textContent = "Open Menu";
-    button.onclick = function () {
+    button.onclick = () => {
         document.getElementById("gamificationExtensionSidenav").style.width = "50%";
     };
     button.src = chrome.runtime.getURL("img/arrow_left.png")
     document.body.appendChild(sideDiv);
     sideDiv.id = "gamificationExtensionSidenav";
     sideDiv.style = "height: 100%; width: 0; position: fixed; z-index: 1; top: 0; right: 0; background-color: rgb(211 245 230); overflow-x: hidden; transition: 0.5s; overflow-y: scroll";
+    //Creation of the X-shaped button used for closing the menu
     let closeButtonDiv = document.createElement("div")
     closeButtonDiv.id = "gamificationExtensionCloseButtonDiv"
     closeButtonDiv.style = "display: flex; justify-content: space-between"
@@ -23,42 +28,48 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
     closeButton.id = "gamificationExtensionSidenavCloseButton";
     closeButton.textContent = "Close Menu";
     closeButton.style = "bottom: 10%; right: 50%; background-color: transparent; width: 40; height: 40";
-    closeButton.onclick = function () {
+    closeButton.onclick = () => {
         document.getElementById("gamificationExtensionSidenav").style.width = "0";
     };
+    //Creation of the button used for ending a testing session
     let endButton = document.createElement("button");
     closeButtonDiv.appendChild(endButton);
     endButton.id = "gamificationExtensionEndSessionButton";
     endButton.textContent = "End Session";
     endButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
-    endButton.onclick = function () {
-        //chiusura della sidenav
+    endButton.onclick = () => {
+        //Closure and removal of the extension menu
         document.getElementById("gamificationExtensionSidenav").style.width = "0";
         document.getElementById("gamificationExtensionSidenav").remove()
         document.getElementById("gamificationExtensionSidenavButton").remove()
 
-        //rimozione della stella se la pagina è una vista per la prima volta
+        //Removal of the star-shaped easter egg, if present
         let star = document.getElementById("gamificationExtensionNewPageStar");
         if (star != null) {
             document.body.removeChild(star);
         }
+
+        //Removal of eventual overlays present in the page (widget highlights, signaled issues)
         removeBorders();
         removeBackground()
+
+        //Removal of the progress bar
         let topnav = document.getElementById("gamificationExtensionTopnav");
         if (topnav != null) {
             document.body.removeChild(topnav);
         }
 
-        //mostrare modal di riepilogo
+        //Creation and display of the recap modal
         chrome.storage.sync.get(
             ["visitedPages", "newPages", "pageStats", "currentURL", "profileInfo", "pageSession"],
-            function (result) {
+            (result) => {
                 let profileInfo = JSON.parse(result.profileInfo)
                 let visitedPages = result.visitedPages;
                 let newPages = result.newPages;
                 let modalContainer = document.createElement("div");
                 let pageStats = JSON.parse(result.pageStats);
                 chrome.runtime.sendMessage({
+                    //Fetching of previous records in the page made by the user and of global user records
                     mess: "fetch",
                     body: "/pages/records/" + profileInfo.username,
                     method: "get"
@@ -70,26 +81,31 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                         body: "/users/" + profileInfo.username + "/records"
                     }, (response2) => {
                         let userRecords = response2.data
+                        //Past highest scores of user obtained to be compared with scores obtained in the current session
                         let highestNewWidgets = userRecords.highestNewWidgets
                         let highestCoverage = userRecords.highestCoverage
                         let highestNewVisitedPages = userRecords.highestNewVisitedPages
-                        for (let page of pageStats) {
+                        let newWidgets = 0
+                        for (let page of pageStats) { //Records are updated for each page visited during the session
                             function filterURL(event) {
                                 return event.url === page.url
                             }
                             let pageRecords = records.filter(filterURL)[0]
+                            //Comparison between the amount of new elements found during the current session and the record for the page
                             let highestLinks = page.newLinks.length > pageRecords.highestLinks ? page.newLinks.length : undefined
                             let highestInputs = page.newInputs.length > pageRecords.highestInputs ? page.newInputs.length : undefined
                             let highestButtons = page.newButtons.length > pageRecords.highestButtons ? page.newButtons.length : undefined
                             let highestSelects = page.newSelects.length > pageRecords.highestSelects ? page.newSelects.length : undefined
+                            //Record about new widgets is updated if total of new widgets found in the page higher than previous record 
                             let highestWidgets = ((page.newLinks.length + page.newInputs.length + page.newButtons.length + page.newSelects.length) >= pageRecords.highestWidgets) ? page.newLinks.length + page.newInputs.length + page.newButtons.length + page.newSelects.length : undefined
-                            if (highestWidgets && highestWidgets > highestNewWidgets) {
-                                highestNewWidgets = highestWidgets
-                            }
+                            //Count of new widgets found during session increased with new widgets found in the page
+                            newWidgets += page.newLinks.length + page.newInputs.length + page.newButtons.length + page.newSelects.length
+                            //Record about coverage updated in case page has higher coverage than previous record (even counting pages of the current session)
                             if (pageRecords.coverage > highestCoverage) {
                                 highestCoverage = pageRecords.coverage
                             }
                             chrome.runtime.sendMessage({
+                                //Updating the records for each page
                                 mess: "fetch",
                                 body: "/pages/records/" + profileInfo.username,
                                 method: "post",
@@ -97,16 +113,23 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                 firstTime: false
                             })
                         }
+                        //Records about new visited pages and new widgets found are updated if they're beaten
                         if (newPages.length > highestNewVisitedPages) {
                             highestNewVisitedPages = newPages.length
                         }
+                        if (newWidgets > highestNewWidgets) {
+                            highestNewWidgets = newWidgets
+                        }
                         chrome.runtime.sendMessage({
+                            //Updates user records
                             mess: "fetch",
                             method: "post",
                             body: "/users/" + profileInfo.username + "/records",
                             content: { username: profileInfo.username, highestNewVisitedPages: highestNewVisitedPages, highestNewWidgets: highestNewWidgets, highestCoverage: highestCoverage }
                         }, () => {
+                            //Function that checks whether the user has reached one of the best three position in a leaderboard and unlocks a new avatar
                             leaderboardAvatars()
+                            //Creation of the recap modal
                             modalContainer.id = "gamificationExtensionModalContainer";
                             modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
                             let innerModal = document.createElement("div");
@@ -130,6 +153,7 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                             let newInputs = 0
                             let newButtons = 0
                             let newSelects = 0;
+                            //Count of all widgets interacted with during the session and of the new ones found
                             for (let i = 0; i < pageStats.length; i++) {
                                 totalLinks += pageStats[i].interactedLinks.length;
                                 totalInputs += pageStats[i].interactedInputs.length;
@@ -146,6 +170,7 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                 "\nButtons clicked in this session: " + totalButtons + "\nButtons clicked for the first time: " + newButtons +
                                 "\nDropdown menus interacted with in this session: " + totalSelects + "\nDropdown menus interacted with for the first time: " + newSelects;
                             innerModal.appendChild(modalContent);
+                            //Closure of the modal, whether done with the X-button of by clicking outside of the modal, reloads the page and removes the event listeners
                             modalSpan.onclick = () => {
                                 modalContainer.style.display = "none";
                                 location.reload()
@@ -159,19 +184,23 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                             document.body.appendChild(modalContainer);
 
                             chrome.runtime.sendMessage({
+                                //Fetching information about the sequence of performed actions, to create SikuliX and Selenium scripts
                                 mess: "fetch",
                                 body: "/pages/crops/" + profileInfo.username,
                                 method: "get"
                             }, (response3) => {
                                 let ret = response3.data
+                                //A new avatar is unlocked if the user has interacted with at least three different tipes of widgets
                                 if (countWidgets(ret) >= 3) {
                                     countActionsAvatar()
                                 }
                                 chrome.storage.sync.get(["baseURL"], (result) => {
                                     let baseURL = result.baseURL
+                                    //Creation of a .zip folder containing the SikuliX script (a second .zip folder) and the Selenium script
                                     let zip = new JSZip()
                                     let folder = zip.folder("scripts")
                                     let inner = folder.folder("script.sikuli")
+                                    //Creation, for each imageUrl corresponding to the screenshot of an interacted element, of an image file used by SikuliX
                                     for (let i = 0; i < ret.length; i++) {
                                         let byteString = atob(ret[i].imageUrl.split(',')[1])
                                         let mimeString = ret[i].imageUrl.split(',')[0].split(':')[1].split(';')[0]
@@ -184,8 +213,10 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                         inner.file(`img${i + 1}.png`, blob)
 
                                     }
+                                    //Creation of the Python file used by SikuliX
                                     let text = `popup("Beginning replay of past session")\n`
                                     for (let i = 0; i < ret.length; i++) {
+                                        //Checking if the image is currently on screen and scrolling down until it's found if not present
                                         text += "max = 20\n"
                                         text += "wait(5)"
                                         text += "while(max > 0):\n"
@@ -196,29 +227,36 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                         text += "       max=-1\n"
                                         text += "       break\n"
                                         if (ret[i].widgetType === "input") {
+                                            //If a widget is an input field the necessary content is written by the script
                                             for (let j = 0; j < i; j++) {
                                                 if (ret[j].widgetType === "input" && i > 0 && ret[i].widgetId === ret[j].widgetId) {
+                                                    //Check if an input field already has an inserted value, which is replaced
                                                     text += `type(Pattern("img${i + 1}.png").similar(0.55), "a", KeyModifier.CTRL)\n`
                                                     text += `type(Pattern("img${i + 1}.png").similar(0.55), Key.BACKSPACE)\n`
                                                 }
                                             }
                                             text += `type(Pattern("img${i + 1}.png").similar(0.55), "${ret[i].textContent}"`
+                                            //In case the input field is the last one of its form, and the form is submitted with the ENTER key, the script handles submission in said way
                                             if (ret[i].lastInput) {
                                                 text += ` + Key.ENTER)\n`
                                             } else {
                                                 text += `)\n`
                                             }
                                         } else {
+                                            //Other widgets simply have to be clicked
                                             text += `click(Pattern("img${i + 1}.png").similar(0.55))\n`
                                             if (ret[i].widgetType === "select") {
+                                                //Selection of the adequate element in a dropdown menu is done by typing the entire string associated to the option
                                                 text += `type("${ret[i].selectIndex}")\n`
                                             }
                                         }
+                                        //Scrolling back up to the beginning of the page to start back for the next operation
                                         text += "wheel(WHEEL_UP, 20-max)\n"
                                     }
                                     text += `popup("Ending replay of past session")\n`
                                     inner.file("script.py", text)
 
+                                    //Definition of the starting structure used by a Selenium script
                                     let seleniumFile = {
                                         id: "idProject",
                                         version: "2.0",
@@ -241,6 +279,7 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                         plugins: []
                                     }
                                     let commands = []
+                                    //Command used to open the starting URL of the session
                                     let openCommand = {
                                         id: `idCommand0`,
                                         comment: "",
@@ -251,37 +290,34 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                     }
                                     commands.push(openCommand)
                                     for (let i = 0; i < ret.length; i++) {
-                                        let els = ret[i].widgetType === "link" ? document.getElementsByTagName("a") : document.getElementsByTagName(ret[i].widgetType)
-                                        let buttons = []
-                                        if (ret[i].widgetType === "button") {
-                                            for (let j = 0; j < els.length; j++) {
-                                                if (!isButtonOfExtension(els[j])) {
-                                                    buttons.push(els[j])
-                                                }
-                                            }
-                                            els = buttons
-                                        }
+                                        //Creation of a new command associated to each interacted element
                                         let commandObj = {
                                             id: `idCommand${i + 1}`,
                                             comment: "",
+                                            //Selection of the adequate command based on the element type (typing for forms that have a text content, selecting for a dropdown menu, clicking for links and buttons)
                                             command: ret[i].textContent && ret[i].widgetType !== "link" ? "type" : ret[i].selectIndex ? "select" : "click",
                                             target: "",
                                             targets: [],
+                                            //Insertion of the value to be typed/selected by the script in relation to the element
                                             value: ret[i].textContent && ret[i].widgetType !== "link" ? ret[i].textContent : ret[i].selectIndex ? `label=${ret[i].selectIndex}` : ""
                                         }
+                                        //The CSS selector is used as the main identified of the element for the script
                                         commandObj.target = `css=${ret[i].selector}`
                                         commandObj.targets.push([`css=${ret[i].selector}`, "css:finder"])
 
+                                        //Other possible selectors are inserted, if they exist
                                         if (ret[i].elementId) {
                                             commandObj.targets.push([`id=${ret[i].elementId}`, "id"])
                                         }
                                         if (ret[i].widgetType === "link") {
                                             commandObj.targets.push([`linkText=${ret[i].textContent}`, "linkText"])
                                         }
+                                        //Insertion of the xpath as another possible selector
                                         commandObj.targets.push([`xpath=${ret[i].xpath}`, "xpath:idRelative"])
 
                                         commands.push(commandObj)
                                         if (ret[i].lastInput) {
+                                            //Creation of an additional command used for entering values in a form, when its last value has been inserted
                                             let sendCommand = {
                                                 id: `idCommandSendKeys`,
                                                 comment: "",
@@ -294,11 +330,12 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                         }
                                     }
                                     seleniumFile.tests[0].commands = commands
+                                    //Creation of the .side file representing the script
                                     folder.file("gamification-extension-selenium-testing-project.side", JSON.stringify(seleniumFile))
+                                    //Download of the entire .zip folder
                                     zip.generateAsync({ type: "blob" }).then((blob) => {
                                         saveAs(blob, "scripts.zip");
                                     });
-                                    chrome.runtime.sendMessage({ obj: obj, mess: "download" });
                                 })
                             })
                         })
@@ -306,10 +343,12 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                 })
             }
         );
+        //Reset of information about current session to avoid extension elements being present in pages when not needed
         chrome.storage.sync.set({ startingURL: "", pageStats: JSON.stringify([]) });
     };
     let buttonsDiv = document.createElement("div")
     sideDiv.appendChild(buttonsDiv)
+    //Creation of the button that highlights the interacted elements
     let toggleClickedElementsButton = document.createElement("button");
     buttonsDiv.appendChild(toggleClickedElementsButton);
     buttonsDiv.id = "gamificationExtensionButtonsDiv"
@@ -317,26 +356,29 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
     toggleClickedElementsButton.id = "gamificationExtensionToggleClickedElementsButton";
     toggleClickedElementsButton.textContent = "Show Interacted Elements";
     toggleClickedElementsButton.style = " background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;"
-    toggleClickedElementsButton.onclick = function () {
+    toggleClickedElementsButton.onclick = () => {
+        //Borders are removed and redrawn
         removeBorders()
         drawBorderOnInteracted()
         chrome.storage.sync.set({ overlayMode: "interacted" })
     };
+    //Creation of the button that removes all overlays
     let removeOverlaysButton = document.createElement("button");
     buttonsDiv.appendChild(removeOverlaysButton);
     removeOverlaysButton.id = "gamificationExtensionRemoveOverlaysButton";
     removeOverlaysButton.textContent = "Remove Overlays";
     removeOverlaysButton.style = " background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;"
-    removeOverlaysButton.onclick = function () {
+    removeOverlaysButton.onclick = () => {
         removeBorders()
         chrome.storage.sync.set({ overlayMode: "none" })
     };
+    //Creation of the button that highlights all interactable elements
     let toggleAllElementsButton = document.createElement("button");
     buttonsDiv.appendChild(toggleAllElementsButton);
     toggleAllElementsButton.id = "gamificationExtensionToggleAllElementsButton";
     toggleAllElementsButton.textContent = "Show All Elements";
     toggleAllElementsButton.style = " background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;"
-    toggleAllElementsButton.onclick = function () {
+    toggleAllElementsButton.onclick = () => {
         drawBorderOnAll()
         chrome.storage.sync.set({ overlayMode: "all" })
     };
@@ -347,6 +389,7 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
             return event.url === result.currentURL;
         }
         chrome.runtime.sendMessage({
+            //Fetching information about total amount of elements interacted with in the page
             mess: "fetch",
             body: "/pages/actions/" + profileInfo.username,
             method: "get",
@@ -360,6 +403,7 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
             let noNewPages = newPages === undefined;
             let noVisitedPages = visitedPages === undefined;
 
+            //Creation of the table containing scores (for all kinds of elements: current, new and total)
             let table = document.createElement("table");
             table.id = "gamificationExtensionPageStatsTable"
             table.style = "height:100px; width:100%"
@@ -468,6 +512,7 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
             sideDiv.appendChild(table);
 
             chrome.runtime.sendMessage({
+                //Fetching the amount of visited pages for the page score table
                 mess: "fetch",
                 method: "get",
                 body: "/pages/records/" + profileInfo.username,
@@ -475,6 +520,7 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
             }, (response2) => {
                 let records = response2.data
                 let pageRecords = records.filter(filterURL)[0]
+                //Creation of the table containing scores about pages (found in current session, new and total)
                 let tablePages = document.createElement("table");
                 tablePages.id = "gamificationExtensionPagesTable"
                 tablePages.style = "width:100%"
@@ -532,12 +578,14 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                 }
 
                 chrome.runtime.sendMessage({
+                    //Fetching info about current page to know about existance or not of element types
                     mess: "fetch",
                     method: "get",
                     body: "/pages",
                     content: { url: result.currentURL }
                 }, (response3) => {
                     let pageInfo = response3.data[0]
+                    //Creation of the progress bars related to the different types of elements (links, buttons, forms, dropdown menus)
                     let linksProgressTop = document.createElement("div");
                     sideDiv.appendChild(linksProgressTop);
                     linksProgressTop.style = "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";
@@ -573,6 +621,7 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                     selectsProgress.textContent = pageInfo.totalSelectObjects > 0 ? "Dropdown Menus Progress: " + selectsCoverage.toFixed(2) + "%" : "There are no dropdown menus in this page";
 
                     chrome.runtime.sendMessage({
+                        //Fetching past records of the user to show them in the menu
                         mess: "fetch",
                         method: "get",
                         body: "/users/" + profileInfo.username + "/records"
@@ -610,13 +659,14 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
     }
     );
     chrome.storage.sync.get(["interactionMode"], function (result) {
+        //Creation of the two different buttons used to switch between interaction mode and issue reporting mode
         let interactionModeDiv = document.createElement("div")
         interactionModeDiv.id = "gamificationExtensionInteractionModeDiv"
         interactionModeDiv.style = "display: flex; flex-direction: column; align-items: center;"
         sideDiv.appendChild(interactionModeDiv)
         let interactionMode = result.interactionMode
         let currentModeText = document.createElement("h3")
-        let currentText = interactionMode === "interact" ? "Current Mode: Page Interaction" : interactionMode === "signal" ? "Current Mode: Signal Issues" : "Current Mode: Replay Session"
+        let currentText = interactionMode === "interact" ? "Current Mode: Page Interaction" : "Current Mode: Signal Issues"
         currentModeText.textContent = currentText
         currentModeText.style = "text-align: center; color: #2215E2"
         interactionModeDiv.appendChild(currentModeText)
@@ -632,35 +682,29 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
         enterInteractModeButton.textContent = "Interact with Page"
         enterInteractModeButton.style = " background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;"
         enterInteractModeButton.style.display = interactionMode !== "interact" ? "flex" : "none"
-        enterSignalModeButton.onclick = function () {
+        enterSignalModeButton.onclick = () => {
+            //Removes highlights on widgets, draws issue backgrounds and hides buttons that show/hide borders on widgets
             chrome.storage.sync.set({ interactionMode: "signal" })
             enterSignalModeButton.style.display = "none"
             enterInteractModeButton.style.display = "flex"
             currentModeText.textContent = "Current Mode: Signal Issues"
             document.getElementById("gamificationExtensionButtonsDiv").style.display = "none"
-            //document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "none"
-            //document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "none"
-            //document.getElementById("gamificationExtensionToggleAllElementsButton").style.display = "none"
             removeBorders()
             drawBackground()
         }
-        enterInteractModeButton.onclick = function () {
+        enterInteractModeButton.onclick = () => {
+            //Removes issue backgrounds, draws highlights and shows buttons
             chrome.storage.sync.set({ interactionMode: "interact" })
             enterSignalModeButton.style.display = "flex"
             enterInteractModeButton.style.display = "none"
             currentModeText.textContent = "Current Mode: Page Interaction"
             document.getElementById("gamificationExtensionButtonsDiv").style.display = "flex"
-            //document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "flex"
-            //document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "flex"
-            //document.getElementById("gamificationExtensionToggleAllElementsButton").style.display = "flex"
             removeBackground()
             drawBorders()
         }
+        //Buttons for changing how widgets are highlighted aren't shown if the menu is created while in signaling mode
         if (interactionMode === "signal") {
             document.getElementById("gamificationExtensionButtonsDiv").style.display = "none"
-            //document.getElementById("gamificationExtensionToggleClickedElementsButton").style.display = "none"
-            //document.getElementById("gamificationExtensionRemoveOverlaysButton").style.display = "none"
-            //document.getElementById("gamificationExtensionToggleAllElementsButton").style.display = "none"
         }
     })
 }

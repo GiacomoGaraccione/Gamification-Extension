@@ -4,6 +4,12 @@ const db = require("./db.js")
 const utilities = require("./utilities.js")
 const bcrypt = require("bcrypt")
 
+/**
+ * Adds a new user to the database.
+ * Creates entries specifying the user has the three default avatars and no records yet.
+ * @param user An object containing information about the new user
+ * @returns Nothing
+ */
 exports.addUser = function (user) {
     return new Promise((resolve, reject) => {
         const salt = bcrypt.genSaltSync(10);
