@@ -201,10 +201,12 @@ chrome.storage.sync.get(["profileInfo", "startingURL", "currentURL"], function (
           url: url,
         });
       } else {
-        chrome.tabs.update(tab.id, { highlighted: true });
+        chrome.runtime.sendMessage({
+          mess: "close",
+          id: tab.id
+        })
       }
     }
-
   });
 
   loginButton.addEventListener("click", (event) => {

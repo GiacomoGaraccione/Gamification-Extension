@@ -173,12 +173,18 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                             //Closure of the modal, whether done with the X-button of by clicking outside of the modal, reloads the page and removes the event listeners
                             modalSpan.onclick = () => {
                                 modalContainer.style.display = "none";
-                                location.reload()
+                                //location.reload()
+                                chrome.runtime.sendMessage({
+                                    mess: "end"
+                                })
                             };
                             window.onclick = (event) => {
                                 if (event.target === modalContainer) {
                                     modalContainer.style.display = "none";
-                                    location.reload()
+                                    //location.reload()
+                                    chrome.runtime.sendMessage({
+                                        mess: "end"
+                                    })
                                 }
                             };
                             document.body.appendChild(modalContainer);

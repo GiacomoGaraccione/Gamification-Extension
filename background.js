@@ -4,7 +4,13 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.mess === "create") {
     chrome.tabs.create({ url: chrome.runtime.getURL("main/mainTab.html") });
     sendResponse({ mess: "Main tab opened correctly" });
+  } else if (request.mess === "close") {
+    chrome.tabs.remove(sender.tab.id)
+    chrome.tabs.update(request.mess.id, { highlighted: true });
+  } else if (request.mess === "end") {
+    chrome.tabs.update(sender.tab.id, { url: chrome.runtime.getURL("main/mainTab.html") })
   } else if (request.mess === "openNew") {
+    chrome.tabs.remove(sender.tab.id)
     chrome.tabs.create({
       url: request.url,
     });
