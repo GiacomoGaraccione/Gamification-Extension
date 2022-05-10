@@ -28,6 +28,7 @@ let highestNewWidgets = document.getElementById("highestNewWidgets")
 let highestCoverage = document.getElementById("highestCoverage")
 let loginDiv = document.getElementById("loginDiv")
 let loginButton = document.getElementById("loginButton")
+let missingAvatars = document.getElementById("missingAvatars")
 
 let url = "";
 let username = ""
@@ -379,27 +380,77 @@ chrome.storage.sync.get(["profileInfo", "startingURL", "currentURL"], function (
                 changeSelectedAvatar(divClicked, otherDivs)
               })
             }
-            if (achievements.length === 0) {
-              let h3 = document.createElement("h3")
-              h3.textContent = "You have obtained no achievements!"
-              h3.style = "text-align: center; color: #2215E2"
-              achievementsContainer.appendChild(h3)
-            } else {
-              achievements.sort(compareAchievements)
-              achievements.map((a) => {
+            chrome.runtime.sendMessage({
+              mess: "fetch",
+              method: "get",
+              body: "/avatars/hints"
+            }, (response4) => {
+              let is = []
+              avatars.map((av) => is.push(av.idAv))
+              function filters(event) {
+                let ind = is.indexOf(event.idAv)
+                return ind === -1
+              }
+              let avHints = response4.data.filter(filters)
+              avHints.map((a) => {
                 let div = document.createElement("div")
                 div.className = "file"
-                let img = document.createElement("img")
-                img.style = "max-width:50%; max-height:50%;"
-                img.src = a.path
-                div.appendChild(img)
+                let h = document.createElement("h3")
+                h.style = "text-align: center"
+                h.textContent = "Avatar still missing. Hint:"
+                div.appendChild(h)
                 let p = document.createElement("h3")
                 p.style = "text-align: center"
-                p.textContent = a.text
+                p.textContent = a.hint
                 div.appendChild(p)
-                achievementsContainer.appendChild(div)
+                missingAvatars.appendChild(div)
               })
-            }
+              if (avHints.length === 0) {
+                missingAvatars.style.display = "none"
+              }
+
+              chrome.runtime.sendMessage({
+                mess: "fetch",
+                method: "get",
+                body: "/achievements/hints"
+              }, (response3) => {
+                let ids = []
+                achievements.map((ac) => ids.push(ac.idAch))
+                function filterId(event) {
+                  let ind = ids.indexOf(event.idAch)
+                  return ind === -1
+                }
+                let hints = response3.data.filter(filterId)
+                achievements.sort(compareAchievements)
+                achievements.map((a) => {
+                  let div = document.createElement("div")
+                  div.className = "file"
+                  let img = document.createElement("img")
+                  img.style = "max-width:50%; max-height:50%;"
+                  img.src = a.path
+                  div.appendChild(img)
+                  let p = document.createElement("h3")
+                  p.style = "text-align: center"
+                  p.textContent = a.text
+                  div.appendChild(p)
+                  achievementsContainer.appendChild(div)
+                })
+                hints.map((a) => {
+                  let div = document.createElement("div")
+                  div.className = "file"
+                  let h = document.createElement("h3")
+                  h.style = "text-align: center"
+                  h.textContent = "Achievement still missing. Hint:"
+                  div.appendChild(h)
+                  let p = document.createElement("h3")
+                  p.style = "text-align: center"
+                  p.textContent = a.hint
+                  div.appendChild(p)
+                  achievementsContainer.appendChild(div)
+                })
+              })
+            })
+
           })
         })
       }

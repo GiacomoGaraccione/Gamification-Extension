@@ -30,3 +30,17 @@ exports.getAvatarsProgress = function () {
         })
     })
 }
+
+exports.getAvatarsHints = function () {
+    return new Promise((resolve, reject) => {
+        const sql = "SELECT * FROM AvatarHints"
+        db.all(sql, [], (err, rows) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                resolve(rows)
+            }
+        })
+    })
+}

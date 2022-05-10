@@ -91,7 +91,7 @@ exports.updateUser = function (user) {
 
 exports.getUserAvatars = function (username) {
     return new Promise((resolve, reject) => {
-        const sql = "SELECT name, url FROM UserAvatars, Avatars WHERE UserAvatars.idAv = Avatars.idAv AND UserAvatars.username = ?"
+        const sql = "SELECT UserAvatars.idAv, name, url FROM UserAvatars, Avatars WHERE UserAvatars.idAv = Avatars.idAv AND UserAvatars.username = ?"
         db.all(sql, [username], (err, rows) => {
             if (err) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code

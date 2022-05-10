@@ -388,6 +388,22 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           sendResponse({ data: "ERROR" })
         }
       })
+    } else if (request.body.indexOf("/achievements/hints") >= 0 && request.method === "get") {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          sendResponse({ data: data })
+        })
+      })
+    } else if (request.body.indexOf("/avatars/hints") >= 0 && request.method === "get") {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          sendResponse({ data: data })
+        })
+      })
     }
   }
 

@@ -539,6 +539,17 @@ app.get("/api/achievements/progress", (req, res) => {
             utilities.resolveErrors(err, res)
         })
 })
+
+app.get("/api/achievements/hints", (req, res) => {
+    achievementDao.getAchievementsHints()
+        .then((achs) => {
+            res.json(achs)
+        })
+        .catch((err) => {
+            utilities.resolveErrors(err, res)
+        })
+})
+
 //------------------------ Avatar APIs ---------------------------------
 
 app.get("/api/avatars", (req, res) => {
@@ -556,6 +567,15 @@ app.get("/api/avatars/progress", (req, res) => {
         .then((avs) => {
             res.json(avs)
         })
+        .catch((err) => {
+            utilities.resolveErrors(err, res)
+        })
+})
+
+app.get("/api/avatars/hints", (req, res) => {
+    avatarDao.getAvatarsHints().then((avs) => {
+        res.json(avs)
+    })
         .catch((err) => {
             utilities.resolveErrors(err, res)
         })
