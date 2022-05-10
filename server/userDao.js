@@ -45,7 +45,7 @@ exports.addUser = function (user) {
 
 exports.getUsers = function () {
     return new Promise((resolve, reject) => {
-        const sql = "SELECT username FROM Users"
+        const sql = "SELECT username, selectedAvatar FROM Users"
         db.all(sql, [], (err, rows) => {
             if (err) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code

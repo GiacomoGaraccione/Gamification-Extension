@@ -3,6 +3,8 @@ const morgan = require('morgan');
 const utilities = require("./utilities.js")
 const userDao = require("./userDao.js")
 const pageDao = require("./pageDao.js")
+const achievementDao = require("./achievementDao.js")
+const avatarDao = require("./avatarDao.js")
 
 const { query, check, body, param, validationResult } = require('express-validator');
 
@@ -11,6 +13,10 @@ const PORT = 3001;
 const app = new express();
 app.use(morgan('tiny'));
 app.use(express.json());
+app.use(function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    next();
+});
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}/`)
@@ -57,7 +63,9 @@ app.post("/api/users", [
 
 app.get("/api/users", (req, res) => {
     userDao.getUsers()
-        .then((users) => res.json(users))
+        .then((users) => {
+            res.json(users)
+        })
         .catch((err) => {
             utilities.resolveErrors(err, res)
         })
@@ -508,4 +516,47 @@ app.patch("/api/pages/crops/:username", [
                 utilities.resolveErrors(err, res)
             })
     }
+})
+
+//------------------------ Achievement APIs ---------------------------------
+
+app.get("/api/achievements", (req, res) => {
+    achievementDao.getAchievements()
+        .then((achs) => {
+            res.json(achs)
+        })
+        .catch((err) => {
+            utilities.resolveErrors(err, res)
+        })
+})
+
+app.get("/api/achievements/progress", (req, res) => {
+    achievementDao.getAchievementsProgress()
+        .then((achs) => {
+            res.json(achs)
+        })
+        .catch((err) => {
+            utilities.resolveErrors(err, res)
+        })
+})
+//------------------------ Avatar APIs ---------------------------------
+
+app.get("/api/avatars", (req, res) => {
+    avatarDao.getAvatars()
+        .then((avs) => {
+            res.json(avs)
+        })
+        .catch((err) => {
+            utilities.resolveErrors(err, res)
+        })
+})
+
+app.get("/api/avatars/progress", (req, res) => {
+    avatarDao.getAvatarsProgress()
+        .then((avs) => {
+            res.json(avs)
+        })
+        .catch((err) => {
+            utilities.resolveErrors(err, res)
+        })
 })
