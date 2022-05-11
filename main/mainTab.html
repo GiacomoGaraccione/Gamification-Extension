@@ -1,115 +1,124 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Gamification Extension</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" type="text/css" href="mainTab.css">
-    </head>
-    <body style="background-color: rgb(211 245 230);">
-        <header>
-            <h1 style="text-align: center; color:#2215E2" id="title">Main Page</h1>
-        </header>
-        <div class="wrapper" id="firstWrapper">
-            <div class="blocks">
-                <div class="file" id="newProfileDiv">
-                    <div>
-                        <button class="btn select-file" id="profileButton">Create a new profile</button>
-                    </div> 
-                 </div>
-                
-                <div class="file" id="loginDiv">
-                    <div>
-                        <h2 style="text-align: center;">Write your credentials here</h2>
-                        <input type="text" id="usernameLogin" placeholder="username">
-                        <input type="password" id="passwordLogin" placeholder="password">
-                        <button class="btn select-file" id="loginButton">Login</button>
-                    </div>
-                </div>
-                <div class="file" style="display:none" id="viewProfileDiv">
-                    <div>
-                        <button class="btn select-file" id="viewProfileButton">View Profile</button>
-                    </div>                
-                </div>
-                <div class="file" >
-                    <div>
-                        <button class="btn select-file" id="viewLeaderboardButton">View Leaderboard</button>
-                    </div>                
-                </div>
-            </div>
-            <div class="blocks">
-                <div style="display: none; align-items: center;" id="urlDiv">
-                    <h2 style="text-align: center; color: #2215E2">Paste URL of Page to Test</h2>
-                    <input type="url" id="pageURL">
-                    <button class="btn select-file" id="pageURLButton">Go to Page</button>
-                </div>
-            </div>
-            <div class="files">
-                <div style="display: none" id="logoutDiv">
-                    <button class="btn select-file" id="logoutButton">Logout</button>
-                </div>
-            </div>
-        </div>
-        <div class="wrapper" id="secondWrapper" style="display: none;">
-            <div class="blocks">
-                <div class="file">
-                    <h2 style="text-align: center;">Write your credentials here</h2>
-                    <input type="text" id="usernameField" placeholder="username">
-                    <input type="password" id="passwordField" placeholder="password">
-                </div>
-            </div>
-            <div class="blocks">
-                <div class="file" id="greenAvatarContainer">
-                    <h2 style="text-align: center;">Green Avatar</h2>
-                    <img src="../img/default_green.png" style="max-width:100%; max-height:100%;" id="greenAvatar">
-                </div>
-                <div class="file" id="redAvatarContainer">
-                    <h2 style="text-align: center;">Red Avatar</h2>
-                    <img src="../img/default_red.png" style="max-width:100%; max-height:100%;" id="redAvatar">
-                </div>
-                <div class="file" id="blueAvatarContainer">
-                    <h2 style="text-align: center;">Blue Avatar</h2>
-                    <img src="../img/default_blue.png" style="max-width:100%; max-height:100%;" id="blueAvatar">
-                </div>
-            </div>
-            <div class="blocks" style="display: none;" id="confirmButtonWrapper">
-                <button class="btn select-file" id="confirmProfileButton">Confirm Profile</button>
-            </div>
-        </div>
-        <div class="wrapper" id="thirdWrapper" style="display: none;">
-            <div class="blocks">
-                <h2 style="text-align: center; color: #2215E2">Your Avatars</h2>
-            </div>
-            <div class="blocks" id="selectableAvatars" style="overflow-y: auto; white-space: nowrap; width: auto;"></div>
-            <div class="blocks" id="missingAvatars" style="overflow-y: auto;  width: auto;"></div>
-            <div class="blocks">
-                <h2 style="text-align: center; color: #2215E2">Your Achievements</h2>
-            </div>
-            <div class="blocks" id="achievements" style="overflow-y: auto; width: auto; "></div>
-            <div class="blocks">
-                <button class="btn select-file" id="goBackButton">Go Back</button>
-            </div>
-        </div>
-        <div class="wrapper" id="fourthWrapper" style="display: none;">
-            <div class="blocks">
-                <h1 style="text-align: center; color: #2215E2">Leaderboard</h1>
-            </div>
-            <div class="blocks" id="highestNewVisitedPages">
-                <h2 style="text-align: center; color:#2215E2">Most New Pages Viewed In a Session</h2>
-            </div>
-            <div class="blocks" id="highestNewWidgets">
-                <h2 style="text-align: center; color:#2215E2">Most New Widgets Clicked In a Session</h2>
-            </div>
-            <div class="blocks" id="highestCoverage">
-                <h2 style="text-align: center; color:#2215E2">Highest Page Coverage Reached</h2>
-            </div>
-            <div class="files">
-                <div class="file">
-                    <button class="btn select-file" id="returnButton">Go Back</button>
-                </div>
-            </div>
-        </div>
 
-        <script src="../jquery.js"></script>
-        <script src="mainTab.js"></script>
-    </body>
+<head>
+    <title>Gamification Extension</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="mainTab.css">
+</head>
+
+<body style="background-color: rgb(211 245 230);">
+    <header>
+        <h1 style="text-align: center; color:#2215E2" id="title">Main Page</h1>
+    </header>
+    <div class="wrapper" id="firstWrapper">
+        <div class="blocks">
+            <div class="file" id="newProfileDiv">
+                <div>
+                    <button class="btn select-file" id="profileButton">Create a new profile</button>
+                </div>
+            </div>
+
+            <div class="file" id="loginDiv">
+                <div>
+                    <h2 style="text-align: center;">Write your credentials here</h2>
+                    <input type="text" id="usernameLogin" placeholder="username">
+                    <input type="password" id="passwordLogin" placeholder="password">
+                    <button class="btn select-file" id="loginButton">Login</button>
+                </div>
+            </div>
+            <div class="file" style="display:none" id="viewProfileDiv">
+                <div>
+                    <button class="btn select-file" id="viewProfileButton">View Profile</button>
+                </div>
+            </div>
+            <div class="file">
+                <div>
+                    <button class="btn select-file" id="viewLeaderboardButton">View Leaderboard</button>
+                </div>
+            </div>
+        </div>
+        <div class="blocks">
+            <div style="display: none; align-items: center;" id="urlDiv">
+                <h2 style="text-align: center; color: #2215E2">Paste URL of Page to Test</h2>
+                <input type="url" id="pageURL">
+                <button class="btn select-file" id="pageURLButton">Go to Page</button>
+            </div>
+        </div>
+        <div class="files">
+            <div style="display: none" id="logoutDiv">
+                <button class="btn select-file" id="logoutButton">Logout</button>
+            </div>
+        </div>
+    </div>
+    <div class="wrapper" id="secondWrapper" style="display: none;">
+        <div class="blocks">
+            <div class="file">
+                <h2 style="text-align: center;">Write your credentials here</h2>
+                <input type="text" id="usernameField" placeholder="username">
+                <input type="password" id="passwordField" placeholder="password">
+            </div>
+        </div>
+        <div class="blocks">
+            <div class="file" id="greenAvatarContainer">
+                <h2 style="text-align: center;">Green Avatar</h2>
+                <img src="../img/default_green.png" style="max-width:100%; max-height:100%;" id="greenAvatar">
+            </div>
+            <div class="file" id="redAvatarContainer">
+                <h2 style="text-align: center;">Red Avatar</h2>
+                <img src="../img/default_red.png" style="max-width:100%; max-height:100%;" id="redAvatar">
+            </div>
+            <div class="file" id="blueAvatarContainer">
+                <h2 style="text-align: center;">Blue Avatar</h2>
+                <img src="../img/default_blue.png" style="max-width:100%; max-height:100%;" id="blueAvatar">
+            </div>
+        </div>
+        <div class="blocks" style="display: none;" id="confirmButtonWrapper">
+            <button class="btn select-file" id="confirmProfileButton">Confirm Profile</button>
+        </div>
+    </div>
+    <div class="wrapper" id="thirdWrapper" style="display: none;">
+        <div class="blocs" style="display: none; align-items: center;" id="platinumDiv">
+            <img src="../img/trophy.png" style="width: 200px; height: 200px;">
+            <h1 style="text-align: center; color: #2215E2">You have obtained all the achievements and avatars!
+                Congratulations!</h1>
+            <img src="../img/trophy.png" style="width: 200px; height: 200px;">
+        </div>
+        <div class="blocks">
+            <h2 style="text-align: center; color: #2215E2">Your Avatars</h2>
+        </div>
+        <div class="blocks" id="selectableAvatars" style="overflow-y: auto; white-space: nowrap; width: auto;"></div>
+        <div class="blocks" id="missingAvatars" style="overflow-y: auto;  width: auto;"></div>
+        <div class="blocks">
+            <h2 style="text-align: center; color: #2215E2">Your Achievements</h2>
+        </div>
+        <div class="blocks" id="achievements" style="overflow-y: auto; width: auto; "></div>
+        <div class="blocks">
+            <button class="btn select-file" id="goBackButton">Go Back</button>
+        </div>
+    </div>
+    <div class="wrapper" id="fourthWrapper" style="display: none;">
+        <div class="blocks">
+            <h1 style="text-align: center; color: #2215E2">Leaderboard</h1>
+        </div>
+        <div class="blocks" id="highestNewVisitedPages">
+            <h2 style="text-align: center; color:#2215E2">Most New Pages Viewed In a Session</h2>
+        </div>
+        <div class="blocks" id="highestNewWidgets">
+            <h2 style="text-align: center; color:#2215E2">Most New Widgets Clicked In a Session</h2>
+        </div>
+        <div class="blocks" id="highestCoverage">
+            <h2 style="text-align: center; color:#2215E2">Highest Page Coverage Reached</h2>
+        </div>
+        <div class="files">
+            <div class="file">
+                <button class="btn select-file" id="returnButton">Go Back</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../jquery.js"></script>
+    <script src="mainTab.js"></script>
+</body>
+
 </html>

@@ -450,6 +450,9 @@ chrome.storage.sync.get(["profileInfo", "startingURL", "currentURL"], function (
                   div.appendChild(p)
                   achievementsContainer.appendChild(div)
                 })
+                if (avHints.length === 0 && hints.length === 0) {
+                  document.getElementById("platinumDiv").style.display = "flex"
+                }
               })
             })
 
