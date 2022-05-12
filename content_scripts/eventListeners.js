@@ -46,7 +46,6 @@ linkClickListener = (event, i, pageInfo) => {
                         content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex, selector: selector(els[i]), xpath: xpath(els[i]), elementId: els[i].id },
                         method: "post"
                     }, () => {
-                        //console.log(canvas.toDataURL())
                         chrome.runtime.sendMessage({
                             mess: "fetch",
                             body: "/pages/actions/" + profileInfo.username,

@@ -31,6 +31,22 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
     closeButton.onclick = () => {
         document.getElementById("gamificationExtensionSidenav").style.width = "0";
     };
+    let homeButton = document.createElement("button")
+    homeButton.id = "gamificationExtensionHomeButton"
+    homeButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
+    homeButton.textContent = "Return to Starting Page"
+    homeButton.onclick = () => {
+        chrome.storage.sync.get(["baseURL", "profileInfo"], (result) => {
+            let profileInfo = JSON.parse(result.profileInfo)
+            chrome.runtime.sendMessage({
+                mess: "fetch",
+                body: "/pages/crops/" + profileInfo.username,
+                content: { widgetType: "back", imageUrl: null, widgetId: 0, textContent: null, selectIndex: null, selector: null, xpath: null, elementId: null },
+                method: "post"
+            }, () => window.location = result.baseURL)
+        })
+    }
+    closeButtonDiv.appendChild(homeButton)
     //Creation of the button used for ending a testing session
     let endButton = document.createElement("button");
     closeButtonDiv.appendChild(endButton);
@@ -206,54 +222,60 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                     let zip = new JSZip()
                                     let folder = zip.folder("scripts")
                                     let inner = folder.folder("script.sikuli")
+                                    console.log(ret)
                                     //Creation, for each imageUrl corresponding to the screenshot of an interacted element, of an image file used by SikuliX
                                     for (let i = 0; i < ret.length; i++) {
-                                        let byteString = atob(ret[i].imageUrl.split(',')[1])
-                                        let mimeString = ret[i].imageUrl.split(',')[0].split(':')[1].split(';')[0]
-                                        let ab = new ArrayBuffer(byteString.length);
-                                        let ia = new Uint8Array(ab);
-                                        for (let j = 0; j < byteString.length; j++) {
-                                            ia[j] = byteString.charCodeAt(j);
+                                        if (ret[i].imageUrl) {
+                                            let byteString = atob(ret[i].imageUrl.split(',')[1])
+                                            let mimeString = ret[i].imageUrl.split(',')[0].split(':')[1].split(';')[0]
+                                            let ab = new ArrayBuffer(byteString.length);
+                                            let ia = new Uint8Array(ab);
+                                            for (let j = 0; j < byteString.length; j++) {
+                                                ia[j] = byteString.charCodeAt(j);
+                                            }
+                                            let blob = new Blob([ab], { type: mimeString });
+                                            inner.file(`img${i + 1}.png`, blob)
                                         }
-                                        let blob = new Blob([ab], { type: mimeString });
-                                        inner.file(`img${i + 1}.png`, blob)
-
                                     }
                                     //Creation of the Python file used by SikuliX
                                     let text = `popup("Beginning replay of past session")\n`
                                     for (let i = 0; i < ret.length; i++) {
                                         //Checking if the image is currently on screen and scrolling down until it's found if not present
                                         text += "max = 20\n"
-                                        text += "wait(5)"
-                                        text += "while(max > 0):\n"
-                                        text += `   if not exists(Pattern("img${i + 1}.png").similar(0.55), 0):\n`
-                                        text += "       wheel(WHEEL_DOWN, 1)\n"
-                                        text += "       max-=1\n"
-                                        text += "   else:\n"
-                                        text += "       max=-1\n"
-                                        text += "       break\n"
-                                        if (ret[i].widgetType === "input") {
-                                            //If a widget is an input field the necessary content is written by the script
-                                            for (let j = 0; j < i; j++) {
-                                                if (ret[j].widgetType === "input" && i > 0 && ret[i].widgetId === ret[j].widgetId) {
-                                                    //Check if an input field already has an inserted value, which is replaced
-                                                    text += `type(Pattern("img${i + 1}.png").similar(0.55), "a", KeyModifier.CTRL)\n`
-                                                    text += `type(Pattern("img${i + 1}.png").similar(0.55), Key.BACKSPACE)\n`
-                                                }
-                                            }
-                                            text += `type(Pattern("img${i + 1}.png").similar(0.55), "${ret[i].textContent}"`
-                                            //In case the input field is the last one of its form, and the form is submitted with the ENTER key, the script handles submission in said way
-                                            if (ret[i].lastInput) {
-                                                text += ` + Key.ENTER)\n`
-                                            } else {
-                                                text += `)\n`
-                                            }
+                                        text += "wait(5)\n"
+                                        if (ret[i].widgetType === "back") {
+                                            text += `type("l", Key.CTRL)\ntype("a", Key.CTRL)\ntype("${baseURL}" + Key.ENTER)\n`
                                         } else {
-                                            //Other widgets simply have to be clicked
-                                            text += `click(Pattern("img${i + 1}.png").similar(0.55))\n`
-                                            if (ret[i].widgetType === "select") {
-                                                //Selection of the adequate element in a dropdown menu is done by typing the entire string associated to the option
-                                                text += `type("${ret[i].selectIndex}")\n`
+                                            text += "while(max > 0):\n"
+                                            text += `   if not exists(Pattern("img${i + 1}.png").similar(0.55), 0):\n`
+                                            text += "       wheel(WHEEL_DOWN, 1)\n"
+                                            text += "       max-=1\n"
+                                            text += "   else:\n"
+                                            text += "       max=-1\n"
+                                            text += "       break\n"
+                                            if (ret[i].widgetType === "input") {
+                                                //If a widget is an input field the necessary content is written by the script
+                                                for (let j = 0; j < i; j++) {
+                                                    if (ret[j].widgetType === "input" && i > 0 && ret[i].widgetId === ret[j].widgetId) {
+                                                        //Check if an input field already has an inserted value, which is replaced
+                                                        text += `type(Pattern("img${i + 1}.png").similar(0.55), "a", KeyModifier.CTRL)\n`
+                                                        text += `type(Pattern("img${i + 1}.png").similar(0.55), Key.BACKSPACE)\n`
+                                                    }
+                                                }
+                                                text += `type(Pattern("img${i + 1}.png").similar(0.55), "${ret[i].textContent}"`
+                                                //In case the input field is the last one of its form, and the form is submitted with the ENTER key, the script handles submission in said way
+                                                if (ret[i].lastInput) {
+                                                    text += ` + Key.ENTER)\n`
+                                                } else {
+                                                    text += `)\n`
+                                                }
+                                            } else if (ret[i].widgetType !== "back") {
+                                                //Other widgets simply have to be clicked
+                                                text += `click(Pattern("img${i + 1}.png").similar(0.55))\n`
+                                                if (ret[i].widgetType === "select") {
+                                                    //Selection of the adequate element in a dropdown menu is done by typing the entire string associated to the option
+                                                    text += `type("${ret[i].selectIndex}")\n`
+                                                }
                                             }
                                         }
                                         //Scrolling back up to the beginning of the page to start back for the next operation
@@ -301,15 +323,15 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                             id: `idCommand${i + 1}`,
                                             comment: "",
                                             //Selection of the adequate command based on the element type (typing for forms that have a text content, selecting for a dropdown menu, clicking for links and buttons)
-                                            command: ret[i].textContent && ret[i].widgetType !== "link" ? "type" : ret[i].selectIndex ? "select" : "click",
+                                            command: ret[i].textContent && ret[i].widgetType !== "link" ? "type" : ret[i].selectIndex ? "select" : ret[i].widgetType !== "back" ? "click" : "open",
                                             target: "",
                                             targets: [],
                                             //Insertion of the value to be typed/selected by the script in relation to the element
                                             value: ret[i].textContent && ret[i].widgetType !== "link" ? ret[i].textContent : ret[i].selectIndex ? `label=${ret[i].selectIndex}` : ""
                                         }
                                         //The CSS selector is used as the main identified of the element for the script
-                                        commandObj.target = `css=${ret[i].selector}`
-                                        commandObj.targets.push([`css=${ret[i].selector}`, "css:finder"])
+                                        commandObj.target = ret[i].widgetType !== "back" ? `css=${ret[i].selector}` : baseURL
+                                        ret[i].widgetType !== "back" ? commandObj.targets.push([`css=${ret[i].selector}`, "css:finder"]) : commandObj.targets.push(baseURL)
 
                                         //Other possible selectors are inserted, if they exist
                                         if (ret[i].elementId) {

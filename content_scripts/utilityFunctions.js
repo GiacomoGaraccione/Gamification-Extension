@@ -98,7 +98,8 @@ function isButtonOfExtension(button) {
         button.id === "GamificationExtensionSignalModeButton" ||
         button.id === "GamificationExtensionInteractModeButton" ||
         button.id === "GamificationExtensionSessionModeButton" ||
-        button.id === "gamificationExtensionIssueModalButton"
+        button.id === "gamificationExtensionIssueModalButton" ||
+        button.id === "gamificationExtensionHomeButton"
     );
 }
 
