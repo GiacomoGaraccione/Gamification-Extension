@@ -1,3 +1,10 @@
+let options = {
+    "scrollX": 0,
+    "useCORS": true,
+    "logging": false,
+    "scale": 2,
+    "scrollY": -1 * window.scrollY
+}
 linkClickListener = (event, i, pageInfo) => {
     event.preventDefault()
     let els = document.body.getElementsByTagName("a");
@@ -12,124 +19,95 @@ linkClickListener = (event, i, pageInfo) => {
             return event.url === currentURL
         }
         if (result.interactionMode === "interact") {
-            //Ottenimento coordinate dell'oggetto cliccato, usate per fare il resize dello screenshot
-
-            els[i].attributeStyleMap.clear()
-            let coords = { x: 0, y: 0, height: 0, width: 0 }
-            if (els[i].getElementsByTagName("img").length > 0) {
-                coords.x = els[i].getElementsByTagName("img")[0].getBoundingClientRect().x,
-                    coords.y = els[i].getElementsByTagName("img")[0].getBoundingClientRect().y,
-                    coords.height = els[i].getElementsByTagName("img")[0].getBoundingClientRect().height,
-                    coords.width = els[i].getElementsByTagName("img")[0].getBoundingClientRect().width
-            } else {
-                coords.x = els[i].getBoundingClientRect().x,
-                    coords.y = els[i].getBoundingClientRect().y,
-                    coords.height = els[i].getBoundingClientRect().height,
-                    coords.width = els[i].getBoundingClientRect().width
-            }
-            chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "link", widgetId: i, textContent: els[i].textContent.trim(), selectIndex: null }, mess: "capture" }, (request) => {
-                let canvas = document.createElement("canvas")
-                document.body.appendChild(canvas)
-                let image = new Image()
-                image.onload = () => {
-                    let width = els[i].getElementsByTagName("img").length > 0 ? request.coords.width : 2 * request.coords.width
-                    let height = els[i].getElementsByTagName("img").length > 0 ? request.coords.height : 2 * request.coords.height
-                    let offX = els[i].getElementsByTagName("img").length > 0 ? 0 : (0.5 * request.coords.width)
-                    let offY = els[i].getElementsByTagName("img").length > 0 ? 0 : (0.5 * request.coords.height)
-                    canvas.width = width
-                    canvas.height = height
-                    let context = canvas.getContext("2d")
-                    context.drawImage(image, request.coords.x - offX, request.coords.y - offY, width, height, 0, 0, width, height)
+            removeBorders()
+            html2canvas(els[i], options).then((canvas) => {
+                console.log(canvas.toDataURL())
+                chrome.runtime.sendMessage({
+                    mess: "fetch",
+                    body: "/pages/crops/" + profileInfo.username,
+                    content: { widgetType: "link", imageUrl: canvas.toDataURL(), widgetId: i, textContent: els[i].textContent.trim(), selectIndex: null, selector: selector(els[i]), xpath: xpath(els[i]), elementId: els[i].id },
+                    method: "post"
+                }, () => {
                     chrome.runtime.sendMessage({
                         mess: "fetch",
-                        body: "/pages/crops/" + profileInfo.username,
-                        content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex, selector: selector(els[i]), xpath: xpath(els[i]), elementId: els[i].id },
-                        method: "post"
-                    }, () => {
-                        chrome.runtime.sendMessage({
-                            mess: "fetch",
-                            body: "/pages/actions/" + profileInfo.username,
-                            method: "get",
-                            content: { url: currentURL }
-                        }, (response3) => {
-                            let pageStatsObj = JSON.parse(result.pageStats);
-                            let psObj = pageStatsObj.filter(filterURL)[0]
-                            let intLinkIds = psObj.interactedLinks
-                            let intLinkPos = intLinkIds.indexOf(i);
-                            if (intLinkPos < 0) {
-                                intLinkIds.push(i);
-                                psObj.interactedLinks = intLinkIds;
+                        body: "/pages/actions/" + profileInfo.username,
+                        method: "get",
+                        content: { url: currentURL }
+                    }, (response3) => {
+                        let pageStatsObj = JSON.parse(result.pageStats);
+                        let psObj = pageStatsObj.filter(filterURL)[0]
+                        let intLinkIds = psObj.interactedLinks
+                        let intLinkPos = intLinkIds.indexOf(i);
+                        if (intLinkPos < 0) {
+                            intLinkIds.push(i);
+                            psObj.interactedLinks = intLinkIds;
+                        }
+                        let pageActions = response3.data
+                        let newLink = pageActions.filter(filterID).length === 0
+                        if (newLink) {
+                            let newlinkIds = psObj.newLinks;
+                            let newLinkPos = newlinkIds.indexOf(i);
+                            if (newLinkPos < 0) {
+                                newlinkIds.push(i);
+                                psObj.newLinks = newlinkIds;
                             }
-                            let pageActions = response3.data
-                            let newLink = pageActions.filter(filterID).length === 0
-                            console.log(pageActions)
-                            if (newLink) {
-                                let newlinkIds = psObj.newLinks;
-                                let newLinkPos = newlinkIds.indexOf(i);
-                                if (newLinkPos < 0) {
-                                    newlinkIds.push(i);
-                                    psObj.newLinks = newlinkIds;
+                        }
+                        chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
+                            chrome.storage.sync.get(["overlayMode"], (result) => {
+                                if (result.overlayMode === "interacted") {
+                                    drawBorderOnInteracted()
+                                } else if (result.overlayMode === "all") {
+                                    drawBorderOnAll()
                                 }
-                            }
-                            chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
-                                chrome.storage.sync.get(["overlayMode"], (result) => {
-                                    if (result.overlayMode === "interacted") {
-                                        drawBorderOnInteracted()
-                                    } else if (result.overlayMode === "all") {
-                                        drawBorderOnAll()
+                            })
+                            if (newLink) {
+                                chrome.runtime.sendMessage({
+                                    mess: "fetch",
+                                    body: "/pages/actions",
+                                    method: "post",
+                                    content: { url: currentURL, username: profileInfo.username, objectId: i, objectType: "link" }
+                                }, () => {
+                                    let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
+                                    let interactedLinks = pageActions.filter(filterLink).length + 1
+                                    let interactedInputs = pageActions.filter(filterInput).length
+                                    let interactedButtons = pageActions.filter(filterButton).length
+                                    let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
+                                    innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
+                                    innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
+                                    let sidenavProgress = document.getElementById("gamificationExtensionLinksProgress")
+                                    let widgetProgress = interactedLinks * 100 / pageInfo.totalLinkObjects
+                                    if (widgetProgress > 100) {
+                                        widgetProgress = 100
                                     }
-                                })
-                                if (newLink) {
+                                    sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
+                                    sidenavProgress.textContent = "Links Progress: " + widgetProgress.toFixed(2) + "%"
+                                    let table = document.getElementById("gamificationExtensionPageStatsTable")
+                                    let linksRow = table.rows[1]
+                                    let pageStat = pageStatsObj.filter(filterURL)[0]
+                                    linksRow.cells[1].innerHTML = pageStat.interactedLinks.length
+                                    linksRow.cells[2].innerHTML = pageStat.newLinks.length
+                                    linksRow.cells[3].innerHTML = pageActions.filter(filterLink).length + 1
+                                    pageCoverageAchievements(progress, widgetProgress)
                                     chrome.runtime.sendMessage({
                                         mess: "fetch",
-                                        body: "/pages/actions",
+                                        body: "/pages/records/" + profileInfo.username,
                                         method: "post",
-                                        content: { url: currentURL, username: profileInfo.username, objectId: i, objectType: "link" }
-                                    }, () => {
-                                        let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                                        let interactedLinks = pageActions.filter(filterLink).length + 1
-                                        let interactedInputs = pageActions.filter(filterInput).length
-                                        let interactedButtons = pageActions.filter(filterButton).length
-                                        let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
-                                        innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
-                                        innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
-                                        let sidenavProgress = document.getElementById("gamificationExtensionLinksProgress")
-                                        let widgetProgress = interactedLinks * 100 / pageInfo.totalLinkObjects
-                                        if (widgetProgress > 100) {
-                                            widgetProgress = 100
-                                        }
-                                        sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
-                                        sidenavProgress.textContent = "Links Progress: " + widgetProgress.toFixed(2) + "%"
-                                        let table = document.getElementById("gamificationExtensionPageStatsTable")
-                                        let linksRow = table.rows[1]
-                                        let pageStat = pageStatsObj.filter(filterURL)[0]
-                                        linksRow.cells[1].innerHTML = pageStat.interactedLinks.length
-                                        linksRow.cells[2].innerHTML = pageStat.newLinks.length
-                                        linksRow.cells[3].innerHTML = pageActions.filter(filterLink).length + 1
-                                        pageCoverageAchievements(progress, widgetProgress)
-                                        chrome.runtime.sendMessage({
-                                            mess: "fetch",
-                                            body: "/pages/records/" + profileInfo.username,
-                                            method: "post",
-                                            content: { username: profileInfo.username, url: currentURL, coverage: progress, linksCoverage: widgetProgress },
-                                            firstTime: false
-                                        })
+                                        content: { username: profileInfo.username, url: currentURL, coverage: progress, linksCoverage: widgetProgress },
+                                        firstTime: false
                                     })
+                                })
 
-                                }
-                            });
-                        })
+                            }
+                        });
                     })
-                }
-                image.src = request.dataUrl
+                })
+                setTimeout(() => {
+                    //window.location = goTo
+                    let stack = result.stack
+                    stack.push(goTo)
+                    chrome.storage.sync.set({ stack: stack, clickedLink: true, lastAction: "click", previousURL: currentURL, reloadCount: 0 })
+                }, 500)
             })
-            setTimeout(() => {
-                window.location = goTo
-                let stack = result.stack
-                stack.push(goTo)
-                chrome.storage.sync.set({ stack: stack, clickedLink: true, lastAction: "click", previousURL: currentURL, reloadCount: 0 })
-            }, 500)
-
         } else if (result.interactionMode === "signal") {
             event.preventDefault()
             chrome.runtime.sendMessage({
@@ -238,6 +216,7 @@ linkClickListener = (event, i, pageInfo) => {
 }
 
 inputClickListener = (event, pageInfo) => {
+    event.preventDefault()
     let els = document.body.getElementsByTagName("input");
     let found = false;
     for (let j = 0; j < els.length && !found; j++) {
@@ -266,110 +245,89 @@ inputClickListener = (event, pageInfo) => {
                             }
                         }
                     }
-                    let coords = { x: 0, y: 0, height: 0, width: 0 }
-                    if (els[j].type === "radio" || els[j].type === "checkbox") {
-                        coords.x = els[j].parentElement.getBoundingClientRect().x
-                        coords.y = els[j].parentElement.getBoundingClientRect().y
-                        coords.height = els[j].parentElement.getBoundingClientRect().height
-                        coords.width = els[j].parentElement.getBoundingClientRect().width
-                    } else {
-                        coords.x = els[j].getBoundingClientRect().x
-                        coords.y = els[j].getBoundingClientRect().y
-                        coords.height = els[j].getBoundingClientRect().height
-                        coords.width = els[j].getBoundingClientRect().width
-                    }
-                    els[j].attributeStyleMap.clear()
-                    chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "input", widgetId: j, textContent: null, selectIndex: null }, mess: "capture" }, (request) => {
-                        let canvas = document.createElement("canvas")
-                        document.body.appendChild(canvas)
-                        let image = new Image()
-                        image.onload = () => {
-                            canvas.width = request.coords.width
-                            canvas.height = request.coords.height
-                            let context = canvas.getContext("2d")
-                            context.drawImage(image, request.coords.x, request.coords.y, request.coords.width, request.coords.height, 0, 0, request.coords.width, request.coords.height)
+                    removeBorders()
+                    html2canvas(els[j], options).then((canvas) => {
+                        console.log(canvas.toDataURL())
+                        chrome.runtime.sendMessage({
+                            mess: "fetch",
+                            body: "/pages/crops/" + profileInfo.username,
+                            content: { widgetType: "input", imageUrl: canvas.toDataURL(), widgetId: j, textContent: null, selectIndex: null, selector: selector(els[j]), xpath: xpath(els[j]), elementId: els[j].id },
+                            method: "post"
+                        }, () => {
                             chrome.runtime.sendMessage({
                                 mess: "fetch",
-                                body: "/pages/crops/" + profileInfo.username,
-                                content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex, selector: selector(els[j]), xpath: xpath(els[j]), elementId: els[j].id },
-                                method: "post"
-                            }, () => {
-                                chrome.runtime.sendMessage({
-                                    mess: "fetch",
-                                    body: "/pages/actions/" + profileInfo.username,
-                                    method: "get",
-                                    content: { url: currentURL }
-                                }, (response3) => {
-                                    let pageStatsObj = JSON.parse(result.pageStats);
-                                    let psObj = pageStatsObj.filter(filterURL)[0]
-                                    let intInputIds = psObj.interactedInputs
-                                    let intInputPos = intInputIds.indexOf(j);
-                                    if (intInputPos < 0) {
-                                        intInputIds.push(j);
-                                        psObj.interactedInputs = intInputIds;
+                                body: "/pages/actions/" + profileInfo.username,
+                                method: "get",
+                                content: { url: currentURL }
+                            }, (response3) => {
+                                let pageStatsObj = JSON.parse(result.pageStats);
+                                let psObj = pageStatsObj.filter(filterURL)[0]
+                                let intInputIds = psObj.interactedInputs
+                                let intInputPos = intInputIds.indexOf(j);
+                                if (intInputPos < 0) {
+                                    intInputIds.push(j);
+                                    psObj.interactedInputs = intInputIds;
+                                }
+                                let pageActions = response3.data
+                                let newInput = pageActions.filter(filterID).length === 0
+                                if (newInput) {
+                                    let newInputIds = psObj.newInputs;
+                                    let newInputPos = newInputIds.indexOf(j);
+                                    if (newInputPos < 0) {
+                                        newInputIds.push(j);
+                                        psObj.newInputs = newInputIds;
                                     }
-                                    let pageActions = response3.data
-                                    let newInput = pageActions.filter(filterID).length === 0
+                                }
+                                chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
+                                    setTimeout(() => {
+                                        chrome.storage.sync.get(["overlayMode"], (result) => {
+                                            if (result.overlayMode === "interacted") {
+                                                drawBorderOnInteracted()
+                                            } else if (result.overlayMode === "all") {
+                                                drawBorderOnAll()
+                                            }
+                                        })
+                                    }, 3000);
                                     if (newInput) {
-                                        let newInputIds = psObj.newInputs;
-                                        let newInputPos = newInputIds.indexOf(j);
-                                        if (newInputPos < 0) {
-                                            newInputIds.push(j);
-                                            psObj.newInputs = newInputIds;
-                                        }
-                                    }
-                                    chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
-                                        setTimeout(() => {
-                                            chrome.storage.sync.get(["overlayMode"], (result) => {
-                                                if (result.overlayMode === "interacted") {
-                                                    drawBorderOnInteracted()
-                                                } else if (result.overlayMode === "all") {
-                                                    drawBorderOnAll()
-                                                }
-                                            })
-                                        }, 3000);
-                                        if (newInput) {
+                                        chrome.runtime.sendMessage({
+                                            mess: "fetch",
+                                            body: "/pages/actions",
+                                            method: "post",
+                                            content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "input" }
+                                        }, () => {
+                                            let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
+                                            let interactedLinks = pageActions.filter(filterLink).length
+                                            let interactedInputs = pageActions.filter(filterInput).length + 1
+                                            let interactedButtons = pageActions.filter(filterButton).length
+                                            let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
+                                            innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
+                                            innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
+                                            let sidenavProgress = document.getElementById("gamificationExtensionInputsProgress")
+                                            let widgetProgress = interactedInputs * 100 / pageInfo.totalInputObjects
+                                            if (widgetProgress > 100) {
+                                                widgetProgress = 100
+                                            }
+                                            sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
+                                            sidenavProgress.textContent = "Forms Progress: " + widgetProgress.toFixed(2) + "%"
+                                            let table = document.getElementById("gamificationExtensionPageStatsTable")
+                                            let inputsRow = table.rows[2]
+                                            let pageStat = pageStatsObj.filter(filterURL)[0]
+                                            inputsRow.cells[1].innerHTML = pageStat.interactedInputs.length
+                                            inputsRow.cells[2].innerHTML = pageStat.newInputs.length
+                                            inputsRow.cells[3].innerHTML = pageActions.filter(filterInput).length + 1
+                                            pageCoverageAchievements(progress, widgetProgress)
                                             chrome.runtime.sendMessage({
                                                 mess: "fetch",
-                                                body: "/pages/actions",
+                                                body: "/pages/records/" + profileInfo.username,
                                                 method: "post",
-                                                content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "input" }
-                                            }, () => {
-                                                let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                                                let interactedLinks = pageActions.filter(filterLink).length
-                                                let interactedInputs = pageActions.filter(filterInput).length + 1
-                                                let interactedButtons = pageActions.filter(filterButton).length
-                                                let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
-                                                innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
-                                                innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
-                                                let sidenavProgress = document.getElementById("gamificationExtensionInputsProgress")
-                                                let widgetProgress = interactedInputs * 100 / pageInfo.totalInputObjects
-                                                if (widgetProgress > 100) {
-                                                    widgetProgress = 100
-                                                }
-                                                sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
-                                                sidenavProgress.textContent = "Forms Progress: " + widgetProgress.toFixed(2) + "%"
-                                                let table = document.getElementById("gamificationExtensionPageStatsTable")
-                                                let inputsRow = table.rows[2]
-                                                let pageStat = pageStatsObj.filter(filterURL)[0]
-                                                inputsRow.cells[1].innerHTML = pageStat.interactedInputs.length
-                                                inputsRow.cells[2].innerHTML = pageStat.newInputs.length
-                                                inputsRow.cells[3].innerHTML = pageActions.filter(filterInput).length + 1
-                                                pageCoverageAchievements(progress, widgetProgress)
-                                                chrome.runtime.sendMessage({
-                                                    mess: "fetch",
-                                                    body: "/pages/records/" + profileInfo.username,
-                                                    method: "post",
-                                                    content: { username: profileInfo.username, url: currentURL, coverage: progress, inputsCoverage: widgetProgress },
-                                                    firstTime: false
-                                                })
+                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, inputsCoverage: widgetProgress },
+                                                firstTime: false
                                             })
-                                        }
-                                    })
+                                        })
+                                    }
                                 })
                             })
-                        }
-                        image.src = request.dataUrl
+                        })
                     })
                 } else if (result.interactionMode === "signal") {
                     event.preventDefault()
@@ -496,99 +454,89 @@ buttonClickListener = (event, pageInfo) => {
                     return event.url === currentURL
                 }
                 if (result.interactionMode === "interact") {
-                    els[j].attributeStyleMap.clear()
-                    let coords = { x: els[j].getBoundingClientRect().x, y: els[j].getBoundingClientRect().y, height: els[j].getBoundingClientRect().height, width: els[j].getBoundingClientRect().width }
-                    chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "button", widgetId: j, textContent: null, selectIndex: null }, mess: "capture" }, (request) => {
-                        let canvas = document.createElement("canvas")
-                        document.body.appendChild(canvas)
-                        let image = new Image()
-                        image.onload = () => {
-                            canvas.width = request.coords.width
-                            canvas.height = request.coords.height
-                            let context = canvas.getContext("2d")
-                            context.drawImage(image, request.coords.x, request.coords.y, request.coords.width, request.coords.height, 0, 0, request.coords.width, request.coords.height)
+                    removeBorders()
+                    html2canvas(els[j], options).then((canvas) => {
+                        console.log(canvas.toDataURL())
+                        chrome.runtime.sendMessage({
+                            mess: "fetch",
+                            body: "/pages/crops/" + profileInfo.username,
+                            content: { widgetType: "button", imageUrl: canvas.toDataURL(), widgetId: j, textContent: null, selectIndex: null, selector: selector(els[j]), xpath: xpath(els[j]), elementId: els[j].id },
+                            method: "post"
+                        }, () => {
                             chrome.runtime.sendMessage({
                                 mess: "fetch",
-                                body: "/pages/crops/" + profileInfo.username,
-                                content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: request.selectIndex, selector: selector(els[j]), xpath: xpath(els[j]), elementId: els[j].id },
-                                method: "post"
-                            }, () => {
-                                chrome.runtime.sendMessage({
-                                    mess: "fetch",
-                                    body: "/pages/actions/" + profileInfo.username,
-                                    method: "get",
-                                    content: { url: currentURL }
-                                }, (response3) => {
-                                    let pageStatsObj = JSON.parse(result.pageStats);
-                                    let psObj = pageStatsObj.filter(filterURL)[0]
-                                    let intButtonIds = psObj.interactedButtons
-                                    let intButtonPos = intButtonIds.indexOf(j);
-                                    if (intButtonPos < 0) {
-                                        intButtonIds.push(j);
-                                        psObj.interactedButtons = intButtonIds;
+                                body: "/pages/actions/" + profileInfo.username,
+                                method: "get",
+                                content: { url: currentURL }
+                            }, (response3) => {
+                                let pageStatsObj = JSON.parse(result.pageStats);
+                                let psObj = pageStatsObj.filter(filterURL)[0]
+                                let intButtonIds = psObj.interactedButtons
+                                let intButtonPos = intButtonIds.indexOf(j);
+                                if (intButtonPos < 0) {
+                                    intButtonIds.push(j);
+                                    psObj.interactedButtons = intButtonIds;
+                                }
+                                let pageActions = response3.data
+                                let newButton = pageActions.filter(filterID).length === 0
+                                if (newButton) {
+                                    let newButtonIds = psObj.newButtons;
+                                    let newButtonPos = newButtonIds.indexOf(j);
+                                    if (newButtonPos < 0) {
+                                        newButtonIds.push(j);
+                                        psObj.newButtons = newButtonIds;
                                     }
-                                    let pageActions = response3.data
-                                    let newButton = pageActions.filter(filterID).length === 0
+                                }
+                                chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
+                                    setTimeout(() => {
+                                        chrome.storage.sync.get(["overlayMode"], (result) => {
+                                            if (result.overlayMode === "interacted") {
+                                                drawBorderOnInteracted()
+                                            } else if (result.overlayMode === "all") {
+                                                drawBorderOnAll()
+                                            }
+                                        })
+                                    }, 3000);
                                     if (newButton) {
-                                        let newButtonIds = psObj.newButtons;
-                                        let newButtonPos = newButtonIds.indexOf(j);
-                                        if (newButtonPos < 0) {
-                                            newButtonIds.push(j);
-                                            psObj.newButtons = newButtonIds;
-                                        }
-                                    }
-                                    chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
-                                        setTimeout(() => {
-                                            chrome.storage.sync.get(["overlayMode"], (result) => {
-                                                if (result.overlayMode === "interacted") {
-                                                    drawBorderOnInteracted()
-                                                } else if (result.overlayMode === "all") {
-                                                    drawBorderOnAll()
-                                                }
-                                            })
-                                        }, 3000);
-                                        if (newButton) {
+                                        chrome.runtime.sendMessage({
+                                            mess: "fetch",
+                                            body: "/pages/actions",
+                                            method: "post",
+                                            content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "button" }
+                                        }, () => {
+                                            let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
+                                            let interactedLinks = pageActions.filter(filterLink).length
+                                            let interactedInputs = pageActions.filter(filterInput).length
+                                            let interactedButtons = pageActions.filter(filterButton).length + 1
+                                            let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
+                                            innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
+                                            innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
+                                            let sidenavProgress = document.getElementById("gamificationExtensionButtonsProgress")
+                                            let widgetProgress = interactedButtons * 100 / pageInfo.totalButtonObjects
+                                            if (widgetProgress > 100) {
+                                                widgetProgress = 100
+                                            }
+                                            sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
+                                            sidenavProgress.textContent = "Buttons Progress: " + widgetProgress.toFixed(2) + "%"
+                                            let table = document.getElementById("gamificationExtensionPageStatsTable")
+                                            let buttonsRow = table.rows[3]
+                                            let pageStat = pageStatsObj.filter(filterURL)[0]
+                                            buttonsRow.cells[1].innerHTML = pageStat.interactedButtons.length
+                                            buttonsRow.cells[2].innerHTML = pageStat.newButtons.length
+                                            buttonsRow.cells[3].innerHTML = pageActions.filter(filterButton).length + 1
+                                            pageCoverageAchievements(progress, widgetProgress)
                                             chrome.runtime.sendMessage({
                                                 mess: "fetch",
-                                                body: "/pages/actions",
+                                                body: "/pages/records/" + profileInfo.username,
                                                 method: "post",
-                                                content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "button" }
-                                            }, () => {
-                                                let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                                                let interactedLinks = pageActions.filter(filterLink).length
-                                                let interactedInputs = pageActions.filter(filterInput).length
-                                                let interactedButtons = pageActions.filter(filterButton).length + 1
-                                                let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
-                                                innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
-                                                innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
-                                                let sidenavProgress = document.getElementById("gamificationExtensionButtonsProgress")
-                                                let widgetProgress = interactedButtons * 100 / pageInfo.totalButtonObjects
-                                                if (widgetProgress > 100) {
-                                                    widgetProgress = 100
-                                                }
-                                                sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
-                                                sidenavProgress.textContent = "Buttons Progress: " + widgetProgress.toFixed(2) + "%"
-                                                let table = document.getElementById("gamificationExtensionPageStatsTable")
-                                                let buttonsRow = table.rows[3]
-                                                let pageStat = pageStatsObj.filter(filterURL)[0]
-                                                buttonsRow.cells[1].innerHTML = pageStat.interactedButtons.length
-                                                buttonsRow.cells[2].innerHTML = pageStat.newButtons.length
-                                                buttonsRow.cells[3].innerHTML = pageActions.filter(filterButton).length + 1
-                                                pageCoverageAchievements(progress, widgetProgress)
-                                                chrome.runtime.sendMessage({
-                                                    mess: "fetch",
-                                                    body: "/pages/records/" + profileInfo.username,
-                                                    method: "post",
-                                                    content: { username: profileInfo.username, url: currentURL, coverage: progress, buttonsCoverage: widgetProgress },
-                                                    firstTime: false
-                                                })
+                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, buttonsCoverage: widgetProgress },
+                                                firstTime: false
                                             })
-                                        }
-                                    })
+                                        })
+                                    }
                                 })
                             })
-                        }
-                        image.src = request.dataUrl
+                        })
                     })
                 } else if (result.interactionMode === "signal") {
                     chrome.runtime.sendMessage({
@@ -714,101 +662,91 @@ selectClickListener = (event, pageInfo) => {
                     return event.url === currentURL
                 }
                 if (result.interactionMode === "interact") {
-                    els[j].attributeStyleMap.clear()
-                    let coords = { x: els[j].getBoundingClientRect().x, y: els[j].getBoundingClientRect().y, height: els[j].getBoundingClientRect().height, width: els[j].getBoundingClientRect().width }
-                    chrome.runtime.sendMessage({ obj: { coords: coords, widgetType: "select", widgetId: j, textContent: null, selectIndex: null }, mess: "capture" }, (request) => {
-                        let canvas = document.createElement("canvas")
-                        document.body.appendChild(canvas)
-                        let image = new Image()
-                        image.onload = () => {
-                            canvas.width = request.coords.width
-                            canvas.height = request.coords.height
-                            let context = canvas.getContext("2d")
-                            context.drawImage(image, request.coords.x, request.coords.y, request.coords.width, request.coords.height, 0, 0, request.coords.width, request.coords.height)
+                    removeBorders()
+                    html2canvas(els[j], options).then((canvas) => {
+                        console.log(canvas.toDataURL())
+                        chrome.runtime.sendMessage({
+                            mess: "fetch",
+                            body: "/pages/crops/" + profileInfo.username,
+                            content: { widgetType: "select", imageUrl: canvas.toDataURL(), widgetId: j, textContent: null, selectIndex: null, selector: selector(els[j]), xpath: xpath(els[j]), elementId: els[j].id },
+                            method: "post"
+                        }, () => {
                             chrome.runtime.sendMessage({
                                 mess: "fetch",
-                                body: "/pages/crops/" + profileInfo.username,
-                                content: { widgetType: request.widgetType, imageUrl: canvas.toDataURL(), widgetId: request.widgetId, textContent: request.textContent, selectIndex: null, selector: selector(els[j]), xpath: xpath(els[j]), elementId: els[j].id },
-                                method: "post"
-                            }, () => {
-                                chrome.runtime.sendMessage({
-                                    mess: "fetch",
-                                    body: "/pages/actions/" + profileInfo.username,
-                                    method: "get",
-                                    content: { url: currentURL }
-                                }, (response3) => {
+                                body: "/pages/actions/" + profileInfo.username,
+                                method: "get",
+                                content: { url: currentURL }
+                            }, (response3) => {
 
-                                    let pageStatsObj = JSON.parse(result.pageStats);
-                                    let psObj = pageStatsObj.filter(filterURL)[0]
-                                    let intSelectIds = psObj.interactedSelects
-                                    let intSelectPos = intSelectIds.indexOf(j);
-                                    if (intSelectPos < 0) {
-                                        intSelectIds.push(j);
-                                        psObj.interactedSelects = intSelectIds;
+                                let pageStatsObj = JSON.parse(result.pageStats);
+                                let psObj = pageStatsObj.filter(filterURL)[0]
+                                let intSelectIds = psObj.interactedSelects
+                                let intSelectPos = intSelectIds.indexOf(j);
+                                if (intSelectPos < 0) {
+                                    intSelectIds.push(j);
+                                    psObj.interactedSelects = intSelectIds;
+                                }
+                                let pageActions = response3.data
+                                let newSelect = pageActions.filter(filterID).length === 0
+                                if (newSelect) {
+                                    let newSelectIds = psObj.newSelects;
+                                    let newSelectPos = newSelectIds.indexOf(j);
+                                    if (newSelectPos < 0) {
+                                        newSelectIds.push(j);
+                                        psObj.newSelects = newSelectIds;
                                     }
-                                    let pageActions = response3.data
-                                    let newSelect = pageActions.filter(filterID).length === 0
+                                }
+                                chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
+                                    setTimeout(() => {
+                                        chrome.storage.sync.get(["overlayMode"], (result) => {
+                                            if (result.overlayMode === "interacted") {
+                                                drawBorderOnInteracted()
+                                            } else if (result.overlayMode === "all") {
+                                                drawBorderOnAll()
+                                            }
+                                        })
+                                    }, 3000);
                                     if (newSelect) {
-                                        let newSelectIds = psObj.newSelects;
-                                        let newSelectPos = newSelectIds.indexOf(j);
-                                        if (newSelectPos < 0) {
-                                            newSelectIds.push(j);
-                                            psObj.newSelects = newSelectIds;
-                                        }
-                                    }
-                                    chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
-                                        setTimeout(() => {
-                                            chrome.storage.sync.get(["overlayMode"], (result) => {
-                                                if (result.overlayMode === "interacted") {
-                                                    drawBorderOnInteracted()
-                                                } else if (result.overlayMode === "all") {
-                                                    drawBorderOnAll()
-                                                }
-                                            })
-                                        }, 3000);
-                                        if (newSelect) {
+                                        chrome.runtime.sendMessage({
+                                            mess: "fetch",
+                                            body: "/pages/actions",
+                                            method: "post",
+                                            content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "select" }
+                                        }, () => {
+                                            let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
+                                            let interactedLinks = pageActions.filter(filterLink).length
+                                            let interactedInputs = pageActions.filter(filterInput).length
+                                            let interactedButtons = pageActions.filter(filterButton).length
+                                            let interactedSelects = pageActions.filter(filterSelect).length + 1
+                                            let progress = ((interactedLinks + interactedInputs + interactedButtons + interactedSelects) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects + pageInfo.totalSelectObjects)
+                                            innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
+                                            innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
+                                            let sidenavProgress = document.getElementById("gamificationExtensionSelectsProgress")
+                                            let widgetProgress = interactedSelects * 100 / pageInfo.totalSelectObjects
+                                            if (widgetProgress > 100) {
+                                                widgetProgress = 100
+                                            }
+                                            sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
+                                            sidenavProgress.textContent = "Dropdown Menus Progress: " + widgetProgress.toFixed(2) + "%"
+                                            let table = document.getElementById("gamificationExtensionPageStatsTable")
+                                            let buttonsRow = table.rows[4]
+                                            let pageStat = pageStatsObj.filter(filterURL)[0]
+                                            buttonsRow.cells[1].innerHTML = pageStat.interactedSelects.length
+                                            buttonsRow.cells[2].innerHTML = pageStat.newSelects.length
+                                            buttonsRow.cells[3].innerHTML = pageActions.filter(filterSelect).length + 1
+                                            pageCoverageAchievements(progress, widgetProgress)
                                             chrome.runtime.sendMessage({
                                                 mess: "fetch",
-                                                body: "/pages/actions",
+                                                body: "/pages/records/" + profileInfo.username,
                                                 method: "post",
-                                                content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "select" }
-                                            }, () => {
-                                                let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                                                let interactedLinks = pageActions.filter(filterLink).length
-                                                let interactedInputs = pageActions.filter(filterInput).length
-                                                let interactedButtons = pageActions.filter(filterButton).length
-                                                let interactedSelects = pageActions.filter(filterSelect).length + 1
-                                                let progress = ((interactedLinks + interactedInputs + interactedButtons + interactedSelects) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects + pageInfo.totalSelectObjects)
-                                                innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
-                                                innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
-                                                let sidenavProgress = document.getElementById("gamificationExtensionSelectsProgress")
-                                                let widgetProgress = interactedSelects * 100 / pageInfo.totalSelectObjects
-                                                if (widgetProgress > 100) {
-                                                    widgetProgress = 100
-                                                }
-                                                sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
-                                                sidenavProgress.textContent = "Dropdown Menus Progress: " + widgetProgress.toFixed(2) + "%"
-                                                let table = document.getElementById("gamificationExtensionPageStatsTable")
-                                                let buttonsRow = table.rows[4]
-                                                let pageStat = pageStatsObj.filter(filterURL)[0]
-                                                buttonsRow.cells[1].innerHTML = pageStat.interactedSelects.length
-                                                buttonsRow.cells[2].innerHTML = pageStat.newSelects.length
-                                                buttonsRow.cells[3].innerHTML = pageActions.filter(filterSelect).length + 1
-                                                pageCoverageAchievements(progress, widgetProgress)
-                                                chrome.runtime.sendMessage({
-                                                    mess: "fetch",
-                                                    body: "/pages/records/" + profileInfo.username,
-                                                    method: "post",
-                                                    content: { username: profileInfo.username, url: currentURL, coverage: progress, selectsCoverage: widgetProgress },
-                                                    firstTime: false
-                                                })
+                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, selectsCoverage: widgetProgress },
+                                                firstTime: false
                                             })
-                                        }
-                                    })
+                                        })
+                                    }
                                 })
                             })
-                        }
-                        image.src = request.dataUrl
+                        })
                     })
                 } else if (result.interactionMode === "signal") {
                     chrome.runtime.sendMessage({

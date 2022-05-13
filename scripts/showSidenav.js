@@ -9,7 +9,7 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
     let button = document.createElement("img");
     document.body.appendChild(button);
     button.id = "gamificationExtensionSidenavButton";
-    button.style = "position: fixed; top: 50%; right: 0; width: 40;";
+    button.style = "position: fixed; top: 50%; right: 0; width: 40px;";
     button.onclick = () => {
         document.getElementById("gamificationExtensionSidenav").style.width = "50%";
     };
@@ -27,7 +27,7 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
     closeButton.src = chrome.runtime.getURL("img/cross.png")
     closeButton.id = "gamificationExtensionSidenavCloseButton";
     closeButton.textContent = "Close Menu";
-    closeButton.style = "bottom: 10%; right: 50%; background-color: transparent; width: 40; height: 40";
+    closeButton.style = "bottom: 10%; right: 50%; background-color: transparent; width: 40px; height: 40px";
     closeButton.onclick = () => {
         document.getElementById("gamificationExtensionSidenav").style.width = "0";
     };

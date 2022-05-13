@@ -13,7 +13,8 @@
                 "content_scripts/utilityFunctions.js",
                 "content_scripts/eventListeners.js",
                 "lib/jszip.js",
-                "lib/FileSaver.js"
+                "lib/FileSaver.js",
+                "lib/html2canvas.js"
             ]
         }
     ],
