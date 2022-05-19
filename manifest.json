@@ -14,7 +14,8 @@
                 "content_scripts/eventListeners.js",
                 "lib/jszip.js",
                 "lib/FileSaver.js",
-                "lib/html2canvas.js"
+                "lib/html2canvas.js",
+                "lib/jquery.js"
             ]
         }
     ],

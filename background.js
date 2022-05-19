@@ -30,17 +30,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         priority: 2
       }
     )
-  } else if (request.mess === "capture") {
-    async function capture() {
-      let [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true
-      })
-      chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" }, (dataUrl) => {
-        sendResponse({ dataUrl: dataUrl, coords: request.obj.coords, widgetType: request.obj.widgetType, widgetId: request.obj.widgetId, textContent: request.obj.textContent, selectIndex: request.obj.selectIndex, name: "crop" })
-      })
-    }
-    capture()
   } else if (request.mess === "fetch") {
     const apiCall = apiUrl + request.body
     //called when a page is visited

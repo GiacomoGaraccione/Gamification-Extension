@@ -5,89 +5,88 @@ let options = {
     "scale": 2,
     "scrollY": -1 * window.scrollY
 }
-linkClickListener = (event, i, pageInfo) => {
-    event.preventDefault()
-    let els = document.body.getElementsByTagName("a");
-    function filterID(event) {
-        return event.objectId === (i) && event.objectType === "link"
+
+clickHandlerInteract = (profileInfo, currentURL, element, objectType, objectId, pageStats, pageInfo) => {
+    function filterURL(event) {
+        return event.url === currentURL
     }
-    let goTo = event.target.href ? event.target.href : els[i].href
-    chrome.storage.sync.get(["interactionMode", "profileInfo", "currentURL", "pageStats", "stack"], (result) => {
-        let profileInfo = JSON.parse(result.profileInfo)
-        let currentURL = result.currentURL
-        function filterURL(event) {
-            return event.url === currentURL
-        }
-        if (result.interactionMode === "interact") {
-            removeBorders()
-            html2canvas(els[i], options).then((canvas) => {
-                console.log(canvas.toDataURL())
-                chrome.runtime.sendMessage({
-                    mess: "fetch",
-                    body: "/pages/crops/" + profileInfo.username,
-                    content: { widgetType: "link", imageUrl: canvas.toDataURL(), widgetId: i, textContent: els[i].textContent.trim(), selectIndex: null, selector: selector(els[i]), xpath: xpath(els[i]), elementId: els[i].id },
-                    method: "post"
-                }, () => {
-                    chrome.runtime.sendMessage({
-                        mess: "fetch",
-                        body: "/pages/actions/" + profileInfo.username,
-                        method: "get",
-                        content: { url: currentURL }
-                    }, (response3) => {
-                        let pageStatsObj = JSON.parse(result.pageStats);
-                        let psObj = pageStatsObj.filter(filterURL)[0]
-                        let intLinkIds = psObj.interactedLinks
-                        let intLinkPos = intLinkIds.indexOf(i);
-                        if (intLinkPos < 0) {
-                            intLinkIds.push(i);
-                            psObj.interactedLinks = intLinkIds;
+
+    function filterID(event) {
+        return event.objectId === objectId && event.objectType === objectType
+    }
+    let textContent = objectType === "link" ? element.textContent.trim() : null
+    removeBorders()
+    html2canvas(element, options).then((canvas) => {
+        console.log(canvas.toDataURL())
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            body: "/pages/crops/" + profileInfo.username,
+            method: "post",
+            content: { widgetType: objectType, imageUrl: canvas.toDataURL(), widgetId: objectId, textContent: textContent, selectIndex: null, selector: selector(element), xpath: xpath(element), elementId: element.id }
+        }, () => {
+            chrome.runtime.sendMessage({
+                "mess": "fetch",
+                "body": "/pages/actions/" + profileInfo.username,
+                "method": "get",
+                "content": { url: currentURL }
+            }, (response) => {
+                let psObj = pageStats.filter(filterURL)[0]
+                let intIds = objectType === "link" ? psObj.interactedLinks : objectType === "input" ? psObj.interactedInputs : objectType === "button" ? psObj.interactedButtons : psObj.interactedSelects
+                let intPos = intIds.indexOf(objectId);
+                if (intPos < 0) {
+                    intIds.push(objectId);
+                    objectType === "link" ? psObj.interactedLinks = intIds : objectType === "input" ? psObj.interactedInputs = intIds : objectType === "button" ? psObj.interactedButtons = intIds : psObj.interactedSelects = intIds
+                }
+                let pageActions = response.data
+                let newEl = pageActions.filter(filterID).length === 0
+                if (newEl) {
+                    let newIds = objectType === "link" ? psObj.newLinks : objectType === "input" ? psObj.newInputs : objectType === "button" ? psObj.newButtons : psObj.newSelects
+                    let newPos = newIds.indexOf(objectId);
+                    if (newPos < 0) {
+                        newIds.push(objectId);
+                        objectType === "link" ? psObj.newLinks = newIds : objectType === "input" ? psObj.newInputs = newIds : objectType === "button" ? psObj.newButtons = newIds : psObj.newSelects = newIds
+                    }
+                }
+                chrome.storage.sync.set({ pageStats: JSON.stringify(pageStats) }, () => {
+                    chrome.storage.sync.get(["overlayMode"], (result) => {
+                        if (result.overlayMode === "interacted") {
+                            drawBorderOnInteracted()
+                        } else if (result.overlayMode === "all") {
+                            drawBorderOnAll()
                         }
-                        let pageActions = response3.data
-                        let newLink = pageActions.filter(filterID).length === 0
-                        if (newLink) {
-                            let newlinkIds = psObj.newLinks;
-                            let newLinkPos = newlinkIds.indexOf(i);
-                            if (newLinkPos < 0) {
-                                newlinkIds.push(i);
-                                psObj.newLinks = newlinkIds;
+                    })
+                    if (newEl) {
+                        chrome.runtime.sendMessage({
+                            "mess": "fetch",
+                            body: "/pages/actions",
+                            method: "post",
+                            content: { url: currentURL, username: profileInfo.username, objectId: objectId, objectType: objectType }
+                        }, () => {
+                            let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
+                            let interactedLinks = objectType === "link" ? pageActions.filter(filterLink).length + 1 : pageActions.filter(filterLink).length
+                            let interactedInputs = objectType === "input" ? pageActions.filter(filterInput).length + 1 : pageActions.filter(filterInput).length
+                            let interactedButtons = objectType === "button" ? pageActions.filter(filterButton).length + 1 : pageActions.filter(filterButton).length
+                            let interactedSelects = objectType === "select" ? pageActions.filter(filterSelect).length + 1 : pageActions.filter(filterSelect).length
+                            let progress = ((interactedLinks + interactedInputs + interactedButtons + interactedSelects) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects + pageInfo.totalSelectObjects)
+                            innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
+                            innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
+                            let sidenavProgress = objectType === "link" ? document.getElementById("gamificationExtensionLinksProgress") : objectType === "input" ? document.getElementById("gamificationExtensionInputsProgress") : objectType === "button" ? document.getElementById("gamificationExtensionButtonsProgress") : document.getElementById("gamificationExtensionSelectsProgress")
+                            let widgetProgress = objectType === "link" ? interactedLinks * 100 / pageInfo.totalLinkObjects : objectType === "input" ? interactedInputs * 100 / pageInfo.totalInputObjects : objectType === "button" ? interactedButtons * 100 / pageInfo.totalButtonObjects : interactedSelects * 100 / pageInfo.totalSelectObjects
+                            if (widgetProgress > 100) {
+                                widgetProgress = 100
                             }
-                        }
-                        chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
-                            chrome.storage.sync.get(["overlayMode"], (result) => {
-                                if (result.overlayMode === "interacted") {
-                                    drawBorderOnInteracted()
-                                } else if (result.overlayMode === "all") {
-                                    drawBorderOnAll()
-                                }
-                            })
-                            if (newLink) {
-                                chrome.runtime.sendMessage({
-                                    mess: "fetch",
-                                    body: "/pages/actions",
-                                    method: "post",
-                                    content: { url: currentURL, username: profileInfo.username, objectId: i, objectType: "link" }
-                                }, () => {
-                                    let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                                    let interactedLinks = pageActions.filter(filterLink).length + 1
-                                    let interactedInputs = pageActions.filter(filterInput).length
-                                    let interactedButtons = pageActions.filter(filterButton).length
-                                    let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
-                                    innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
-                                    innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
-                                    let sidenavProgress = document.getElementById("gamificationExtensionLinksProgress")
-                                    let widgetProgress = interactedLinks * 100 / pageInfo.totalLinkObjects
-                                    if (widgetProgress > 100) {
-                                        widgetProgress = 100
-                                    }
-                                    sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
-                                    sidenavProgress.textContent = "Links Progress: " + widgetProgress.toFixed(2) + "%"
-                                    let table = document.getElementById("gamificationExtensionPageStatsTable")
-                                    let linksRow = table.rows[1]
-                                    let pageStat = pageStatsObj.filter(filterURL)[0]
-                                    linksRow.cells[1].innerHTML = pageStat.interactedLinks.length
-                                    linksRow.cells[2].innerHTML = pageStat.newLinks.length
-                                    linksRow.cells[3].innerHTML = pageActions.filter(filterLink).length + 1
-                                    pageCoverageAchievements(progress, widgetProgress)
+                            let firstWord = objectType === "link" ? "Links " : objectType === "input" ? "Forms " : objectType === "button" ? "Buttons " : "Dropdown Menus "
+                            sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
+                            sidenavProgress.textContent = firstWord + "Progress: " + widgetProgress.toFixed(2) + "%"
+                            let table = document.getElementById("gamificationExtensionPageStatsTable")
+                            let row = objectType === "link" ? table.rows[1] : objectType === "input" ? table.rows[2] : objectType === "button" ? table.rows[3] : table.rows[4]
+                            let pageStat = pageStats.filter(filterURL)[0]
+                            row.cells[1].innerHTML = objectType === "link" ? pageStat.interactedLinks.length : objectType === "input" ? pageStat.interactedInputs.length : objectType === "button" ? pageStat.interactedButtons.length : pageStat.interactedSelects.length
+                            row.cells[2].innerHTML = objectType === "link" ? pageStat.newLinks.length : objectType === "input" ? pageStat.newInputs.length : objectType === "button" ? pageStat.newButtons.length : pageStat.newSelects.length
+                            row.cells[3].innerHTML = objectType === "link" ? pageActions.filter(filterLink).length + 1 : objectType === "input" ? pageActions.filter(filterInput).length + 1 : objectType === "button" ? pageActions.filter(filterButton).length + 1 : pageActions.filter(filterSelect).length + 1
+                            pageCoverageAchievements(progress, widgetProgress)
+                            switch (objectType) {
+                                case "link":
                                     chrome.runtime.sendMessage({
                                         mess: "fetch",
                                         body: "/pages/records/" + profileInfo.username,
@@ -95,122 +94,173 @@ linkClickListener = (event, i, pageInfo) => {
                                         content: { username: profileInfo.username, url: currentURL, coverage: progress, linksCoverage: widgetProgress },
                                         firstTime: false
                                     })
-                                })
-
+                                    break
+                                case "input":
+                                    chrome.runtime.sendMessage({
+                                        mess: "fetch",
+                                        body: "/pages/records/" + profileInfo.username,
+                                        method: "post",
+                                        content: { username: profileInfo.username, url: currentURL, coverage: progress, inputsCoverage: widgetProgress },
+                                        firstTime: false
+                                    })
+                                    break
+                                case "button":
+                                    chrome.runtime.sendMessage({
+                                        mess: "fetch",
+                                        body: "/pages/records/" + profileInfo.username,
+                                        method: "post",
+                                        content: { username: profileInfo.username, url: currentURL, coverage: progress, buttonsCoverage: widgetProgress },
+                                        firstTime: false
+                                    })
+                                    break
+                                case "select":
+                                    chrome.runtime.sendMessage({
+                                        mess: "fetch",
+                                        body: "/pages/records/" + profileInfo.username,
+                                        method: "post",
+                                        content: { username: profileInfo.username, url: currentURL, coverage: progress, selectsCoverage: widgetProgress },
+                                        firstTime: false
+                                    })
+                                    break
+                                default:
+                                    break
                             }
-                        });
-                    })
+                        })
+                    }
                 })
-                setTimeout(() => {
-                    //window.location = goTo
-                    let stack = result.stack
-                    stack.push(goTo)
-                    chrome.storage.sync.set({ stack: stack, clickedLink: true, lastAction: "click", previousURL: currentURL, reloadCount: 0 })
-                }, 500)
             })
+        })
+    })
+
+}
+
+clickHandlerSignal = (profileInfo, currentURL, objectType, objectId) => {
+    function filterID(event) {
+        return event.objectId === objectId && event.objectType === objectType
+    }
+
+    chrome.runtime.sendMessage({
+        mess: "fetch",
+        body: "/pages/issues/" + profileInfo.username,
+        method: "get",
+        content: { url: currentURL }
+    }, (response) => {
+        let pageIssues = response.data
+        if (pageIssues.filter(filterID).length === 0) {
+            let modalContainer = document.createElement("div")
+            modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
+            let innerModal = document.createElement("div");
+            innerModal.style = "background-color: rgb(211 245 230); margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; ";
+            modalContainer.appendChild(innerModal);
+            let modalSpan = document.createElement("span");
+            modalSpan.style = "color: #aaa; float: right; font-size: 28px; font-weight: bold;";
+            modalSpan.textContent = "X";
+            innerModal.appendChild(modalSpan);
+            let modalContent = document.createElement("p")
+            modalContent.innerText = `Which is the issue you wish to report for this element?`
+            innerModal.appendChild(modalContent);
+            let modalForm = document.createElement("input")
+            modalForm.type = "text"
+            innerModal.appendChild(modalForm)
+            modalContent.style = "text-align: center; color: #2215E2; font-size: x-large"
+            modalSpan.onclick = () => { modalContainer.style.display = "none"; };
+            window.onclick = (event) => {
+                if (event.target === modalContainer) {
+                    modalContainer.style.display = "none";
+                }
+            };
+            let modalButton = document.createElement("button")
+            modalButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
+            innerModal.appendChild(modalButton)
+            modalButton.textContent = "Submit Issue"
+            modalButton.id = "gamificationExtensionIssueModalButton"
+            modalButton.addEventListener("click", () => {
+                chrome.runtime.sendMessage({
+                    mess: "fetch",
+                    body: "/pages/issues",
+                    method: "post",
+                    content: { url: currentURL, username: profileInfo.username, objectId: objectId, objectType: objectType, issueText: modalForm.value }
+                }, () => {
+                    drawBackground()
+                    countIssuesAchievement()
+                    modalContainer.style.display = "none";
+                    document.body.removeChild(modalContainer)
+                })
+            })
+            document.body.appendChild(modalContainer)
+        } else {
+            let issue = pageIssues.filter(filterID)[0]
+            let modalContainer = document.createElement("div")
+            modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
+            let innerModal = document.createElement("div");
+            innerModal.style = "background-color: rgb(211 245 230); margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; ";
+            modalContainer.appendChild(innerModal);
+            let modalSpan = document.createElement("span");
+            modalSpan.style = "color: #aaa; float: right; font-size: 28px; font-weight: bold;";
+            modalSpan.textContent = "X";
+            innerModal.appendChild(modalSpan);
+            let modalContent = document.createElement("p")
+            modalContent.innerText = `Current issue for this element: ${issue.issueText}`
+            innerModal.appendChild(modalContent);
+            modalContent.style = "text-align: center; color: #2215E2; font-size: x-large"
+            modalSpan.onclick = () => { modalContainer.style.display = "none"; };
+            window.onclick = (event) => {
+                if (event.target === modalContainer) {
+                    modalContainer.style.display = "none";
+                }
+            };
+            let modalButton = document.createElement("button")
+            modalButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
+            if (issue.username === profileInfo.username) {
+                innerModal.appendChild(modalButton)
+            }
+            modalButton.textContent = "Mark as Solved"
+            modalButton.id = "gamificationExtensionIssueModalButton"
+            modalButton.addEventListener("click", (event) => {
+                chrome.runtime.sendMessage({
+                    mess: "fetch",
+                    method: "delete",
+                    body: "/pages/issues/" + profileInfo.username,
+                    content: issue
+                }, () => {
+                    removeBackground()
+                    drawBackground()
+                    solveIssueAchievement()
+                    modalContainer.style.display = "none";
+                    document.body.removeChild(modalContainer)
+                    let objects = objectType === "link" ? document.getElementsByTagName("a") : document.getElementsByName(objectType)
+                    let nodes = objects[issue.objectId].childNodes
+                    for (let k = 0; k < nodes.length; k++) {
+                        if (nodes[k].id && nodes[k].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
+                            objects[issue.objectId].removeChild(nodes[k])
+                        }
+                    }
+                })
+            })
+            document.body.appendChild(modalContainer)
+        }
+    })
+}
+
+linkClickListener = (event, i, pageInfo) => {
+    event.preventDefault()
+    let els = document.body.getElementsByTagName("a");
+    let goTo = event.target.href ? event.target.href : els[i].href
+    chrome.storage.sync.get(["interactionMode", "profileInfo", "currentURL", "pageStats", "stack"], (result) => {
+        let profileInfo = JSON.parse(result.profileInfo)
+        let currentURL = result.currentURL
+        if (result.interactionMode === "interact") {
+            clickHandlerInteract(profileInfo, currentURL, els[i], "link", i, JSON.parse(result.pageStats), pageInfo)
+            setTimeout(() => {
+                window.location = goTo
+                /*
+                let stack = result.stack
+                stack.push(goTo)
+                chrome.storage.sync.set({ stack: stack, clickedLink: true, lastAction: "click", previousURL: currentURL, reloadCount: 0 })
+            */}, 500)
         } else if (result.interactionMode === "signal") {
             event.preventDefault()
-            chrome.runtime.sendMessage({
-                mess: "fetch",
-                body: "/pages/issues/" + profileInfo.username,
-                method: "get",
-                content: { url: currentURL }
-            }, (response3) => {
-                let pageIssues = response3.data
-                if (pageIssues.filter(filterID).length === 0) {
-                    let modalContainer = document.createElement("div")
-                    modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
-                    let innerModal = document.createElement("div");
-                    innerModal.style = "background-color: rgb(211 245 230); margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; ";
-                    modalContainer.appendChild(innerModal);
-                    let modalSpan = document.createElement("span");
-                    modalSpan.style = "color: #aaa; float: right; font-size: 28px; font-weight: bold;";
-                    modalSpan.textContent = "X";
-                    innerModal.appendChild(modalSpan);
-                    let modalContent = document.createElement("p")
-                    modalContent.innerText = `Which is the issue you wish to report for this element?`
-                    innerModal.appendChild(modalContent);
-                    let modalForm = document.createElement("input")
-                    modalForm.type = "text"
-                    innerModal.appendChild(modalForm)
-                    modalContent.style = "text-align: center; color: #2215E2; font-size: x-large"
-                    modalSpan.onclick = () => { modalContainer.style.display = "none"; };
-                    window.onclick = (event) => {
-                        if (event.target === modalContainer) {
-                            modalContainer.style.display = "none";
-                        }
-                    };
-                    let modalButton = document.createElement("button")
-                    modalButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
-                    innerModal.appendChild(modalButton)
-                    modalButton.textContent = "Submit Issue"
-                    modalButton.id = "gamificationExtensionIssueModalButton"
-                    modalButton.addEventListener("click", (event) => {
-                        chrome.runtime.sendMessage({
-                            mess: "fetch",
-                            body: "/pages/issues",
-                            method: "post",
-                            content: { url: currentURL, username: profileInfo.username, objectId: i, objectType: "link", issueText: modalForm.value }
-                        }, () => {
-                            drawBackground()
-                            countIssuesAchievement()
-                            modalContainer.style.display = "none";
-                            document.body.removeChild(modalContainer)
-                        })
-                    })
-                    document.body.appendChild(modalContainer)
-                } else {
-                    let issue = pageIssues.filter(filterID)[0]
-                    let modalContainer = document.createElement("div")
-                    modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
-                    let innerModal = document.createElement("div");
-                    innerModal.style = "background-color: rgb(211 245 230); margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; ";
-                    modalContainer.appendChild(innerModal);
-                    let modalSpan = document.createElement("span");
-                    modalSpan.style = "color: #aaa; float: right; font-size: 28px; font-weight: bold;";
-                    modalSpan.textContent = "X";
-                    innerModal.appendChild(modalSpan);
-                    let modalContent = document.createElement("p")
-                    modalContent.innerText = `Current issue for this element: ${issue.issueText}`
-                    innerModal.appendChild(modalContent);
-                    modalContent.style = "text-align: center; color: #2215E2; font-size: x-large"
-                    modalSpan.onclick = () => { modalContainer.style.display = "none"; };
-                    window.onclick = (event) => {
-                        if (event.target === modalContainer) {
-                            modalContainer.style.display = "none";
-                        }
-                    };
-                    let modalButton = document.createElement("button")
-                    modalButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
-                    if (issue.username === profileInfo.username) {
-                        innerModal.appendChild(modalButton)
-                    }
-                    modalButton.textContent = "Mark as Solved"
-                    modalButton.id = "gamificationExtensionIssueModalButton"
-                    modalButton.addEventListener("click", (event) => {
-                        chrome.runtime.sendMessage({
-                            mess: "fetch",
-                            method: "delete",
-                            body: "/pages/issues/" + profileInfo.username,
-                            content: issue
-                        }, () => {
-                            removeBackground()
-                            drawBackground()
-                            solveIssueAchievement()
-                            modalContainer.style.display = "none";
-                            document.body.removeChild(modalContainer)
-                            let linkObjects = document.getElementsByTagName("a")
-                            let nodes = linkObjects[issue.objectId].childNodes
-                            for (let k = 0; k < nodes.length; k++) {
-                                if (nodes[k].id && nodes[k].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
-                                    linkObjects[issue.objectId].removeChild(nodes[k])
-                                }
-                            }
-                        })
-                    })
-                    document.body.appendChild(modalContainer)
-                }
-            })
+            clickHandlerSignal(profileInfo, currentURL, "link", i)
         }
     })
 }
@@ -228,9 +278,6 @@ inputClickListener = (event, pageInfo) => {
             chrome.storage.sync.get(["interactionMode", "profileInfo", "currentURL", "pageStats"], (result) => {
                 let profileInfo = JSON.parse(result.profileInfo)
                 let currentURL = result.currentURL
-                function filterURL(event) {
-                    return event.url === currentURL
-                }
                 if (result.interactionMode === "interact") {
                     if (els[j].value !== "") {
                         let allInputs = document.body.getElementsByTagName("input")
@@ -246,192 +293,10 @@ inputClickListener = (event, pageInfo) => {
                         }
                     }
                     removeBorders()
-                    html2canvas(els[j], options).then((canvas) => {
-                        console.log(canvas.toDataURL())
-                        chrome.runtime.sendMessage({
-                            mess: "fetch",
-                            body: "/pages/crops/" + profileInfo.username,
-                            content: { widgetType: "input", imageUrl: canvas.toDataURL(), widgetId: j, textContent: null, selectIndex: null, selector: selector(els[j]), xpath: xpath(els[j]), elementId: els[j].id },
-                            method: "post"
-                        }, () => {
-                            chrome.runtime.sendMessage({
-                                mess: "fetch",
-                                body: "/pages/actions/" + profileInfo.username,
-                                method: "get",
-                                content: { url: currentURL }
-                            }, (response3) => {
-                                let pageStatsObj = JSON.parse(result.pageStats);
-                                let psObj = pageStatsObj.filter(filterURL)[0]
-                                let intInputIds = psObj.interactedInputs
-                                let intInputPos = intInputIds.indexOf(j);
-                                if (intInputPos < 0) {
-                                    intInputIds.push(j);
-                                    psObj.interactedInputs = intInputIds;
-                                }
-                                let pageActions = response3.data
-                                let newInput = pageActions.filter(filterID).length === 0
-                                if (newInput) {
-                                    let newInputIds = psObj.newInputs;
-                                    let newInputPos = newInputIds.indexOf(j);
-                                    if (newInputPos < 0) {
-                                        newInputIds.push(j);
-                                        psObj.newInputs = newInputIds;
-                                    }
-                                }
-                                chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
-                                    setTimeout(() => {
-                                        chrome.storage.sync.get(["overlayMode"], (result) => {
-                                            if (result.overlayMode === "interacted") {
-                                                drawBorderOnInteracted()
-                                            } else if (result.overlayMode === "all") {
-                                                drawBorderOnAll()
-                                            }
-                                        })
-                                    }, 3000);
-                                    if (newInput) {
-                                        chrome.runtime.sendMessage({
-                                            mess: "fetch",
-                                            body: "/pages/actions",
-                                            method: "post",
-                                            content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "input" }
-                                        }, () => {
-                                            let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                                            let interactedLinks = pageActions.filter(filterLink).length
-                                            let interactedInputs = pageActions.filter(filterInput).length + 1
-                                            let interactedButtons = pageActions.filter(filterButton).length
-                                            let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
-                                            innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
-                                            innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
-                                            let sidenavProgress = document.getElementById("gamificationExtensionInputsProgress")
-                                            let widgetProgress = interactedInputs * 100 / pageInfo.totalInputObjects
-                                            if (widgetProgress > 100) {
-                                                widgetProgress = 100
-                                            }
-                                            sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
-                                            sidenavProgress.textContent = "Forms Progress: " + widgetProgress.toFixed(2) + "%"
-                                            let table = document.getElementById("gamificationExtensionPageStatsTable")
-                                            let inputsRow = table.rows[2]
-                                            let pageStat = pageStatsObj.filter(filterURL)[0]
-                                            inputsRow.cells[1].innerHTML = pageStat.interactedInputs.length
-                                            inputsRow.cells[2].innerHTML = pageStat.newInputs.length
-                                            inputsRow.cells[3].innerHTML = pageActions.filter(filterInput).length + 1
-                                            pageCoverageAchievements(progress, widgetProgress)
-                                            chrome.runtime.sendMessage({
-                                                mess: "fetch",
-                                                body: "/pages/records/" + profileInfo.username,
-                                                method: "post",
-                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, inputsCoverage: widgetProgress },
-                                                firstTime: false
-                                            })
-                                        })
-                                    }
-                                })
-                            })
-                        })
-                    })
+                    clickHandlerInteract(profileInfo, currentURL, els[j], "input", j, JSON.parse(result.pageStats), pageInfo)
                 } else if (result.interactionMode === "signal") {
                     event.preventDefault()
-                    chrome.runtime.sendMessage({
-                        mess: "fetch",
-                        body: "/pages/issues/" + profileInfo.username,
-                        method: "get",
-                        content: { url: currentURL }
-                    }, (response3) => {
-                        let pageIssues = response3.data
-                        if (pageIssues.filter(filterID).length === 0) {
-                            let modalContainer = document.createElement("div")
-                            modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
-                            let innerModal = document.createElement("div");
-                            innerModal.style = "background-color: rgb(211 245 230); margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; ";
-                            modalContainer.appendChild(innerModal);
-                            let modalSpan = document.createElement("span");
-                            modalSpan.style = "color: #aaa; float: right; font-size: 28px; font-weight: bold;";
-                            modalSpan.textContent = "X";
-                            innerModal.appendChild(modalSpan);
-                            let modalContent = document.createElement("p")
-                            modalContent.innerText = `Which is the issue you wish to report for this element?`
-                            innerModal.appendChild(modalContent);
-                            let modalForm = document.createElement("input")
-                            modalForm.type = "text"
-                            innerModal.appendChild(modalForm)
-                            modalContent.style = "text-align: center; color: #2215E2; font-size: x-large"
-                            modalSpan.onclick = () => { modalContainer.style.display = "none"; };
-                            window.onclick = (event) => {
-                                if (event.target === modalContainer) {
-                                    modalContainer.style.display = "none";
-                                }
-                            };
-                            let modalButton = document.createElement("button")
-                            modalButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
-                            innerModal.appendChild(modalButton)
-                            modalButton.textContent = "Submit Issue"
-                            modalButton.id = "gamificationExtensionIssueModalButton"
-                            modalButton.addEventListener("click", (event) => {
-                                chrome.runtime.sendMessage({
-                                    mess: "fetch",
-                                    body: "/pages/issues",
-                                    method: "post",
-                                    content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "input", issueText: modalForm.value }
-                                }, () => {
-                                    drawBackground()
-                                    countIssuesAchievement()
-                                    modalContainer.style.display = "none";
-                                    document.body.removeChild(modalContainer)
-                                })
-                            })
-                            document.body.appendChild(modalContainer)
-                        } else {
-                            let issue = pageIssues.filter(filterID)[0]
-                            let modalContainer = document.createElement("div")
-                            modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
-                            let innerModal = document.createElement("div");
-                            innerModal.style = "background-color: rgb(211 245 230); margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; ";
-                            modalContainer.appendChild(innerModal);
-                            let modalSpan = document.createElement("span");
-                            modalSpan.style = "color: #aaa; float: right; font-size: 28px; font-weight: bold;";
-                            modalSpan.textContent = "X";
-                            innerModal.appendChild(modalSpan);
-                            let modalContent = document.createElement("p")
-                            modalContent.innerText = `Current issue for this element: ${issue.issueText}`
-                            innerModal.appendChild(modalContent);
-                            modalContent.style = "text-align: center; color: #2215E2; font-size: x-large"
-                            modalSpan.onclick = () => { modalContainer.style.display = "none"; };
-                            window.onclick = (event) => {
-                                if (event.target === modalContainer) {
-                                    modalContainer.style.display = "none";
-                                }
-                            };
-                            let modalButton = document.createElement("button")
-                            modalButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
-                            if (issue.username === profileInfo.username) {
-                                innerModal.appendChild(modalButton)
-                            }
-                            modalButton.textContent = "Mark as Solved"
-                            modalButton.id = "gamificationExtensionIssueModalButton"
-                            modalButton.addEventListener("click", (event) => {
-                                chrome.runtime.sendMessage({
-                                    mess: "fetch",
-                                    method: "delete",
-                                    body: "/pages/issues/" + profileInfo.username,
-                                    content: issue
-                                }, () => {
-                                    removeBackground()
-                                    drawBackground()
-                                    solveIssueAchievement()
-                                    modalContainer.style.display = "none";
-                                    document.body.removeChild(modalContainer)
-                                    let inputs = document.body.getElementsByTagName("input");
-                                    let nodes = inputs[issue.objectId].childNodes
-                                    for (let k = 0; k < nodes.length; k++) {
-                                        if (nodes[k].id && nodes[k].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
-                                            inputs[issue.objectId].removeChild(nodes[k])
-                                        }
-                                    }
-                                })
-                            })
-                            document.body.appendChild(modalContainer)
-                        }
-                    })
+                    clickHandlerSignal(profileInfo, currentURL, "input", j)
                 }
             })
         }
@@ -450,196 +315,12 @@ buttonClickListener = (event, pageInfo) => {
             chrome.storage.sync.get(["interactionMode", "profileInfo", "currentURL", "pageStats"], (result) => {
                 let profileInfo = JSON.parse(result.profileInfo)
                 let currentURL = result.currentURL
-                function filterURL(event) {
-                    return event.url === currentURL
-                }
                 if (result.interactionMode === "interact") {
                     removeBorders()
-                    html2canvas(els[j], options).then((canvas) => {
-                        console.log(canvas.toDataURL())
-                        chrome.runtime.sendMessage({
-                            mess: "fetch",
-                            body: "/pages/crops/" + profileInfo.username,
-                            content: { widgetType: "button", imageUrl: canvas.toDataURL(), widgetId: j, textContent: null, selectIndex: null, selector: selector(els[j]), xpath: xpath(els[j]), elementId: els[j].id },
-                            method: "post"
-                        }, () => {
-                            chrome.runtime.sendMessage({
-                                mess: "fetch",
-                                body: "/pages/actions/" + profileInfo.username,
-                                method: "get",
-                                content: { url: currentURL }
-                            }, (response3) => {
-                                let pageStatsObj = JSON.parse(result.pageStats);
-                                let psObj = pageStatsObj.filter(filterURL)[0]
-                                let intButtonIds = psObj.interactedButtons
-                                let intButtonPos = intButtonIds.indexOf(j);
-                                if (intButtonPos < 0) {
-                                    intButtonIds.push(j);
-                                    psObj.interactedButtons = intButtonIds;
-                                }
-                                let pageActions = response3.data
-                                let newButton = pageActions.filter(filterID).length === 0
-                                if (newButton) {
-                                    let newButtonIds = psObj.newButtons;
-                                    let newButtonPos = newButtonIds.indexOf(j);
-                                    if (newButtonPos < 0) {
-                                        newButtonIds.push(j);
-                                        psObj.newButtons = newButtonIds;
-                                    }
-                                }
-                                chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
-                                    setTimeout(() => {
-                                        chrome.storage.sync.get(["overlayMode"], (result) => {
-                                            if (result.overlayMode === "interacted") {
-                                                drawBorderOnInteracted()
-                                            } else if (result.overlayMode === "all") {
-                                                drawBorderOnAll()
-                                            }
-                                        })
-                                    }, 3000);
-                                    if (newButton) {
-                                        chrome.runtime.sendMessage({
-                                            mess: "fetch",
-                                            body: "/pages/actions",
-                                            method: "post",
-                                            content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "button" }
-                                        }, () => {
-                                            let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                                            let interactedLinks = pageActions.filter(filterLink).length
-                                            let interactedInputs = pageActions.filter(filterInput).length
-                                            let interactedButtons = pageActions.filter(filterButton).length + 1
-                                            let progress = ((interactedLinks + interactedInputs + interactedButtons) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects)
-                                            innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
-                                            innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
-                                            let sidenavProgress = document.getElementById("gamificationExtensionButtonsProgress")
-                                            let widgetProgress = interactedButtons * 100 / pageInfo.totalButtonObjects
-                                            if (widgetProgress > 100) {
-                                                widgetProgress = 100
-                                            }
-                                            sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
-                                            sidenavProgress.textContent = "Buttons Progress: " + widgetProgress.toFixed(2) + "%"
-                                            let table = document.getElementById("gamificationExtensionPageStatsTable")
-                                            let buttonsRow = table.rows[3]
-                                            let pageStat = pageStatsObj.filter(filterURL)[0]
-                                            buttonsRow.cells[1].innerHTML = pageStat.interactedButtons.length
-                                            buttonsRow.cells[2].innerHTML = pageStat.newButtons.length
-                                            buttonsRow.cells[3].innerHTML = pageActions.filter(filterButton).length + 1
-                                            pageCoverageAchievements(progress, widgetProgress)
-                                            chrome.runtime.sendMessage({
-                                                mess: "fetch",
-                                                body: "/pages/records/" + profileInfo.username,
-                                                method: "post",
-                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, buttonsCoverage: widgetProgress },
-                                                firstTime: false
-                                            })
-                                        })
-                                    }
-                                })
-                            })
-                        })
-                    })
+                    clickHandlerInteract(profileInfo, currentURL, els[j], "button", j, JSON.parse(result.pageStats), pageInfo)
                 } else if (result.interactionMode === "signal") {
-                    chrome.runtime.sendMessage({
-                        mess: "fetch",
-                        body: "/pages/issues/" + profileInfo.username,
-                        method: "get",
-                        content: { url: currentURL }
-                    }, (response3) => {
-                        let pageIssues = response3.data
-                        if (pageIssues.filter(filterID).length === 0) {
-                            let modalContainer = document.createElement("div")
-                            modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
-                            let innerModal = document.createElement("div");
-                            innerModal.style = "background-color: rgb(211 245 230); margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; ";
-                            modalContainer.appendChild(innerModal);
-                            let modalSpan = document.createElement("span");
-                            modalSpan.style = "color: #aaa; float: right; font-size: 28px; font-weight: bold;";
-                            modalSpan.textContent = "X";
-                            innerModal.appendChild(modalSpan);
-                            let modalContent = document.createElement("p")
-                            modalContent.innerText = `Which is the issue you wish to report for this element?`
-                            innerModal.appendChild(modalContent);
-                            let modalForm = document.createElement("input")
-                            modalForm.type = "text"
-                            innerModal.appendChild(modalForm)
-                            modalContent.style = "text-align: center; color: #2215E2; font-size: x-large"
-                            modalSpan.onclick = () => { modalContainer.style.display = "none"; };
-                            window.onclick = (event) => {
-                                if (event.target === modalContainer) {
-                                    modalContainer.style.display = "none";
-                                }
-                            };
-                            let modalButton = document.createElement("button")
-                            modalButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
-                            innerModal.appendChild(modalButton)
-                            modalButton.textContent = "Submit Issue"
-                            modalButton.id = "gamificationExtensionIssueModalButton"
-                            modalButton.addEventListener("click", (event) => {
-                                chrome.runtime.sendMessage({
-                                    mess: "fetch",
-                                    body: "/pages/issues",
-                                    method: "post",
-                                    content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "button", issueText: modalForm.value }
-                                }, () => {
-                                    drawBackground()
-                                    countIssuesAchievement()
-                                    modalContainer.style.display = "none";
-                                    document.body.removeChild(modalContainer)
-                                })
-                            })
-                            document.body.appendChild(modalContainer)
-                        } else {
-                            let issue = pageIssues.filter(filterID)[0]
-                            let modalContainer = document.createElement("div")
-                            modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
-                            let innerModal = document.createElement("div");
-                            innerModal.style = "background-color: rgb(211 245 230); margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; ";
-                            modalContainer.appendChild(innerModal);
-                            let modalSpan = document.createElement("span");
-                            modalSpan.style = "color: #aaa; float: right; font-size: 28px; font-weight: bold;";
-                            modalSpan.textContent = "X";
-                            innerModal.appendChild(modalSpan);
-                            let modalContent = document.createElement("p")
-                            modalContent.innerText = `Current issue for this element: ${issue.issueText}`
-                            if (issue.username === profileInfo.username) {
-                                innerModal.appendChild(modalButton)
-                            }
-                            modalContent.style = "text-align: center; color: #2215E2; font-size: x-large"
-                            modalSpan.onclick = () => { modalContainer.style.display = "none"; };
-                            window.onclick = (event) => {
-                                if (event.target === modalContainer) {
-                                    modalContainer.style.display = "none";
-                                }
-                            };
-                            let modalButton = document.createElement("button")
-                            modalButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
-                            innerModal.appendChild(modalButton)
-                            modalButton.textContent = "Mark as Solved"
-                            modalButton.id = "gamificationExtensionIssueModalButton"
-                            modalButton.addEventListener("click", (event) => {
-                                chrome.runtime.sendMessage({
-                                    mess: "fetch",
-                                    method: "delete",
-                                    body: "/pages/issues/" + profileInfo.username,
-                                    content: issue
-                                }, () => {
-                                    removeBackground()
-                                    drawBackground()
-                                    solveIssueAchievement()
-                                    modalContainer.style.display = "none";
-                                    document.body.removeChild(modalContainer)
-                                    let buttonObjects = document.getElementsByTagName("button")
-                                    let nodes = buttonObjects[issue.objectId].childNodes
-                                    for (let k = 0; k < nodes.length; k++) {
-                                        if (nodes[k].id && nodes[k].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
-                                            buttonObjects[issue.objectId].removeChild(nodes[k])
-                                        }
-                                    }
-                                })
-                            })
-                            document.body.appendChild(modalContainer)
-                        }
-                    })
+                    event.preventDefault()
+                    clickHandlerSignal(profileInfo, currentURL, "button", j)
                 }
             })
         }
@@ -650,206 +331,16 @@ selectClickListener = (event, pageInfo) => {
     let els = document.body.getElementsByTagName("select")
     let found = false
     for (let j = 0; j < els.length && !found; j++) {
-        function filterID(event) {
-            return event.objectId === (j) && event.objectType === "select"
-        }
         if (event.target.id === els[j].id) {
             found = true
             chrome.storage.sync.get(["interactionMode", "profileInfo", "currentURL", "pageStats"], (result) => {
                 let profileInfo = JSON.parse(result.profileInfo)
                 let currentURL = result.currentURL
-                function filterURL(event) {
-                    return event.url === currentURL
-                }
                 if (result.interactionMode === "interact") {
-                    removeBorders()
-                    html2canvas(els[j], options).then((canvas) => {
-                        console.log(canvas.toDataURL())
-                        chrome.runtime.sendMessage({
-                            mess: "fetch",
-                            body: "/pages/crops/" + profileInfo.username,
-                            content: { widgetType: "select", imageUrl: canvas.toDataURL(), widgetId: j, textContent: null, selectIndex: null, selector: selector(els[j]), xpath: xpath(els[j]), elementId: els[j].id },
-                            method: "post"
-                        }, () => {
-                            chrome.runtime.sendMessage({
-                                mess: "fetch",
-                                body: "/pages/actions/" + profileInfo.username,
-                                method: "get",
-                                content: { url: currentURL }
-                            }, (response3) => {
-
-                                let pageStatsObj = JSON.parse(result.pageStats);
-                                let psObj = pageStatsObj.filter(filterURL)[0]
-                                let intSelectIds = psObj.interactedSelects
-                                let intSelectPos = intSelectIds.indexOf(j);
-                                if (intSelectPos < 0) {
-                                    intSelectIds.push(j);
-                                    psObj.interactedSelects = intSelectIds;
-                                }
-                                let pageActions = response3.data
-                                let newSelect = pageActions.filter(filterID).length === 0
-                                if (newSelect) {
-                                    let newSelectIds = psObj.newSelects;
-                                    let newSelectPos = newSelectIds.indexOf(j);
-                                    if (newSelectPos < 0) {
-                                        newSelectIds.push(j);
-                                        psObj.newSelects = newSelectIds;
-                                    }
-                                }
-                                chrome.storage.sync.set({ pageStats: JSON.stringify(pageStatsObj) }, () => {
-                                    setTimeout(() => {
-                                        chrome.storage.sync.get(["overlayMode"], (result) => {
-                                            if (result.overlayMode === "interacted") {
-                                                drawBorderOnInteracted()
-                                            } else if (result.overlayMode === "all") {
-                                                drawBorderOnAll()
-                                            }
-                                        })
-                                    }, 3000);
-                                    if (newSelect) {
-                                        chrome.runtime.sendMessage({
-                                            mess: "fetch",
-                                            body: "/pages/actions",
-                                            method: "post",
-                                            content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "select" }
-                                        }, () => {
-                                            let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                                            let interactedLinks = pageActions.filter(filterLink).length
-                                            let interactedInputs = pageActions.filter(filterInput).length
-                                            let interactedButtons = pageActions.filter(filterButton).length
-                                            let interactedSelects = pageActions.filter(filterSelect).length + 1
-                                            let progress = ((interactedLinks + interactedInputs + interactedButtons + interactedSelects) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects + pageInfo.totalSelectObjects)
-                                            innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
-                                            innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
-                                            let sidenavProgress = document.getElementById("gamificationExtensionSelectsProgress")
-                                            let widgetProgress = interactedSelects * 100 / pageInfo.totalSelectObjects
-                                            if (widgetProgress > 100) {
-                                                widgetProgress = 100
-                                            }
-                                            sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
-                                            sidenavProgress.textContent = "Dropdown Menus Progress: " + widgetProgress.toFixed(2) + "%"
-                                            let table = document.getElementById("gamificationExtensionPageStatsTable")
-                                            let buttonsRow = table.rows[4]
-                                            let pageStat = pageStatsObj.filter(filterURL)[0]
-                                            buttonsRow.cells[1].innerHTML = pageStat.interactedSelects.length
-                                            buttonsRow.cells[2].innerHTML = pageStat.newSelects.length
-                                            buttonsRow.cells[3].innerHTML = pageActions.filter(filterSelect).length + 1
-                                            pageCoverageAchievements(progress, widgetProgress)
-                                            chrome.runtime.sendMessage({
-                                                mess: "fetch",
-                                                body: "/pages/records/" + profileInfo.username,
-                                                method: "post",
-                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, selectsCoverage: widgetProgress },
-                                                firstTime: false
-                                            })
-                                        })
-                                    }
-                                })
-                            })
-                        })
-                    })
+                    clickHandlerInteract(profileInfo, currentURL, els[j], "select", j, JSON.parse(result.pageStats), pageInfo)
                 } else if (result.interactionMode === "signal") {
-                    chrome.runtime.sendMessage({
-                        mess: "fetch",
-                        body: "/pages/issues/" + profileInfo.username,
-                        method: "get",
-                        content: { url: currentURL }
-                    }, (response3) => {
-                        let pageIssues = response3.data
-                        if (pageIssues.filter(filterID).length === 0) {
-                            let modalContainer = document.createElement("div")
-                            modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
-                            let innerModal = document.createElement("div");
-                            innerModal.style = "background-color: rgb(211 245 230); margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; ";
-                            modalContainer.appendChild(innerModal);
-                            let modalSpan = document.createElement("span");
-                            modalSpan.style = "color: #aaa; float: right; font-size: 28px; font-weight: bold;";
-                            modalSpan.textContent = "X";
-                            innerModal.appendChild(modalSpan);
-                            let modalContent = document.createElement("p")
-                            modalContent.innerText = `Which is the issue you wish to report for this element?`
-                            innerModal.appendChild(modalContent);
-                            let modalForm = document.createElement("input")
-                            modalForm.type = "text"
-                            innerModal.appendChild(modalForm)
-                            modalContent.style = "text-align: center; color: #2215E2; font-size: x-large"
-                            modalSpan.onclick = () => { modalContainer.style.display = "none"; };
-                            window.onclick = (event) => {
-                                if (event.target === modalContainer) {
-                                    modalContainer.style.display = "none";
-                                }
-                            };
-                            let modalButton = document.createElement("button")
-                            modalButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
-                            innerModal.appendChild(modalButton)
-                            modalButton.textContent = "Submit Issue"
-                            modalButton.id = "gamificationExtensionIssueModalButton"
-                            modalButton.addEventListener("click", (event) => {
-                                chrome.runtime.sendMessage({
-                                    mess: "fetch",
-                                    body: "/pages/issues",
-                                    method: "post",
-                                    content: { url: currentURL, username: profileInfo.username, objectId: j, objectType: "select", issueText: modalForm.value }
-                                }, () => {
-                                    drawBackground()
-                                    countIssuesAchievement()
-                                    modalContainer.style.display = "none";
-                                    document.body.removeChild(modalContainer)
-                                })
-                            })
-                            document.body.appendChild(modalContainer)
-                        } else {
-                            let issue = pageIssues.filter(filterID)[0]
-                            let modalContainer = document.createElement("div")
-                            modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
-                            let innerModal = document.createElement("div");
-                            innerModal.style = "background-color: rgb(211 245 230); margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; ";
-                            modalContainer.appendChild(innerModal);
-                            let modalSpan = document.createElement("span");
-                            modalSpan.style = "color: #aaa; float: right; font-size: 28px; font-weight: bold;";
-                            modalSpan.textContent = "X";
-                            innerModal.appendChild(modalSpan);
-                            let modalContent = document.createElement("p")
-                            modalContent.innerText = `Current issue for this element: ${issue.issueText}`
-                            innerModal.appendChild(modalContent);
-                            modalContent.style = "text-align: center; color: #2215E2; font-size: x-large"
-                            modalSpan.onclick = () => { modalContainer.style.display = "none"; };
-                            window.onclick = (event) => {
-                                if (event.target === modalContainer) {
-                                    modalContainer.style.display = "none";
-                                }
-                            };
-                            let modalButton = document.createElement("button")
-                            modalButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
-                            if (issue.username === profileInfo.username) {
-                                innerModal.appendChild(modalButton)
-                            }
-                            modalButton.textContent = "Mark as Solved"
-                            modalButton.id = "gamificationExtensionIssueModalButton"
-                            modalButton.addEventListener("click", (event) => {
-                                chrome.runtime.sendMessage({
-                                    mess: "fetch",
-                                    method: "delete",
-                                    body: "/pages/issues/" + profileInfo.username,
-                                    content: issue
-                                }, () => {
-                                    removeBackground()
-                                    drawBackground()
-                                    solveIssueAchievement()
-                                    modalContainer.style.display = "none";
-                                    document.body.removeChild(modalContainer)
-                                    let selectObjects = document.body.getElementsByTagName("select")
-                                    let nodes = selectObjects[issue.objectId].childNodes
-                                    for (let k = 0; k < nodes.length; k++) {
-                                        if (nodes[k].id && nodes[k].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
-                                            selectObjects[issue.objectId].removeChild(nodes[k])
-                                        }
-                                    }
-                                })
-                            })
-                            document.body.appendChild(modalContainer)
-                        }
-                    })
+                    event.preventDefault()
+                    clickHandlerSignal(profileInfo, currentURL, "select", j)
                 }
             })
         }
