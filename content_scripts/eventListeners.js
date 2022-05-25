@@ -191,6 +191,7 @@ clickHandlerSignal = (profileInfo, currentURL, objectType, objectId) => {
         } else {
             let issue = pageIssues.filter(filterID)[0]
             let modalContainer = document.createElement("div")
+            modalContainer.id = "gamificationExtensionIssueModal"
             modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
             let innerModal = document.createElement("div");
             innerModal.style = "background-color: rgb(211 245 230); margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; ";
@@ -204,11 +205,11 @@ clickHandlerSignal = (profileInfo, currentURL, objectType, objectId) => {
             innerModal.appendChild(modalContent);
             modalContent.style = "text-align: center; color: #2215E2; font-size: x-large"
             modalSpan.onclick = () => { modalContainer.style.display = "none"; };
-            window.onclick = (event) => {
+            /*window.onclick = (event) => {
                 if (event.target === modalContainer) {
                     modalContainer.style.display = "none";
                 }
-            };
+            };*/
             let modalButton = document.createElement("button")
             modalButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
             if (issue.username === profileInfo.username) {
@@ -270,9 +271,6 @@ inputClickListener = (event, pageInfo) => {
     let els = document.body.getElementsByTagName("input");
     let found = false;
     for (let j = 0; j < els.length && !found; j++) {
-        function filterID(event) {
-            return event.objectId === (j) && event.objectType === "input"
-        }
         if (els[j].id === event.target.id) {
             found = true
             chrome.storage.sync.get(["interactionMode", "profileInfo", "currentURL", "pageStats"], (result) => {

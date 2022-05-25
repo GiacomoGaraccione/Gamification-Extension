@@ -366,7 +366,7 @@ app.post("/api/pages/actions", [
     body("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/),
     body("url", "Parameter doesn't respect specifications").notEmpty().isURL(),
     body("objectId", "Parameter doesn't respect specifications").notEmpty().isNumeric(),
-    body("objectType", "Parameter doesn't respect specifications").notEmpty().isIn(["link", "input", "button", "select"])
+    body("objectType", "Parameter doesn't respect specifications").notEmpty().isAlphanumeric()
 ], (req, res) => {
     if (utilities.resolveExpressValidator(validationResult(req), res)) {
         const pageAction = req.body

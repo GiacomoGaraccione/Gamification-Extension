@@ -492,7 +492,8 @@ function callScripts(tab) {
       "scripts/showSidenav.js",
       "scripts/countInteractableElements.js",
       "scripts/showTopbar.js",
-      "scripts/drawOverlays.js"/*,
+      "scripts/drawOverlays.js",
+      "scripts/otherElementsListener.js"/*,
   "scripts/stackHandler.js"*/]
   });
 }

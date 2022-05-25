@@ -15,6 +15,13 @@ function filterSelect(event) {
     return event.objectType === "select"
 }
 
+function filterOther(event) {
+    return (event.objectType !== "link" &&
+        event.objectType !== "input" &&
+        event.objectType !== "button" &&
+        event.objectType !== "select")
+}
+
 function removeBorders() {
     let linksToRemove = document.body.getElementsByTagName("a");
     for (let i = 0; i < linksToRemove.length; i++) {
@@ -37,6 +44,22 @@ function removeBorders() {
     for (let i = 0; i < selectsToRemove.length; i++) {
         selectsToRemove[i].style = "border:0; border-style:solid;";
     }
+
+    chrome.storage.sync.get(["currentURL", "profileInfo"], (result) => {
+        let profileInfo = JSON.parse(result.profileInfo)
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            body: "/pages/actions/" + profileInfo.username,
+            method: "get",
+            content: { url: result.currentURL }
+        }, (response) => {
+            let pageActions = response.data.filter(filterOther)
+            for (action of pageActions) {
+                let els = document.body.getElementsByTagName(action.objectType)
+                els[action.objectId].style = "border:0; border-style:solid;";
+            }
+        })
+    })
 }
 
 function removeBackground() {
@@ -84,6 +107,29 @@ function removeBackground() {
             }
         }
     }
+
+    chrome.storage.sync.get(["currentURL", "profileInfo"], (result) => {
+        let profileInfo = JSON.parse(result.profileInfo)
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            body: "/pages/issues/" + profileInfo.username,
+            method: "get",
+            content: { url: result.currentURL }
+        }, (response) => {
+            let pageIssues = response.data.filter(filterOther)
+            for (issue of pageIssues) {
+                let els = document.body.getElementsByTagName(issue.objectType)
+                console.log(issue)
+                els[issue.objectId].style = "background-image: none"
+                let nodes = els[issue.objectId].childNodes
+                for (let k = 0; k < nodes.length; k++) {
+                    if (nodes[k].id && nodes[k].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
+                        els[issue.objectId].removeChild(nodes[k])
+                    }
+                }
+            }
+        })
+    })
 }
 
 function isButtonOfExtension(button) {
@@ -125,6 +171,21 @@ function drawBorderOnAll() {
     for (let i = 0; i < selects.length; i++) {
         selects[i].style = "border:3px solid; border-color:yellow;";
     }
+    chrome.storage.sync.get(["currentURL", "profileInfo"], (result) => {
+        let profileInfo = JSON.parse(result.profileInfo)
+        chrome.runtime.sendMessage({
+            mess: "fetch",
+            body: "/pages/actions/" + profileInfo.username,
+            method: "get",
+            content: { url: result.currentURL }
+        }, (response) => {
+            let pageActions = response.data.filter(filterOther)
+            for (action of pageActions) {
+                let els = document.body.getElementsByTagName(action.objectType)
+                els[action.objectId].style = "border:3px; border-style:solid; border-color:purple;";
+            }
+        })
+    })
 }
 
 function drawBorderOnInteracted() {
@@ -155,6 +216,9 @@ function drawBorderOnInteracted() {
                     case "select":
                         selects[action.objectId].style = "border:3px; border-style:solid; border-color:yellow;";
                         break
+                    default:
+                        let els = document.body.getElementsByTagName(action.objectType)
+                        els[action.objectId].style = "border:3px; border-style:solid; border-color:purple;";
                 }
             }
         })
@@ -262,6 +326,27 @@ function drawBackground() {
                             })
                         }
                         break
+                    default:
+                        console.log(issue)
+                        let els = document.getElementsByTagName(issue.objectType)
+                        els[issue.objectId].style = "background-image: linear-gradient(to right top, rgb(255, 255, 255) 0%, rgb(243 0 0) 100%)"
+                        let children = els[issue.objectId].childNodes
+                        let found = false
+                        for (let j = 0; j < children.length && !found; j++) {
+                            if (children[j].id && children[j].id.indexOf("gamificationExtensionTooltipIssue") >= 0) {
+                                found = true
+                            }
+                        }
+                        if (!found) {
+                            els[issue.objectId].appendChild(tooltip)
+                            els[issue.objectId].addEventListener("mouseover", () => {
+                                tooltip.style.display = "inline"
+                                tooltip.style.visibility = "visible"
+                            })
+                            els[issue.objectId].addEventListener("mouseout", () => {
+                                tooltip.style.display = "none"
+                            })
+                        }
                 }
             }
         })
