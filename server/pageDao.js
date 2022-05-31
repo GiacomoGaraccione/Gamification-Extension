@@ -379,3 +379,54 @@ exports.updateWidgetCrop = function (username, widgetCrop) {
         }
     })
 }
+
+exports.addIssueCrop = function (issueCrop, username) {
+    return new Promise((resolve, reject) => {
+        const sql = "INSERT INTO IssueCrops(username, imageUrl, issueText, widgetType, widgetId) VALUES(?, ?, ?, ?, ?)"
+        db.run(sql, [username, issueCrop.imageUrl, issueCrop.issueText, issueCrop.widgetType, issueCrop.widgetId], (err, row) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                resolve()
+            }
+        })
+    })
+}
+
+exports.getIssueCrops = function (username) {
+    return new Promise((resolve, reject) => {
+        const sql = "SELECT * FROM IssueCrops WHERE username = ? ORDER BY id"
+        db.all(sql, [username], (err, rows) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                //All the crops made during the session are deleted, resetting the state for future sessions
+                const sqlDel = "DELETE FROM IssueCrops WHERE username = ?"
+                db.run(sqlDel, [username], (errDel, rowDel) => {
+                    if (errDel) {
+                        utilities.errorObjs.dbError.errorMessage = "errno: " + errDel.errno + " - code: " + errDel.code
+                        reject(utilities.errorObjs.dbError)
+                    } else {
+                        resolve(rows)
+                    }
+                })
+            }
+        })
+    })
+}
+
+exports.deleteIssueCrop = function (username, issueCrop) {
+    return new Promise((resolve, reject) => {
+        const sql = "DELETE FROM IssueCrops WHERE username = ? AND widgetId = ? AND widgetType = ?"
+        db.run(sql, [username, issueCrop.widgetId, issueCrop.widgetType], (err, row) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                resolve()
+            }
+        })
+    })
+}

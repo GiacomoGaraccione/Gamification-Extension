@@ -220,9 +220,17 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                     let baseURL = result.baseURL
                                     //Creation of a .zip folder containing the SikuliX script (a second .zip folder) and the Selenium script
                                     let zip = new JSZip()
-                                    let folder = zip.folder("scripts")
-                                    let inner = folder.folder("script.sikuli")
-                                    console.log(ret)
+                                    let reports = zip.folder("reports")
+                                    let scripts = reports.folder("scripts")
+                                    let inner = scripts.folder("scripts.sikuli")
+                                    let issueReports = reports.folder("issues")
+                                    let readme = "This folder contains the various reports generated during the testing session you have just finished.\n" +
+                                        "Its content are divided as follows:\n" +
+                                        `   - "scripts" folder: this folder contains scripts whose purpose is to emulate as faithfully as possible the actions you have performed during the session (clicking on elements, writing into text fields, selecting values from menus and so on).\n` +
+                                        `       More in detail: the "script.sikuli" folder is to be used with the SikuliX program, while the single file with ".side" extension is compatible with "Selenium IDE", a web browser extension.\n` +
+                                        `   - "issues" folder: this folder contains an image for each element you have reported an issue for, together with an html file which, if opened in browser, displays a table listing information about the reported issues.\n` +
+                                        `   - "log" folder: this folder acts as a combination  of the behaviors of the two previous ones, seeing as it contains an image of each element you have either interacted with or reported an issue for, along with an html file displaying all the actions performed, in the exact sequence you have performed them.`
+                                    reports.file("readme.txt", readme)
                                     //Creation, for each imageUrl corresponding to the screenshot of an interacted element, of an image file used by SikuliX
                                     for (let i = 0; i < ret.length; i++) {
                                         if (ret[i].imageUrl) {
@@ -359,11 +367,59 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                     }
                                     seleniumFile.tests[0].commands = commands
                                     //Creation of the .side file representing the script
-                                    folder.file("gamification-extension-selenium-testing-project.side", JSON.stringify(seleniumFile))
+                                    scripts.file("gamification-extension-selenium-testing-project.side", JSON.stringify(seleniumFile))
                                     //Download of the entire .zip folder
-                                    zip.generateAsync({ type: "blob" }).then((blob) => {
-                                        saveAs(blob, "scripts.zip");
-                                    });
+                                    chrome.runtime.sendMessage({
+                                        mess: "fetch",
+                                        method: "get",
+                                        body: "/pages/issues/crops/" + profileInfo.username
+                                    }, (response4) => {
+                                        console.log(response4)
+
+                                        let issues = response4.data
+                                        for (let i = 0; i < issues.length; i++) {
+                                            if (issues[i].imageUrl) {
+                                                let byteString = atob(issues[i].imageUrl.split(',')[1])
+                                                let mimeString = issues[i].imageUrl.split(',')[0].split(':')[1].split(';')[0]
+                                                let ab = new ArrayBuffer(byteString.length);
+                                                let ia = new Uint8Array(ab);
+                                                for (let j = 0; j < byteString.length; j++) {
+                                                    ia[j] = byteString.charCodeAt(j);
+                                                }
+                                                let blob = new Blob([ab], { type: mimeString });
+                                                console.log(blob)
+                                                issueReports.file(`img${i + 1}.png`, blob)
+                                            }
+                                        }
+                                        let htmlReport = "<!DOCTYPE html>\n" +
+                                            "<html>\n" +
+                                            "<head>\n" +
+                                            "<title>Gamification Extension - Issue Report</title>\n" +
+                                            "</head>\n" +
+                                            `<body style="background-color: rgb(211 245 230);">\n` +
+                                            `<header>\n` +
+                                            `<h1 style="text-align: center; color:#2215E2" id="title">Issues reported during the last session</h1>\n` +
+                                            `</header>\n` +
+                                            `<table>\n` +
+                                            `<tr>\n` +
+                                            `<th>Reported Widget</th>\n` +
+                                            `<th>Issue</th>\n` +
+                                            `<th>Widget Type</th>\n` +
+                                            `</tr>\n`
+                                        for (let i = 0; i < issues.length; i++) {
+                                            htmlReport += "<tr>\n" +
+                                                `<td><img src="./img${i + 1}.png"></img></td>\n` +
+                                                `<td>${issues[i].issueText}</td>\n` +
+                                                `<td>${issues[i].widgetType}</td>\n`
+                                        }
+                                        htmlReport += `</table>\n` +
+                                            `</body>\n` +
+                                            `</html>`
+                                        issueReports.file("issueReports.html", htmlReport)
+                                        zip.generateAsync({ type: "blob" }).then((blob) => {
+                                            saveAs(blob, "reports.zip");
+                                        });
+                                    })
                                 })
                             })
                         })

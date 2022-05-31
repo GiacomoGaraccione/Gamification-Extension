@@ -65,7 +65,6 @@ window.addEventListener("click", (event) => {
                                 })
                             })
                         } else if (result.interactionMode === "signal") {
-                            console.log(event.target)
                             chrome.runtime.sendMessage({
                                 mess: "fetch",
                                 body: "/pages/issues/" + profileInfo.username,
@@ -109,10 +108,19 @@ window.addEventListener("click", (event) => {
                                                 method: "post",
                                                 content: { url: result.currentURL, username: profileInfo.username, objectId: i, objectType: tag, issueText: modalForm.value }
                                             }, () => {
-                                                drawBackground()
-                                                countIssuesAchievement()
-                                                modalContainer.style.display = "none";
-                                                document.body.removeChild(modalContainer)
+                                                html2canvas(event.target, options).then((canvas) => {
+                                                    chrome.runtime.sendMessage({
+                                                        mess: "fetch",
+                                                        method: "post",
+                                                        body: "/pages/issues/crops/" + profileInfo.username,
+                                                        content: { imageUrl: canvas.toDataURL(), issueText: modalForm.value, widgetId: i, widgetType: tag }
+                                                    }, () => {
+                                                        drawBackground()
+                                                        countIssuesAchievement()
+                                                        modalContainer.style.display = "none";
+                                                        document.body.removeChild(modalContainer)
+                                                    })
+                                                })
                                             })
                                         } else {
                                             alert("Please write an issue before submitting")
@@ -167,6 +175,15 @@ window.addEventListener("click", (event) => {
                                                     objects[issue.objectId].removeChild(nodes[k])
                                                 }
                                             }
+                                            html2canvas(objects[issue.objectId], options).then((canvas) => {
+                                                chrome.runtime.sendMessage({
+                                                    mess: "fetch",
+                                                    method: "delete",
+                                                    body: "/pages/issues/crops/" + profileInfo.username,
+                                                    content: { imageUrl: canvas.toDataURL(), issueText: issue.issueText, widgetId: issue.objectId, widgetType: issue.objectType }
+                                                })
+                                            })
+
                                         })
                                     })
                                     document.body.appendChild(modalContainer)

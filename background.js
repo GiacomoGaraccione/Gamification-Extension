@@ -91,7 +91,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           sendResponse({ data: "ERROR" })
         }
       })
-    } else if (request.body.indexOf("/pages/issues") >= 0 && request.method === "get") {
+    } else if (request.body.indexOf("/pages/issues") >= 0 && request.body.indexOf("/crops") < 0 && request.method === "get") {
       fetch(apiCall, {
         method: "get"
       }).then((res) => {
@@ -102,7 +102,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           sendResponse({ data: data.filter(filterURL) })
         })
       })
-    } else if (request.body.indexOf("/pages/issues") >= 0 && request.method === "post") {
+    } else if (request.body.indexOf("/pages/issues") >= 0 && request.body.indexOf("/crops") < 0 && request.method === "post") {
       fetch(apiCall, {
         method: "post",
         headers: {
@@ -122,7 +122,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           sendResponse({ data: "ERROR" })
         }
       })
-    } else if (request.body.indexOf("/pages/issues") >= 0 && request.method === "delete") {
+    } else if (request.body.indexOf("/pages/issues") >= 0 && request.body.indexOf("/crops") < 0 && request.method === "delete") {
       fetch(apiCall, {
         method: "delete",
         headers: {
@@ -398,6 +398,42 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         res.json().then((data) => {
           sendResponse({ data: data })
         })
+      })
+    } else if (request.body.indexOf("/pages/issues/crops") >= 0 && request.method === "post") {
+      fetch(apiCall, {
+        method: "post",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify({ imageUrl: request.content.imageUrl, widgetType: request.content.widgetType, widgetId: request.content.widgetId, issueText: request.content.issueText })
+      }).then((res) => {
+        if (res.ok) {
+          sendResponse({ data: "OK" })
+        } else {
+          sendResponse({ data: "ERROR" })
+        }
+      })
+    } else if (request.body.indexOf("/pages/issues/crops") >= 0 && request.method === "get") {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          sendResponse({ data: data })
+        })
+      })
+    } else if (request.body.indexOf("/pages/issues/crops") >= 0 && request.method === "delete") {
+      fetch(apiCall, {
+        method: "delete",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify(request.content)
+      }).then((res) => {
+        if (res.ok) {
+          sendResponse({ data: "OK" })
+        } else {
+          sendResponse({ data: "ERROR" })
+        }
       })
     }
   }

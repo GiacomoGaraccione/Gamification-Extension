@@ -518,6 +518,37 @@ app.patch("/api/pages/crops/:username", [
     }
 })
 
+app.post("/api/pages/issues/crops/:username", [
+    param("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
+], (req, res) => {
+    if (utilities.resolveExpressValidator(validationResult(req), res)) {
+        const issueCrop = req.body
+        const username = req.params.username
+        pageDao.addIssueCrop(issueCrop, username)
+            .then(() => res.status(200).json(utilities.successObj))
+            .catch((err) => {
+                utilities.resolveErrors(err, res)
+            })
+    }
+})
+
+app.get("/api/pages/issues/crops/:username", (req, res) => {
+    const username = req.params.username
+    pageDao.getIssueCrops(username)
+        .then((crops) => { res.json(crops) })
+        .catch((err) => utilities.resolveErrors(err, res))
+})
+
+app.delete("/api/pages/issues/crops/:username", (req, res) => {
+    const username = req.params.username
+    const pageIssue = req.body
+    pageDao.deleteIssueCrop(username, pageIssue)
+        .then(() => res.status(200).json(utilities.successObj))
+        .catch((err) => {
+            utilities.resolveErrors(err, res)
+        })
+})
+
 //------------------------ Achievement APIs ---------------------------------
 
 app.get("/api/achievements", (req, res) => {

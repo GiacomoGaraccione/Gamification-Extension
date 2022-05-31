@@ -147,6 +147,7 @@ clickHandlerSignal = (profileInfo, currentURL, objectType, objectId) => {
     }, (response) => {
         let pageIssues = response.data
         if (pageIssues.filter(filterID).length === 0) {
+
             let modalContainer = document.createElement("div")
             modalContainer.style = " display: block; position: fixed;  z-index: 1;  left: 0; top: 0;width: 100%;  height: 100%;  overflow: auto; background-color: rgb(0,0,0);background-color: rgba(0,0,0,0.4); ";
             let innerModal = document.createElement("div");
@@ -181,10 +182,21 @@ clickHandlerSignal = (profileInfo, currentURL, objectType, objectId) => {
                     method: "post",
                     content: { url: currentURL, username: profileInfo.username, objectId: objectId, objectType: objectType, issueText: modalForm.value }
                 }, () => {
-                    drawBackground()
-                    countIssuesAchievement()
-                    modalContainer.style.display = "none";
-                    document.body.removeChild(modalContainer)
+                    let els = objectType === "link" ? document.getElementsByTagName("a") : document.getElementsByTagName(objectType)
+                    html2canvas(els[objectId], options).then((canvas) => {
+                        console.log(canvas.toDataURL())
+                        chrome.runtime.sendMessage({
+                            mess: "fetch",
+                            body: "/pages/issues/crops/" + profileInfo.username,
+                            method: "post",
+                            content: { imageUrl: canvas.toDataURL(), issueText: modalForm.value, widgetType: objectType, widgetId: objectId }
+                        }, () => {
+                            drawBackground()
+                            countIssuesAchievement()
+                            modalContainer.style.display = "none";
+                            document.body.removeChild(modalContainer)
+                        })
+                    })
                 })
             })
             document.body.appendChild(modalContainer)
@@ -236,6 +248,15 @@ clickHandlerSignal = (profileInfo, currentURL, objectType, objectId) => {
                             objects[issue.objectId].removeChild(nodes[k])
                         }
                     }
+                    html2canvas(objects[issue.objectId], options).then((canvas) => {
+                        chrome.runtime.sendMessage({
+                            mess: "fetch",
+                            method: "delete",
+                            body: "/pages/issues/crops/" + profileInfo.username,
+                            content: { imageUrl: canvas.toDataURL(), issueText: issue.issueText, widgetId: issue.objectId, widgetType: issue.objectType }
+                        })
+                    })
+
                 })
             })
             document.body.appendChild(modalContainer)
