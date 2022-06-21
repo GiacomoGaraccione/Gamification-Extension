@@ -36,14 +36,21 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
     homeButton.style = "bottom: 10%; right: 50%; background-color: transparent; color: black; border: 2px solid #416262; border-radius: 12px; padding: 9px; font-size: 16px;";
     homeButton.textContent = "Return to Starting Page"
     homeButton.onclick = () => {
-        chrome.storage.sync.get(["baseURL", "profileInfo"], (result) => {
+        chrome.storage.sync.get(["baseURL", "profileInfo", "currentURL"], (result) => {
             let profileInfo = JSON.parse(result.profileInfo)
             chrome.runtime.sendMessage({
                 mess: "fetch",
                 body: "/pages/crops/" + profileInfo.username,
                 content: { widgetType: "back", imageUrl: null, widgetId: 0, textContent: null, selectIndex: null, selector: null, xpath: null, elementId: null },
                 method: "post"
-            }, () => window.location = result.baseURL)
+            }, () => {
+                chrome.runtime.sendMessage({
+                    mess: "fetch",
+                    method: "post",
+                    body: "/sessions/add/" + profileInfo.username,
+                    content: { url: result.currentURL, action: "Change URL", content: result.baseURL }
+                }, () => window.location = result.baseURL)
+            })
         })
     }
     closeButtonDiv.appendChild(homeButton)
@@ -204,7 +211,6 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                 }
                             };
                             document.body.appendChild(modalContainer);
-
                             chrome.runtime.sendMessage({
                                 //Fetching information about the sequence of performed actions, to create SikuliX and Selenium scripts
                                 mess: "fetch",
@@ -224,12 +230,13 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                     let scripts = reports.folder("scripts")
                                     let inner = scripts.folder("scripts.sikuli")
                                     let issueReports = reports.folder("issues")
+                                    let sessionLog = reports.folder("session log")
                                     let readme = "This folder contains the various reports generated during the testing session you have just finished.\n" +
                                         "Its content are divided as follows:\n" +
                                         `   - "scripts" folder: this folder contains scripts whose purpose is to emulate as faithfully as possible the actions you have performed during the session (clicking on elements, writing into text fields, selecting values from menus and so on).\n` +
                                         `       More in detail: the "script.sikuli" folder is to be used with the SikuliX program, while the single file with ".side" extension is compatible with "Selenium IDE", a web browser extension.\n` +
                                         `   - "issues" folder: this folder contains an image for each element you have reported an issue for, together with an html file which, if opened in browser, displays a table listing information about the reported issues.\n` +
-                                        `   - "log" folder: this folder acts as a combination  of the behaviors of the two previous ones, seeing as it contains an image of each element you have either interacted with or reported an issue for, along with an html file displaying all the actions performed, in the exact sequence you have performed them.`
+                                        `   - "session log" folder: this folder acts as a combination  of the behaviors of the two previous ones, seeing as it contains an image of each element you have either interacted with or reported an issue for, along with an html file displaying all the actions performed, in the exact sequence you have performed them.`
                                     reports.file("readme.txt", readme)
                                     //Creation, for each imageUrl corresponding to the screenshot of an interacted element, of an image file used by SikuliX
                                     for (let i = 0; i < ret.length; i++) {
@@ -374,8 +381,6 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                         method: "get",
                                         body: "/pages/issues/crops/" + profileInfo.username
                                     }, (response4) => {
-                                        console.log(response4)
-
                                         let issues = response4.data
                                         for (let i = 0; i < issues.length; i++) {
                                             if (issues[i].imageUrl) {
@@ -387,28 +392,27 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                                     ia[j] = byteString.charCodeAt(j);
                                                 }
                                                 let blob = new Blob([ab], { type: mimeString });
-                                                console.log(blob)
                                                 issueReports.file(`img${i + 1}.png`, blob)
                                             }
                                         }
                                         let htmlReport = "<!DOCTYPE html>\n" +
                                             "<html>\n" +
                                             "<head>\n" +
-                                            "<title>Gamification Extension - Issue Report</title>\n" +
+                                            "<title>GaTE - Issue Report</title>\n" +
                                             "</head>\n" +
                                             `<body style="background-color: rgb(211 245 230);">\n` +
                                             `<header>\n` +
                                             `<h1 style="text-align: center; color:#2215E2" id="title">Issues reported during the last session</h1>\n` +
                                             `</header>\n` +
                                             `<table>\n` +
-                                            `<tr>\n` +
+                                            `<tr style="text-align:center">\n` +
                                             `<th>Reported Widget</th>\n` +
                                             `<th>Issue</th>\n` +
                                             `<th>Widget Type</th>\n` +
                                             `</tr>\n`
                                         for (let i = 0; i < issues.length; i++) {
-                                            htmlReport += "<tr>\n" +
-                                                `<td><img src="./img${i + 1}.png"></img></td>\n` +
+                                            htmlReport += `<tr style="text-align:center">\n` +
+                                                `<td><img src="./img${i + 1}.png" style="width: 200px"></img></td>\n` +
                                                 `<td>${issues[i].issueText}</td>\n` +
                                                 `<td>${issues[i].widgetType}</td>\n`
                                         }
@@ -416,9 +420,64 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                             `</body>\n` +
                                             `</html>`
                                         issueReports.file("issueReports.html", htmlReport)
-                                        zip.generateAsync({ type: "blob" }).then((blob) => {
-                                            saveAs(blob, "reports.zip");
-                                        });
+                                        chrome.runtime.sendMessage({
+                                            mess: "fetch",
+                                            method: "get",
+                                            body: "/sessions/end/" + profileInfo.username
+                                        }, (response5) => {
+                                            let actions = response5.data
+                                            for (let i = 0; i < actions.length; i++) {
+                                                if (actions[i].imageUrl) {
+                                                    let byteString = atob(actions[i].imageUrl.split(',')[1])
+                                                    let mimeString = actions[i].imageUrl.split(',')[0].split(':')[1].split(';')[0]
+                                                    let ab = new ArrayBuffer(byteString.length);
+                                                    let ia = new Uint8Array(ab);
+                                                    for (let j = 0; j < byteString.length; j++) {
+                                                        ia[j] = byteString.charCodeAt(j);
+                                                    }
+                                                    let blob = new Blob([ab], { type: mimeString });
+                                                    sessionLog.file(`img${i + 1}.png`, blob)
+                                                }
+                                            }
+                                            let htmlLog = "<!DOCTYPE html>\n" +
+                                                "<html>\n" +
+                                                "<head>\n" +
+                                                "<title>GaTE - Session Log</title>\n" +
+                                                "</head>\n" +
+                                                `<body style="background-color: rgb(211 245 230);">\n` +
+                                                `<header>\n` +
+                                                `<h1 style="text-align: center; color:#2215E2" id="title">Actions performed during the last session</h1>\n` +
+                                                `</header>\n` +
+                                                `<table>\n` +
+                                                `<tr style="text-align:center">\n` +
+                                                `<th>Widget</th>\n` +
+                                                `<th>Action</th>\n` +
+                                                `<th>Widget Type</th>\n` +
+                                                "<th>Web Page</th>" +
+                                                "<th>Content</th>" +
+                                                "<th>Date and Time</th>" +
+                                                `</tr>\n`
+                                            for (let i = 0; i < actions.length; i++) {
+                                                let content = actions[i].issueText ? actions[i].issueText : actions[i].content ? actions[i].content : ""
+                                                let imgRow = actions[i].imageUrl ? `<td><img src="./img${i + 1}.png" style="width: 200px"></img></td>\n` : "<td></td>"
+                                                let url = actions[i].url ? actions[i].url : ""
+                                                let widgetType = actions[i].widgetType ? actions[i].widgetType : ""
+                                                htmlLog += `<tr style="text-align: center">\n` +
+                                                    imgRow +
+                                                    `<td>${actions[i].action}</td>\n` +
+                                                    `<td>${widgetType}</td>\n` +
+                                                    `<td>${url}</td>\n` +
+                                                    `<td>${content}</td>\n` +
+                                                    `<td>${actions[i].date}</td>\n`
+                                            }
+                                            htmlLog += `</table>\n` +
+                                                `</body>\n` +
+                                                `</html>`
+                                            sessionLog.file("sessionLog.html", htmlLog)
+                                            zip.generateAsync({ type: "blob" }).then((blob) => {
+                                                saveAs(blob, "reports.zip");
+                                            });
+                                        })
                                     })
                                 })
                             })

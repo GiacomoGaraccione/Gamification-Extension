@@ -161,6 +161,7 @@ chrome.storage.sync.get(["profileInfo", "startingURL", "currentURL"], function (
   }
 
   document.getElementById("passwordField").addEventListener("change", () => displayConfirmButton())
+  console.log(result)
 
   pageURLButton.addEventListener("click", async () => {
     isValidUrl = (_string) => {
@@ -195,17 +196,24 @@ chrome.storage.sync.get(["profileInfo", "startingURL", "currentURL"], function (
         clickedLink: null,
         lastAction: ""
       });
-      if (tab === undefined) {
-        chrome.runtime.sendMessage({
-          mess: "openNew",
-          url: url,
-        });
-      } else {
-        chrome.runtime.sendMessage({
-          mess: "close",
-          id: tab.id
-        })
-      }
+      chrome.runtime.sendMessage({
+        mess: "fetch",
+        method: "post",
+        body: "/sessions/start",
+        content: { username: JSON.parse(profileInfo).username, url: url }
+      }, () => {
+        if (tab === undefined) {
+          chrome.runtime.sendMessage({
+            mess: "openNew",
+            url: url,
+          });
+        } else {
+          chrome.runtime.sendMessage({
+            mess: "close",
+            id: tab.id
+          })
+        }
+      })
     }
   });
 

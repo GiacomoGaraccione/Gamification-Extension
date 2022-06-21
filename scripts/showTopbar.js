@@ -30,7 +30,7 @@ chrome.storage.sync.get(["currentURL", "profileInfo"], (result) => {
             let found = document.getElementById("gamificationExtensionTopnav");
             if (found === null) {
                 document.body.appendChild(topnav);
-                topnav.style = "background-color: transparent;position: fixed;bottom: 10;width: 100%;";
+                topnav.style = "background-color: transparent; position: fixed;bottom: 10;width: 100%;";
                 let outerDiv = document.createElement("div");
                 outerDiv.id = "gamificationExtensionTopnavOuter";
                 outerDiv.style = "color:#000!important;background-color:#f1f1f1!important;border-radius:16px";

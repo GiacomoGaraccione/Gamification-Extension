@@ -48,84 +48,173 @@ clickHandlerInteract = (profileInfo, currentURL, element, objectType, objectId, 
                     }
                 }
                 chrome.storage.sync.set({ pageStats: JSON.stringify(pageStats) }, () => {
-                    chrome.storage.sync.get(["overlayMode"], (result) => {
-                        if (result.overlayMode === "interacted") {
-                            drawBorderOnInteracted()
-                        } else if (result.overlayMode === "all") {
-                            drawBorderOnAll()
-                        }
-                    })
-                    if (newEl) {
+                    if (objectType !== "select") {
                         chrome.runtime.sendMessage({
-                            "mess": "fetch",
-                            body: "/pages/actions",
+                            mess: "fetch",
                             method: "post",
-                            content: { url: currentURL, username: profileInfo.username, objectId: objectId, objectType: objectType }
+                            body: "/sessions/add/" + profileInfo.username,
+                            content: { imageUrl: canvas.toDataURL(), url: currentURL, widgetId: objectId, widgetType: objectType, issueText: null, action: "Click", content: null }
                         }, () => {
-                            let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
-                            let interactedLinks = objectType === "link" ? pageActions.filter(filterLink).length + 1 : pageActions.filter(filterLink).length
-                            let interactedInputs = objectType === "input" ? pageActions.filter(filterInput).length + 1 : pageActions.filter(filterInput).length
-                            let interactedButtons = objectType === "button" ? pageActions.filter(filterButton).length + 1 : pageActions.filter(filterButton).length
-                            let interactedSelects = objectType === "select" ? pageActions.filter(filterSelect).length + 1 : pageActions.filter(filterSelect).length
-                            let progress = ((interactedLinks + interactedInputs + interactedButtons + interactedSelects) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects + pageInfo.totalSelectObjects)
-                            innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
-                            innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
-                            let sidenavProgress = objectType === "link" ? document.getElementById("gamificationExtensionLinksProgress") : objectType === "input" ? document.getElementById("gamificationExtensionInputsProgress") : objectType === "button" ? document.getElementById("gamificationExtensionButtonsProgress") : document.getElementById("gamificationExtensionSelectsProgress")
-                            let widgetProgress = objectType === "link" ? interactedLinks * 100 / pageInfo.totalLinkObjects : objectType === "input" ? interactedInputs * 100 / pageInfo.totalInputObjects : objectType === "button" ? interactedButtons * 100 / pageInfo.totalButtonObjects : interactedSelects * 100 / pageInfo.totalSelectObjects
-                            if (widgetProgress > 100) {
-                                widgetProgress = 100
-                            }
-                            let firstWord = objectType === "link" ? "Links " : objectType === "input" ? "Forms " : objectType === "button" ? "Buttons " : "Dropdown Menus "
-                            sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
-                            sidenavProgress.textContent = firstWord + "Progress: " + widgetProgress.toFixed(2) + "%"
-                            let table = document.getElementById("gamificationExtensionPageStatsTable")
-                            let row = objectType === "link" ? table.rows[1] : objectType === "input" ? table.rows[2] : objectType === "button" ? table.rows[3] : table.rows[4]
-                            let pageStat = pageStats.filter(filterURL)[0]
-                            row.cells[1].innerHTML = objectType === "link" ? pageStat.interactedLinks.length : objectType === "input" ? pageStat.interactedInputs.length : objectType === "button" ? pageStat.interactedButtons.length : pageStat.interactedSelects.length
-                            row.cells[2].innerHTML = objectType === "link" ? pageStat.newLinks.length : objectType === "input" ? pageStat.newInputs.length : objectType === "button" ? pageStat.newButtons.length : pageStat.newSelects.length
-                            row.cells[3].innerHTML = objectType === "link" ? pageActions.filter(filterLink).length + 1 : objectType === "input" ? pageActions.filter(filterInput).length + 1 : objectType === "button" ? pageActions.filter(filterButton).length + 1 : pageActions.filter(filterSelect).length + 1
-                            pageCoverageAchievements(progress, widgetProgress)
-                            switch (objectType) {
-                                case "link":
-                                    chrome.runtime.sendMessage({
-                                        mess: "fetch",
-                                        body: "/pages/records/" + profileInfo.username,
-                                        method: "post",
-                                        content: { username: profileInfo.username, url: currentURL, coverage: progress, linksCoverage: widgetProgress },
-                                        firstTime: false
-                                    })
-                                    break
-                                case "input":
-                                    chrome.runtime.sendMessage({
-                                        mess: "fetch",
-                                        body: "/pages/records/" + profileInfo.username,
-                                        method: "post",
-                                        content: { username: profileInfo.username, url: currentURL, coverage: progress, inputsCoverage: widgetProgress },
-                                        firstTime: false
-                                    })
-                                    break
-                                case "button":
-                                    chrome.runtime.sendMessage({
-                                        mess: "fetch",
-                                        body: "/pages/records/" + profileInfo.username,
-                                        method: "post",
-                                        content: { username: profileInfo.username, url: currentURL, coverage: progress, buttonsCoverage: widgetProgress },
-                                        firstTime: false
-                                    })
-                                    break
-                                case "select":
-                                    chrome.runtime.sendMessage({
-                                        mess: "fetch",
-                                        body: "/pages/records/" + profileInfo.username,
-                                        method: "post",
-                                        content: { username: profileInfo.username, url: currentURL, coverage: progress, selectsCoverage: widgetProgress },
-                                        firstTime: false
-                                    })
-                                    break
-                                default:
-                                    break
+                            chrome.storage.sync.get(["overlayMode"], (result) => {
+                                if (result.overlayMode === "interacted") {
+                                    drawBorderOnInteracted()
+                                } else if (result.overlayMode === "all") {
+                                    drawBorderOnAll()
+                                }
+                            })
+                            if (newEl) {
+                                chrome.runtime.sendMessage({
+                                    "mess": "fetch",
+                                    body: "/pages/actions",
+                                    method: "post",
+                                    content: { url: currentURL, username: profileInfo.username, objectId: objectId, objectType: objectType }
+                                }, () => {
+                                    let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
+                                    let interactedLinks = objectType === "link" ? pageActions.filter(filterLink).length + 1 : pageActions.filter(filterLink).length
+                                    let interactedInputs = objectType === "input" ? pageActions.filter(filterInput).length + 1 : pageActions.filter(filterInput).length
+                                    let interactedButtons = objectType === "button" ? pageActions.filter(filterButton).length + 1 : pageActions.filter(filterButton).length
+                                    let interactedSelects = objectType === "select" ? pageActions.filter(filterSelect).length + 1 : pageActions.filter(filterSelect).length
+                                    let progress = ((interactedLinks + interactedInputs + interactedButtons + interactedSelects) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects + pageInfo.totalSelectObjects)
+                                    innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
+                                    innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
+                                    let sidenavProgress = objectType === "link" ? document.getElementById("gamificationExtensionLinksProgress") : objectType === "input" ? document.getElementById("gamificationExtensionInputsProgress") : objectType === "button" ? document.getElementById("gamificationExtensionButtonsProgress") : document.getElementById("gamificationExtensionSelectsProgress")
+                                    let widgetProgress = objectType === "link" ? interactedLinks * 100 / pageInfo.totalLinkObjects : objectType === "input" ? interactedInputs * 100 / pageInfo.totalInputObjects : objectType === "button" ? interactedButtons * 100 / pageInfo.totalButtonObjects : interactedSelects * 100 / pageInfo.totalSelectObjects
+                                    if (widgetProgress > 100) {
+                                        widgetProgress = 100
+                                    }
+                                    let firstWord = objectType === "link" ? "Links " : objectType === "input" ? "Forms " : objectType === "button" ? "Buttons " : "Dropdown Menus "
+                                    sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
+                                    sidenavProgress.textContent = firstWord + "Progress: " + widgetProgress.toFixed(2) + "%"
+                                    let table = document.getElementById("gamificationExtensionPageStatsTable")
+                                    let row = objectType === "link" ? table.rows[1] : objectType === "input" ? table.rows[2] : objectType === "button" ? table.rows[3] : table.rows[4]
+                                    let pageStat = pageStats.filter(filterURL)[0]
+                                    row.cells[1].innerHTML = objectType === "link" ? pageStat.interactedLinks.length : objectType === "input" ? pageStat.interactedInputs.length : objectType === "button" ? pageStat.interactedButtons.length : pageStat.interactedSelects.length
+                                    row.cells[2].innerHTML = objectType === "link" ? pageStat.newLinks.length : objectType === "input" ? pageStat.newInputs.length : objectType === "button" ? pageStat.newButtons.length : pageStat.newSelects.length
+                                    row.cells[3].innerHTML = objectType === "link" ? pageActions.filter(filterLink).length + 1 : objectType === "input" ? pageActions.filter(filterInput).length + 1 : objectType === "button" ? pageActions.filter(filterButton).length + 1 : pageActions.filter(filterSelect).length + 1
+                                    pageCoverageAchievements(progress, widgetProgress)
+                                    switch (objectType) {
+                                        case "link":
+                                            chrome.runtime.sendMessage({
+                                                mess: "fetch",
+                                                body: "/pages/records/" + profileInfo.username,
+                                                method: "post",
+                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, linksCoverage: widgetProgress },
+                                                firstTime: false
+                                            })
+                                            break
+                                        case "input":
+                                            chrome.runtime.sendMessage({
+                                                mess: "fetch",
+                                                body: "/pages/records/" + profileInfo.username,
+                                                method: "post",
+                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, inputsCoverage: widgetProgress },
+                                                firstTime: false
+                                            })
+                                            break
+                                        case "button":
+                                            chrome.runtime.sendMessage({
+                                                mess: "fetch",
+                                                body: "/pages/records/" + profileInfo.username,
+                                                method: "post",
+                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, buttonsCoverage: widgetProgress },
+                                                firstTime: false
+                                            })
+                                            break
+                                        case "select":
+                                            chrome.runtime.sendMessage({
+                                                mess: "fetch",
+                                                body: "/pages/records/" + profileInfo.username,
+                                                method: "post",
+                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, selectsCoverage: widgetProgress },
+                                                firstTime: false
+                                            })
+                                            break
+                                        default:
+                                            break
+                                    }
+                                })
                             }
                         })
+                    } else {
+                        chrome.storage.sync.get(["overlayMode"], (result) => {
+                            if (result.overlayMode === "interacted") {
+                                drawBorderOnInteracted()
+                            } else if (result.overlayMode === "all") {
+                                drawBorderOnAll()
+                            }
+                        })
+                        if (newEl) {
+                            chrome.runtime.sendMessage({
+                                "mess": "fetch",
+                                body: "/pages/actions",
+                                method: "post",
+                                content: { url: currentURL, username: profileInfo.username, objectId: objectId, objectType: objectType }
+                            }, () => {
+                                let innerDiv = document.getElementById("gamificationExtensionTopnavInner");
+                                let interactedLinks = objectType === "link" ? pageActions.filter(filterLink).length + 1 : pageActions.filter(filterLink).length
+                                let interactedInputs = objectType === "input" ? pageActions.filter(filterInput).length + 1 : pageActions.filter(filterInput).length
+                                let interactedButtons = objectType === "button" ? pageActions.filter(filterButton).length + 1 : pageActions.filter(filterButton).length
+                                let interactedSelects = objectType === "select" ? pageActions.filter(filterSelect).length + 1 : pageActions.filter(filterSelect).length
+                                let progress = ((interactedLinks + interactedInputs + interactedButtons + interactedSelects) * 100) / (pageInfo.totalLinkObjects + pageInfo.totalInputObjects + pageInfo.totalButtonObjects + pageInfo.totalSelectObjects)
+                                innerDiv.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + progress + `%; white-space:nowrap`;
+                                innerDiv.textContent = "Progress: " + progress.toFixed(2) + "%";
+                                let sidenavProgress = objectType === "link" ? document.getElementById("gamificationExtensionLinksProgress") : objectType === "input" ? document.getElementById("gamificationExtensionInputsProgress") : objectType === "button" ? document.getElementById("gamificationExtensionButtonsProgress") : document.getElementById("gamificationExtensionSelectsProgress")
+                                let widgetProgress = objectType === "link" ? interactedLinks * 100 / pageInfo.totalLinkObjects : objectType === "input" ? interactedInputs * 100 / pageInfo.totalInputObjects : objectType === "button" ? interactedButtons * 100 / pageInfo.totalButtonObjects : interactedSelects * 100 / pageInfo.totalSelectObjects
+                                if (widgetProgress > 100) {
+                                    widgetProgress = 100
+                                }
+                                let firstWord = objectType === "link" ? "Links " : objectType === "input" ? "Forms " : objectType === "button" ? "Buttons " : "Dropdown Menus "
+                                sidenavProgress.style = `border-radius:16px;margin-top:16px;margin-bottom:16px;color:#000!important;background-color:#2196F3!important; width:` + widgetProgress + `%; white-space:nowrap`;
+                                sidenavProgress.textContent = firstWord + "Progress: " + widgetProgress.toFixed(2) + "%"
+                                let table = document.getElementById("gamificationExtensionPageStatsTable")
+                                let row = objectType === "link" ? table.rows[1] : objectType === "input" ? table.rows[2] : objectType === "button" ? table.rows[3] : table.rows[4]
+                                let pageStat = pageStats.filter(filterURL)[0]
+                                row.cells[1].innerHTML = objectType === "link" ? pageStat.interactedLinks.length : objectType === "input" ? pageStat.interactedInputs.length : objectType === "button" ? pageStat.interactedButtons.length : pageStat.interactedSelects.length
+                                row.cells[2].innerHTML = objectType === "link" ? pageStat.newLinks.length : objectType === "input" ? pageStat.newInputs.length : objectType === "button" ? pageStat.newButtons.length : pageStat.newSelects.length
+                                row.cells[3].innerHTML = objectType === "link" ? pageActions.filter(filterLink).length + 1 : objectType === "input" ? pageActions.filter(filterInput).length + 1 : objectType === "button" ? pageActions.filter(filterButton).length + 1 : pageActions.filter(filterSelect).length + 1
+                                pageCoverageAchievements(progress, widgetProgress)
+                                switch (objectType) {
+                                    case "link":
+                                        chrome.runtime.sendMessage({
+                                            mess: "fetch",
+                                            body: "/pages/records/" + profileInfo.username,
+                                            method: "post",
+                                            content: { username: profileInfo.username, url: currentURL, coverage: progress, linksCoverage: widgetProgress },
+                                            firstTime: false
+                                        })
+                                        break
+                                    case "input":
+                                        chrome.runtime.sendMessage({
+                                            mess: "fetch",
+                                            body: "/pages/records/" + profileInfo.username,
+                                            method: "post",
+                                            content: { username: profileInfo.username, url: currentURL, coverage: progress, inputsCoverage: widgetProgress },
+                                            firstTime: false
+                                        })
+                                        break
+                                    case "button":
+                                        chrome.runtime.sendMessage({
+                                            mess: "fetch",
+                                            body: "/pages/records/" + profileInfo.username,
+                                            method: "post",
+                                            content: { username: profileInfo.username, url: currentURL, coverage: progress, buttonsCoverage: widgetProgress },
+                                            firstTime: false
+                                        })
+                                        break
+                                    case "select":
+                                        chrome.runtime.sendMessage({
+                                            mess: "fetch",
+                                            body: "/pages/records/" + profileInfo.username,
+                                            method: "post",
+                                            content: { username: profileInfo.username, url: currentURL, coverage: progress, selectsCoverage: widgetProgress },
+                                            firstTime: false
+                                        })
+                                        break
+                                    default:
+                                        break
+                                }
+                            })
+                        }
                     }
                 })
             })
@@ -191,10 +280,17 @@ clickHandlerSignal = (profileInfo, currentURL, objectType, objectId) => {
                             method: "post",
                             content: { imageUrl: canvas.toDataURL(), issueText: modalForm.value, widgetType: objectType, widgetId: objectId }
                         }, () => {
-                            drawBackground()
-                            countIssuesAchievement()
-                            modalContainer.style.display = "none";
-                            document.body.removeChild(modalContainer)
+                            chrome.runtime.sendMessage({
+                                mess: "fetch",
+                                method: "post",
+                                body: "/sessions/add/" + profileInfo.username,
+                                content: { imageUrl: canvas.toDataURL(), url: currentURL, widgetId: objectId, widgetType: objectType, issueText: modalForm.value, action: "Report Issue", content: null }
+                            }, () => {
+                                drawBackground()
+                                countIssuesAchievement()
+                                modalContainer.style.display = "none";
+                                document.body.removeChild(modalContainer)
+                            })
                         })
                     })
                 })
@@ -254,6 +350,13 @@ clickHandlerSignal = (profileInfo, currentURL, objectType, objectId) => {
                             method: "delete",
                             body: "/pages/issues/crops/" + profileInfo.username,
                             content: { imageUrl: canvas.toDataURL(), issueText: issue.issueText, widgetId: issue.objectId, widgetType: issue.objectType }
+                        }, () => {
+                            chrome.runtime.sendMessage({
+                                mess: "fetch",
+                                method: "post",
+                                body: "/sessions/add/" + profileInfo.username,
+                                content: { imageUrl: canvas.toDataURL(), url: currentURL, widgetId: objectId, widgetType: objectType, issueText: null, action: "Solve Issue", content: null }
+                            })
                         })
                     })
 
@@ -372,7 +475,7 @@ selectChangeListener = (event) => {
     for (let j = 0; j < els.length && !found; j++) {
         if (event.target.id === els[j].id) {
             found = true
-            chrome.storage.sync.get(["interactionMode", "profileInfo"], (result) => {
+            chrome.storage.sync.get(["interactionMode", "profileInfo", "currentURL"], (result) => {
                 let profileInfo = JSON.parse(result.profileInfo)
                 if (result.interactionMode === "interact") {
                     chrome.runtime.sendMessage({
@@ -380,6 +483,16 @@ selectChangeListener = (event) => {
                         body: "/pages/crops/" + profileInfo.username,
                         method: "patch",
                         content: { selectIndex: els[j].options[els[j].selectedIndex].text, widgetId: j, submit: false }
+                    }, () => {
+                        html2canvas(els[j], options).then((canvas) => {
+                            console.log(canvas.toDataURL())
+                            chrome.runtime.sendMessage({
+                                mess: "fetch",
+                                method: "post",
+                                body: "/sessions/add/" + profileInfo.username,
+                                content: { imageUrl: canvas.toDataURL(), url: result.currentURL, widgetId: j, widgetType: "select", issueText: null, action: "Select", content: els[j].options[els[j].selectedIndex].text }
+                            })
+                        })
                     })
                 }
             })

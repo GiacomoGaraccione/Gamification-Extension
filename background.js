@@ -435,6 +435,43 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           sendResponse({ data: "ERROR" })
         }
       })
+    } else if (request.body.indexOf("/sessions/start") >= 0) {
+      fetch(apiCall, {
+        method: "post",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify({ username: request.content.username, url: request.content.url })
+      }).then((res) => {
+        if (res.ok) {
+          sendResponse({ data: "OK" })
+        } else {
+          sendResponse({ data: "ERROR" })
+        }
+      })
+    } else if (request.body.indexOf("/sessions/end") >= 0) {
+      fetch(apiCall, {
+        method: "get"
+      }).then((res) => {
+        res.json().then((data) => {
+          sendResponse({ data: data })
+        })
+      })
+    } else if (request.body.indexOf("/sessions/add") >= 0) {
+      console.log(request)
+      fetch(apiCall, {
+        method: "post",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify({ imageUrl: request.content.imageUrl, url: request.content.url, widgetId: request.content.widgetId, widgetType: request.content.widgetType, issueText: request.content.issueText, action: request.content.action, content: request.content.content })
+      }).then((res) => {
+        if (res.ok) {
+          sendResponse({ data: "OK" })
+        } else {
+          sendResponse({ data: "ERROR" })
+        }
+      })
     }
   }
 

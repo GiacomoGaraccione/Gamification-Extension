@@ -42,12 +42,19 @@ window.addEventListener("click", (event) => {
                                         "method": "get",
                                         "content": { url: result.currentURL }
                                     }, (response) => {
-                                        chrome.storage.sync.get(["overlayMode"], (result) => {
-                                            if (result.overlayMode === "interacted") {
-                                                drawBorderOnInteracted()
-                                            } else if (result.overlayMode === "all") {
-                                                drawBorderOnAll()
-                                            }
+                                        chrome.runtime.sendMessage({
+                                            mess: "fetch",
+                                            method: "post",
+                                            body: "/sessions/add/" + profileInfo.username,
+                                            content: { imageUrl: canvas.toDataURL(), url: result.currentURL, widgetId: i, widgetType: tag, issueText: null, action: "Click", content: null }
+                                        }, () => {
+                                            chrome.storage.sync.get(["overlayMode"], (result) => {
+                                                if (result.overlayMode === "interacted") {
+                                                    drawBorderOnInteracted()
+                                                } else if (result.overlayMode === "all") {
+                                                    drawBorderOnAll()
+                                                }
+                                            })
                                         })
                                         let pageActions = response.data
                                         let newEl = pageActions.filter(filterId).length === 0
@@ -190,11 +197,9 @@ window.addEventListener("click", (event) => {
                                 }
                             })
                         }
-
                     }
                 }
             }
         }
-
     })
 })

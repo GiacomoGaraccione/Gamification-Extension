@@ -377,7 +377,14 @@ function unlockAchievement(achievement, array, username) {
             method: "post",
             body: "/users/" + username + "/achievements",
             content: { text: achievement.text }
-        }, () => { chrome.runtime.sendMessage({ obj: achievement.obj, mess: "notification" }) })
+        }, () => {
+            chrome.runtime.sendMessage({
+                mess: "fetch",
+                method: "post",
+                body: "/sessions/add/" + username,
+                content: { imageUrl: null, url: null, widgetId: null, widgetType: null, issueText: null, action: "Unlocked Achievement", content: achievement.text }
+            }, () => chrome.runtime.sendMessage({ obj: achievement.obj, mess: "notification" }))
+        })
     }
 }
 
@@ -403,9 +410,13 @@ function unlockAvatar(avatar, array, path, username) {
                 message: "Unlocked " + avatar,
                 path: path
             }
-            chrome.runtime.sendMessage({ obj: notification, mess: "notification" })
+            chrome.runtime.sendMessage({
+                mess: "fetch",
+                method: "post",
+                body: "/sessions/add/" + username,
+                content: { imageUrl: null, url: null, widgetId: null, widgetType: null, issueText: null, action: "Unlocked Avatar", content: avatar }
+            }, () => chrome.runtime.sendMessage({ obj: notification, mess: "notification" }))
         })
-
     }
 }
 

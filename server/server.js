@@ -5,6 +5,7 @@ const userDao = require("./userDao.js")
 const pageDao = require("./pageDao.js")
 const achievementDao = require("./achievementDao.js")
 const avatarDao = require("./avatarDao.js")
+const sessionDao = require("./sessionDao.js")
 
 const { query, check, body, param, validationResult } = require('express-validator');
 
@@ -607,6 +608,38 @@ app.get("/api/avatars/hints", (req, res) => {
     avatarDao.getAvatarsHints().then((avs) => {
         res.json(avs)
     })
+        .catch((err) => {
+            utilities.resolveErrors(err, res)
+        })
+})
+
+//------------------------ Session APIs ---------------------------------
+
+app.post("/api/sessions/start", (req, res) => {
+    const username = req.body.username
+    const url = req.body.url
+    sessionDao.beginSession(username, url)
+        .then(() => res.status(200).json(utilities.successObj))
+        .catch((err) => {
+            utilities.resolveErrors(err, res)
+        })
+})
+
+app.get("/api/sessions/end/:username", (req, res) => {
+    const username = req.params.username
+    sessionDao.endSession(username).then((log) => {
+        res.json(log)
+    })
+        .catch((err) => {
+            utilities.resolveErrors(err, res)
+        })
+})
+
+app.post("/api/sessions/add/:username", (req, res) => {
+    const username = req.params.username
+    const sessionAction = req.body
+    sessionDao.addAction(username, sessionAction)
+        .then(() => res.status(200).json(utilities.successObj))
         .catch((err) => {
             utilities.resolveErrors(err, res)
         })
