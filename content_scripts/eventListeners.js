@@ -91,47 +91,69 @@ clickHandlerInteract = (profileInfo, currentURL, element, objectType, objectId, 
                                     row.cells[1].innerHTML = objectType === "link" ? pageStat.interactedLinks.length : objectType === "input" ? pageStat.interactedInputs.length : objectType === "button" ? pageStat.interactedButtons.length : pageStat.interactedSelects.length
                                     row.cells[2].innerHTML = objectType === "link" ? pageStat.newLinks.length : objectType === "input" ? pageStat.newInputs.length : objectType === "button" ? pageStat.newButtons.length : pageStat.newSelects.length
                                     row.cells[3].innerHTML = objectType === "link" ? pageActions.filter(filterLink).length + 1 : objectType === "input" ? pageActions.filter(filterInput).length + 1 : objectType === "button" ? pageActions.filter(filterButton).length + 1 : pageActions.filter(filterSelect).length + 1
-                                    pageCoverageAchievements(progress, widgetProgress)
-                                    switch (objectType) {
-                                        case "link":
-                                            chrome.runtime.sendMessage({
-                                                mess: "fetch",
-                                                body: "/pages/records/" + profileInfo.username,
-                                                method: "post",
-                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, linksCoverage: widgetProgress },
-                                                firstTime: false
-                                            })
-                                            break
-                                        case "input":
-                                            chrome.runtime.sendMessage({
-                                                mess: "fetch",
-                                                body: "/pages/records/" + profileInfo.username,
-                                                method: "post",
-                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, inputsCoverage: widgetProgress },
-                                                firstTime: false
-                                            })
-                                            break
-                                        case "button":
-                                            chrome.runtime.sendMessage({
-                                                mess: "fetch",
-                                                body: "/pages/records/" + profileInfo.username,
-                                                method: "post",
-                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, buttonsCoverage: widgetProgress },
-                                                firstTime: false
-                                            })
-                                            break
-                                        case "select":
-                                            chrome.runtime.sendMessage({
-                                                mess: "fetch",
-                                                body: "/pages/records/" + profileInfo.username,
-                                                method: "post",
-                                                content: { username: profileInfo.username, url: currentURL, coverage: progress, selectsCoverage: widgetProgress },
-                                                firstTime: false
-                                            })
-                                            break
-                                        default:
-                                            break
-                                    }
+                                    chrome.runtime.sendMessage({
+                                        mess: "fetch",
+                                        body: "/pages/records/" + profileInfo.username,
+                                        method: "get"
+                                    }, (response2) => {
+                                        let oldProgress = response2.data.filter(filterURL)[0].coverage
+                                        let message = ""
+                                        if (oldProgress < 25 && progress >= 25) {
+                                            message = "25% coverage reached"
+                                        } else if (oldProgress < 50 && progress >= 50) {
+                                            message = "50% coverage reached"
+                                        } else if (progress === 100) {
+                                            message = "100% coverage reached"
+                                        }
+                                        chrome.runtime.sendMessage({
+                                            mess: "fetch",
+                                            method: "post",
+                                            body: "/sessions/add/" + profileInfo.username,
+                                            content: { imageUrl: null, url: currentURL, widgetId: null, widgetType: null, issueText: null, action: message, content: null }
+                                        }, () => {
+                                            pageCoverageAchievements(progress, widgetProgress)
+                                            switch (objectType) {
+                                                case "link":
+                                                    chrome.runtime.sendMessage({
+                                                        mess: "fetch",
+                                                        body: "/pages/records/" + profileInfo.username,
+                                                        method: "post",
+                                                        content: { username: profileInfo.username, url: currentURL, coverage: progress, linksCoverage: widgetProgress },
+                                                        firstTime: false
+                                                    })
+                                                    break
+                                                case "input":
+                                                    chrome.runtime.sendMessage({
+                                                        mess: "fetch",
+                                                        body: "/pages/records/" + profileInfo.username,
+                                                        method: "post",
+                                                        content: { username: profileInfo.username, url: currentURL, coverage: progress, inputsCoverage: widgetProgress },
+                                                        firstTime: false
+                                                    })
+                                                    break
+                                                case "button":
+                                                    chrome.runtime.sendMessage({
+                                                        mess: "fetch",
+                                                        body: "/pages/records/" + profileInfo.username,
+                                                        method: "post",
+                                                        content: { username: profileInfo.username, url: currentURL, coverage: progress, buttonsCoverage: widgetProgress },
+                                                        firstTime: false
+                                                    })
+                                                    break
+                                                case "select":
+                                                    chrome.runtime.sendMessage({
+                                                        mess: "fetch",
+                                                        body: "/pages/records/" + profileInfo.username,
+                                                        method: "post",
+                                                        content: { username: profileInfo.username, url: currentURL, coverage: progress, selectsCoverage: widgetProgress },
+                                                        firstTime: false
+                                                    })
+                                                    break
+                                                default:
+                                                    break
+                                            }
+                                        })
+                                    })
                                 })
                             }
                         })

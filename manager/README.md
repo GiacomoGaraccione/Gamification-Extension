@@ -1,16 +1,13 @@
 # TODO
 
-## Users
+## Client
+
+### Users
 
 - Cliccare su un utente nella tabella dovrebbe evidenziarlo
 
-## Leaderboards
+### Leaderboards
 
-## Achievements/Avatars
+### Achievements/Avatars
 
-- Mostrare in ordine decrescente la percentuale di ottenimento di ciascuno
-
-SELECT idAch,COUNT(\*) as count
-FROM UserAchievements
-GROUP BY idAch
-ORDER BY count DESC;
+## Estensione

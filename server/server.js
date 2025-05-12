@@ -49,7 +49,6 @@ app.post("/api/login", [
  */
 app.post("/api/users", [
     body("username", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/),
-    body("selectedAvatar", "Parameter isn't a valid path").notEmpty().isIn(["../img/default_green.png", "../img/default_red.png", "../img/default_blue.png"]),
     body("password", "Parameter doesn't respect specifications").notEmpty().matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};///':"\\|,.<>\/? ]+$/)
 ], (req, res) => {
     if (utilities.resolveExpressValidator(validationResult(req), res)) {
@@ -107,6 +106,7 @@ app.patch("/api/users/:username", [
     }
 })
 
+
 /**
  * GET API - Retrieval of a user's unlocked avatars
  * Request Parameters: a string corresponding to the username of the user whose information is asked
@@ -126,6 +126,17 @@ app.get("/api/users/:username/avatars", [
             .then((avatars) => res.json(avatars))
             .catch((err) => utilities.resolveErrors(err, res))
     }
+})
+
+app.patch("/api/users/:username/avatars", (req, res) => {
+    const username = req.params.username
+    const param = req.body.param
+    const name = req.body.name
+    userDao.updateAvatarParameter(username, param, name)
+        .then(() => res.status(200).json(utilities.successObj))
+        .catch((err) => {
+            utilities.resolveErrors(err, res)
+        })
 })
 
 /**
@@ -604,13 +615,13 @@ app.get("/api/avatars/progress", (req, res) => {
         })
 })
 
-app.get("/api/avatars/hints", (req, res) => {
-    avatarDao.getAvatarsHints().then((avs) => {
+app.get("/api/avatars/:username/hints", (req, res) => {
+    const username = req.params.username
+    avatarDao.getAvatarsHints(username).then((avs) => {
         res.json(avs)
+    }).catch((err) => {
+        utilities.resolveErrors(err, res)
     })
-        .catch((err) => {
-            utilities.resolveErrors(err, res)
-        })
 })
 
 //------------------------ Session APIs ---------------------------------

@@ -247,6 +247,7 @@ exports.addPageRecord = function (pageRecord) {
  */
 exports.getPageRecords = function (username) {
     return new Promise((resolve, reject) => {
+        console.log(username)
         const sql = "SELECT * FROM PageRecords WHERE username = ?"
         db.all(sql, [username], (err, rows) => {
             if (err) {

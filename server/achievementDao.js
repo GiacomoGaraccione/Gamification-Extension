@@ -33,7 +33,7 @@ exports.getAchievementsProgress = function () {
 
 exports.getAchievementsHints = function () {
     return new Promise((resolve, reject) => {
-        const sql = "SELECT * FROM AchievementHints"
+        const sql = "SELECT * FROM Achievements"
         db.all(sql, [], (err, rows) => {
             if (err) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code

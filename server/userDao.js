@@ -4,6 +4,24 @@ const db = require("./db.js")
 const utilities = require("./utilities.js")
 const bcrypt = require("bcrypt")
 
+const defaultParams = [
+    { name: "NoHair", paramType: "topType" },
+    { name: "LongHairStraight", paramType: "topType" },
+    { name: "LongHairBigHair", paramType: "topType" },
+    { name: "ShortHairShortFlat", paramType: "topType" },
+    { name: "ShortHairTheCaesar", paramType: "topType" },
+    { name: "Brown", paramType: "hairColor" },
+    { name: "Blonde", paramType: "hairColor" },
+    { name: "Auburn", paramType: "hairColor" },
+    { name: "Black", paramType: "hairColor" },
+    { name: "Blue01", paramType: "clotheColor" },
+    { name: "PastelGreen", paramType: "clotheColor" },
+    { name: "Red", paramType: "clotheColor" },
+    { name: "Light", paramType: "skinColor" },
+    { name: "Brown", paramType: "skinColor" },
+    { name: "Black", paramType: "skinColor" },
+    { name: "Yellow", paramType: "skinColor" }
+]
 /**
  * Adds a new user to the database.
  * Creates entries specifying the user has the three default avatars and no records yet.
@@ -14,14 +32,23 @@ exports.addUser = function (user) {
     return new Promise((resolve, reject) => {
         const salt = bcrypt.genSaltSync(10);
         const hash = bcrypt.hashSync(user.password, salt);
-        const sql = "INSERT INTO Users(username, selectedAvatar, password, salt) VALUES(?, ?, ?, ?)"
-        db.run(sql, [user.username, user.selectedAvatar, hash, salt], (err, row) => {
+        const sql = "INSERT INTO Users(username, email, password, salt) VALUES(?, ?, ?, ?)"
+        db.run(sql, [user.username, user.email, hash, salt], (err, row) => {
             if (err) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                 reject(utilities.errorObjs.dbError)
             } else {
-                const sqlAv = "INSERT INTO UserAvatars(username, idAv) VALUES (?, ?), (?, ?), (?, ?)"
-                const params = [user.username, 1, user.username, 2, user.username, 3]
+                let sqlAv = "INSERT INTO UserAvatarParams(username, name, paramType) VALUES (?, ?, ?), "
+                for (let i = 0; i < defaultParams.length - 2; i++) {
+                    sqlAv += "(?, ?, ?), "
+                }
+                sqlAv += "(?, ?, ?)"
+                const params = []
+                defaultParams.map((p) => {
+                    params.push(user.username)
+                    params.push(p.name)
+                    params.push(p.paramType)
+                })
                 db.run(sqlAv, params, (err, row) => {
                     if (err) {
                         utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
@@ -33,7 +60,15 @@ exports.addUser = function (user) {
                                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
                                 reject(utilities.errorObjs.dbError)
                             } else {
-                                resolve()
+                                const sqlCur = "INSERT INTO UserCurrentAvatar(username, topType, hairColor, clotheColor, skinColor) VALUES(?, ?, ?, ?, ?)"
+                                db.run(sqlCur, [user.username, user.avatarParams.topType, user.avatarParams.hairColor, user.avatarParams.clotheColor, user.avatarParams.skinColor], (errCur, rowCur) => {
+                                    if (errCur) {
+                                        utilities.errorObjs.dbError.errorMessage = "errno: " + errCur.errno + " - code: " + errCur.code
+                                        reject(utilities.errorObjs.dbError)
+                                    } else {
+                                        resolve()
+                                    }
+                                })
                             }
                         })
                     }
@@ -45,7 +80,7 @@ exports.addUser = function (user) {
 
 exports.getUsers = function () {
     return new Promise((resolve, reject) => {
-        const sql = "SELECT username, selectedAvatar FROM Users"
+        const sql = "SELECT username, selectedAvatar, email FROM Users"
         db.all(sql, [], (err, rows) => {
             if (err) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
@@ -91,7 +126,7 @@ exports.updateUser = function (user) {
 
 exports.getUserAvatars = function (username) {
     return new Promise((resolve, reject) => {
-        const sql = "SELECT UserAvatars.idAv, name, url FROM UserAvatars, Avatars WHERE UserAvatars.idAv = Avatars.idAv AND UserAvatars.username = ?"
+        const sql = "SELECT * FROM UserAvatarParams WHERE username = ? ORDER BY paramType"
         db.all(sql, [username], (err, rows) => {
             if (err) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
@@ -102,6 +137,21 @@ exports.getUserAvatars = function (username) {
         })
     })
 }
+
+exports.updateAvatarParameter = function (username, param, name) {
+    return new Promise((resolve, reject) => {
+        const sql = "UPDATE UserCurrentAvatar SET " + param + " = ? WHERE username = ?"
+        db.run(sql, [name, username], (err, row) => {
+            if (err) {
+                utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code
+                reject(utilities.errorObjs.dbError)
+            } else {
+                resolve()
+            }
+        })
+    })
+}
+
 
 exports.getUserAchievements = function (username) {
     return new Promise((resolve, reject) => {
@@ -161,7 +211,7 @@ exports.getUserRecords = function (username) {
 
 exports.getRecords = function () {
     return new Promise((resolve, reject) => {
-        const sql = "SELECT * FROM Records, Users WHERE Users.username = Records.username"
+        const sql = "SELECT * FROM Records, UserCurrentAvatar WHERE UserCurrentAvatar.username = Records.username"
         db.all(sql, (err, rows) => {
             if (err) {
                 utilities.errorObjs.dbError.errorMessage = "errno: " + err.errno + " - code: " + err.code

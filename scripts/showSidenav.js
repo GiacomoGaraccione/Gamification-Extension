@@ -404,17 +404,17 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                             `<header>\n` +
                                             `<h1 style="text-align: center; color:#2215E2" id="title">Issues reported during the last session</h1>\n` +
                                             `</header>\n` +
-                                            `<table>\n` +
+                                            `<table style="display: flex; justify-content: center; border-collapse: collapse">\n` +
                                             `<tr style="text-align:center">\n` +
-                                            `<th>Reported Widget</th>\n` +
-                                            `<th>Issue</th>\n` +
-                                            `<th>Widget Type</th>\n` +
+                                            `<th style="background-color: #416262;">Reported Widget</th>\n` +
+                                            `<th style="background-color: #416262;">Issue</th>\n` +
+                                            `<th style="background-color: #416262; border: 1px solid">Widget Type</th>\n` +
                                             `</tr>\n`
                                         for (let i = 0; i < issues.length; i++) {
                                             htmlReport += `<tr style="text-align:center">\n` +
-                                                `<td><img src="./img${i + 1}.png" style="width: 200px"></img></td>\n` +
-                                                `<td>${issues[i].issueText}</td>\n` +
-                                                `<td>${issues[i].widgetType}</td>\n`
+                                                `<td><img src="./img${i + 1}.png" style="width: 200px; border: 1px solid"></img></td>\n` +
+                                                `<td style="border: 1px solid">${issues[i].issueText}</td>\n` +
+                                                `<td style="border: 1px solid">${issues[i].widgetType}</td>\n`
                                         }
                                         htmlReport += `</table>\n` +
                                             `</body>\n` +
@@ -448,27 +448,27 @@ if (document.getElementById("gamificationExtensionSidenav") === null) {
                                                 `<header>\n` +
                                                 `<h1 style="text-align: center; color:#2215E2" id="title">Actions performed during the last session</h1>\n` +
                                                 `</header>\n` +
-                                                `<table>\n` +
+                                                `<table style="display: flex; justify-content: center; border-collapse: collapse">\n` +
                                                 `<tr style="text-align:center">\n` +
-                                                `<th>Widget</th>\n` +
-                                                `<th>Action</th>\n` +
-                                                `<th>Widget Type</th>\n` +
-                                                "<th>Web Page</th>" +
-                                                "<th>Content</th>" +
-                                                "<th>Date and Time</th>" +
+                                                `<th style="background-color: #416262; border: 1px solid">Widget</th>\n` +
+                                                `<th style="background-color: #416262; border: 1px solid">Action</th>\n` +
+                                                `<th style="background-color: #416262; border: 1px solid">Widget Type</th>\n` +
+                                                `<th style="background-color: #416262; border: 1px solid">Web Page</th>` +
+                                                `<th style="background-color: #416262; border: 1px solid">Content</th>` +
+                                                `<th style="background-color: #416262; border: 1px solid">Date and Time</th>` +
                                                 `</tr>\n`
                                             for (let i = 0; i < actions.length; i++) {
                                                 let content = actions[i].issueText ? actions[i].issueText : actions[i].content ? actions[i].content : ""
-                                                let imgRow = actions[i].imageUrl ? `<td><img src="./img${i + 1}.png" style="width: 200px"></img></td>\n` : "<td></td>"
+                                                let imgRow = actions[i].imageUrl ? `<td><img src="./img${i + 1}.png" style="width: 200px; border: 1px solid"></img></td>\n` : `<td style="border: 1px solid"></td>`
                                                 let url = actions[i].url ? actions[i].url : ""
                                                 let widgetType = actions[i].widgetType ? actions[i].widgetType : ""
                                                 htmlLog += `<tr style="text-align: center">\n` +
                                                     imgRow +
-                                                    `<td>${actions[i].action}</td>\n` +
-                                                    `<td>${widgetType}</td>\n` +
-                                                    `<td>${url}</td>\n` +
-                                                    `<td>${content}</td>\n` +
-                                                    `<td>${actions[i].date}</td>\n`
+                                                    `<td style= "border: 1px solid">${actions[i].action}</td>\n` +
+                                                    `<td style= "border: 1px solid">${widgetType}</td>\n` +
+                                                    `<td style= "border: 1px solid">${url}</td>\n` +
+                                                    `<td style= "border: 1px solid">${content}</td>\n` +
+                                                    `<td style= "border: 1px solid">${actions[i].date}</td>\n`
                                             }
                                             htmlLog += `</table>\n` +
                                                 `</body>\n` +
